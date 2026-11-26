@@ -748,8 +748,44 @@ function initVer() {
   });
 }
 
+// ---------- Get Hineni: simple steps for the device in your hand ----------
+const SITE_URL = 'https://maxatrilion1.github.io/Hineni/';
+const WIDGET_RAW = 'https://raw.githubusercontent.com/Maxatrilion1/Hineni/main/widget/hineni-widget.js';
+function device() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
+  if (/Android/.test(ua)) return 'android';
+  return 'computer';
+}
+const steps = (list) => `<ol class="steps">${list.map((t) => `<li>${t}</li>`).join('')}</ol>`;
+function renderGet() {
+  const d = device();
+  $('getApp').innerHTML = {
+    ios: steps(['Open Hineni in <b>Safari</b>.', 'Tap the <b>Share</b> button.', 'Tap <b>Add to Home Screen</b>, then <b>Add</b>.']),
+    android: steps(['Open Hineni in <b>Chrome</b>.', 'Tap the <b>⋮</b> menu.', 'Tap <b>Add to Home screen</b> or <b>Install app</b>.']),
+    computer: steps(['Open Hineni in <b>Chrome</b> or <b>Edge</b>.', 'Click the <b>install</b> icon at the right end of the address bar.']),
+  }[d] + `<p class="fine">Hineni's address: <a href="${SITE_URL}">${SITE_URL.replace('https://', '')}</a></p>`;
+  $('getWidget').innerHTML = {
+    ios: steps(['Install the free app <a href="https://apps.apple.com/app/scriptable/id1405459188">Scriptable</a>.', 'Tap <b>Copy the widget</b> below.', 'In Scriptable, tap <b>+</b>, paste, and name it <b>Hineni</b>. Tap ▶ once so it learns where you are.', 'Long-press your home screen, tap <b>+</b>, add a <b>Scriptable</b> widget, tap it and choose <b>Script: Hineni</b>. On the lock screen: Customize → add Scriptable.'])
+      + `<button type="button" id="copyWidget" class="btn wide">Copy the widget</button><p id="copyMsg" class="fine tight"></p>`,
+    android: `<p class="lore-p">An Android widget is coming. For now, put Hineni on your home screen as an app (above).</p>`,
+    computer: `<p class="lore-p">Widgets are for phones. Open this page on your iPhone to set one up.</p>`,
+  }[d];
+  $('copyWidget')?.addEventListener('click', async () => {
+    $('copyMsg').textContent = 'Copying…';
+    try {
+      let r = await fetch('widget/hineni-widget.js').catch(() => null);
+      if (!r || !r.ok) r = await fetch(WIDGET_RAW);
+      await navigator.clipboard.writeText(await r.text());
+      $('copyMsg').textContent = 'Copied. Now paste it into Scriptable.';
+    } catch {
+      $('copyMsg').innerHTML = `Couldn't copy here. Open <a href="${WIDGET_RAW}">the widget code</a> and copy it from there.`;
+    }
+  });
+}
+
 function initSettings() {
-  $('setBtn').addEventListener('click', () => { $('optMA').checked = prefs.ma; $('optCandles').value = prefs.candles; $('setDlg').showModal(); });
+  $('setBtn').addEventListener('click', () => { $('optMA').checked = prefs.ma; $('optCandles').value = prefs.candles; renderVer(); renderGet(); $('setDlg').showModal(); });
   $('setClose').addEventListener('click', () => $('setDlg').close());
   $('optMA').addEventListener('change', (e) => { prefs.ma = e.target.checked; store.set('prefs', prefs); render(); });
   $('optCandles').addEventListener('change', (e) => { prefs.candles = e.target.value; store.set('prefs', prefs); render(); });

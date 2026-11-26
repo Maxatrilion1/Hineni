@@ -766,3 +766,15 @@ body[data-jstep="month"] #dial .rs.now, body[data-jstep="week"] #dial .rs.now { 
 .no-now .rs.now, .no-now .seg.now { stroke: var(--face); stroke-width: 1.2; }
 /* Fading copies are never tappable: a tap always reaches the real circle */
 .ring-ghost *, .halos-ghost *, .morph, .fly { pointer-events: none !important; }
+
+/* Get Hineni */
+.get { border-bottom: 1px solid var(--line); padding: 12px 0; }
+.get summary { list-style: none; cursor: pointer; display: grid; gap: 2px; }
+.get summary::-webkit-details-marker { display: none; }
+.get summary small { color: var(--muted); font-size: 12.5px; }
+.get summary b::after { content: ' ›'; color: var(--muted); }
+.get[open] summary b::after { content: ' ⌄'; }
+.steps { margin: 10px 0 6px; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; line-height: 1.45; }
+.get .btn { margin-top: 6px; }
+.get a { color: var(--accent); }
+.credit { margin: 14px 0 2px; text-align: center; font-family: var(--he); font-size: 14px; color: var(--muted); }

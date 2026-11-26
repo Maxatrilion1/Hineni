@@ -4,7 +4,7 @@
 
 **Open it:** https://maxatrilion1.github.io/Hineni/
 
-Created by [Maxatrilion1](https://github.com/Maxatrilion1).
+A project of Moshe Fehler.
 
 ## What it is
 
