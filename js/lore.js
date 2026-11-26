@@ -114,3 +114,32 @@ export function towardJerusalem({ lat, lon }) {
 export function compassWord(b) {
   return ['north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'][Math.round(b / 45) % 8];
 }
+
+// What each month (and so each hour) holds. The senses are Sefer Yetzirah's (5:2);
+// the readings follow well-known Chassidic teachings on the months.
+export const MONTH_FOCUS = {
+  Nissan: { energy: 'Redemption and new beginnings. Its sense is speech: Pesach is read as peh sach, "the mouth that speaks".', focus: 'Say words that free: thanks, Torah, a kind word to someone stuck.', aware: 'What your words build or break.' },
+  Iyar: { energy: 'Healing and refinement. Its name is read as אני ה׳ רופאך, "I am Hashem your healer"; its sense is thought.', focus: 'Refine one trait. The Omer counts each one, a day at a time.', aware: 'The thoughts you let settle in.' },
+  Sivan: { energy: 'Receiving the Torah. Its sense is walking: moving forward, the way the people journeyed to Sinai.', focus: 'Take one real step forward in learning or growth.', aware: 'Standing still.' },
+  Tammuz: { energy: 'Seeing. The spies saw the land wrongly in this month, and its task is to see truly.', focus: 'Look for the good in people and in what happens.', aware: 'What you let your eyes rest on.' },
+  'Menachem Av': { energy: 'Loss turned to comfort. Its sense is hearing, as in Shema.', focus: 'Listen: to another person, and to the quiet call inside.', aware: 'Words you take in about others.' },
+  Elul: { energy: 'Return. "The King is in the field" (Likkutei Torah): close, approachable, smiling.', focus: 'Teshuvah through action: one deed you have been putting off.', aware: 'Small acts count most now.' },
+  Tishrei: { energy: 'Closeness and renewal: Rosh Hashanah, Yom Kippur, the embrace of the sukkah. Its sense is touch and union.', focus: 'Draw close: to Hashem, to family, to the people around you.', aware: 'Renew what has become routine.' },
+  Cheshvan: { energy: 'The quiet month, with no festivals. Its sense is smell, the subtlest, by which Moshiach will judge (Yeshayahu 11:3).', focus: 'Carry the inspiration of Tishrei into ordinary days.', aware: 'Growth that happens quietly.' },
+  Kislev: { energy: 'Dreams and miracles. Its sense is sleep: Yosef\'s dreams are read now, and Chanukah\'s light comes in the dark.', focus: 'Trust. Sleep is letting go into Hashem\'s hands.', aware: 'What you hope and dream for.' },
+  Teves: { energy: 'The siege that began on 10 Teves. Its sense is anger.', focus: 'Turn anger into holy zeal against what is wrong in yourself.', aware: 'Your temper.' },
+  Shevat: { energy: 'The new year of the trees. Its sense is taste and eating.', focus: 'Eat with a blessing and intention; taste the sweetness of Torah.', aware: 'How and why you eat.' },
+  Adar: { energy: 'Joy. "When Adar enters, increase joy" (Taanis 29a). Its sense is laughter.', focus: 'Joy that breaks through barriers.', aware: 'Hashem\'s hidden hand behind events, as on Purim.' },
+};
+MONTH_FOCUS['Adar I'] = MONTH_FOCUS['Adar II'] = MONTH_FOCUS.Adar;
+
+// What was built on each day (Bereishis 1–2), and what the day asks of us.
+export const DAY_DEPTH = [
+  { built: 'Light, before there was a sun. Chazal say it was hidden away for the righteous (Chagigah 12a).', ask: 'Begin with clarity. Bring a little light where it is dark.', quality: 'Chesed: kindness that flows outward', guest: 'Avraham, who opened his tent to everyone' },
+  { built: 'The firmament, dividing the upper waters from the lower. The only day without "it was good", because its work was not finished (Rashi 1:7).', ask: 'Make boundaries that hold, and finish what you started.', quality: 'Gevurah: strength, restraint, discipline', guest: 'Yitzchak, the awe and devotion of the Akeidah' },
+  { built: 'Dry land, grass and trees. "It was good" is said twice.', ask: 'Plant something and let it grow: a habit, a friendship, a project.', quality: 'Tiferes: harmony and truth', guest: 'Yaakov, man of truth and Torah' },
+  { built: 'The sun, moon and stars, to give light and mark the times. The moon was made smaller (Chullin 60b).', ask: 'Give light to others, and keep your times: for prayer, learning, family.', quality: 'Netzach: endurance and victory', guest: 'Moshe, who led and taught for forty years' },
+  { built: 'Fish in the sea and birds in the sky: the first living creatures, blessed to be fruitful.', ask: 'Bring life and movement into your work.', quality: 'Hod: acknowledgment, humility, splendor', guest: 'Aharon, who loved peace and pursued it' },
+  { built: 'The animals, and then man, in the image of G-d.', ask: 'Take responsibility, and prepare for Shabbos.', quality: 'Yesod: connection and foundation', guest: 'Yosef the tzaddik, who guarded holiness' },
+  { built: 'Rest. "G-d blessed the seventh day and made it holy" (Bereishis 2:3).', ask: 'Stop building and just be. Let the week settle into blessing.', quality: 'Malchus: kingship and receiving', guest: 'David, the king who sang' },
+];

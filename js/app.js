@@ -2,8 +2,8 @@ import { hourOf, civilDate, addDays, SHITAH } from './zmanim.js';
 import { gematria, WEEKDAYS, hebrewDate } from './hebrew.js';
 import { buildDial, updateDial } from './dial.js';
 import { paintSky } from './sky.js';
-import { icon } from './emblems.js';
-import { LEVELS, context, hourTribe, ordinal, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
+import { art } from './art.js';
+import { LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
 import { NEW_YORK, CITIES, isIsrael, candleMinutes, geolocate, geoPermission, placeName, searchPlaces, distanceKm } from './places.js';
 
 const store = {
@@ -16,7 +16,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 let loc = store.get('loc') || NEW_YORK;
 let prefs = { ma: false, candles: 'auto', ...(store.get('prefs') || {}) };
 const view = { mode: 'time', level: 'day', focus: Date.now(), follow: true };
-let x = null, v = null, renderedKey = '', heading = null;
+let x = null, v = null, renderedKey = '', heading = null, rot = 0, rotMode = 'north';
 
 const opts = () => ({ israel: isIsrael(loc), ma: prefs.ma, candleMin: prefs.candles === 'auto' ? candleMinutes(loc) : +prefs.candles });
 const fmt = (t) => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZone: loc.tz }).format(new Date(t));
@@ -84,15 +84,12 @@ function render(dir) {
   }
 
   if (view.mode === 'space') {
-    v = spaceView(x, heading);
-    $('dial').innerHTML = v.svg;
-    $('centerBtn').innerHTML = v.center;
-    $('panel').innerHTML = v.panel;
-    $('crumbs').innerHTML = `<span class="crumb cur">${esc(loc.name)}</span><span class="crumb">→ ירושלים</span>`;
-    $('prevBtn').hidden = $('nextBtn').hidden = $('outBtn').hidden = true;
-    $('compassBtn')?.addEventListener('click', startCompass);
+    renderSpace();
+    $('prevBtn').hidden = $('nextBtn').hidden = true;
+    $('scale').hidden = true;
     return;
   }
+  $('scale').hidden = false;
 
   if (view.level === 'day') {
     buildDial($('dial'), x.jd, loc.tz);
@@ -117,30 +114,39 @@ function render(dir) {
   }
   $('prevBtn').hidden = !v.prev;
   $('nextBtn').hidden = !v.next;
-  const up = LEVELS[LEVELS.indexOf(view.level) + 1];
-  $('outBtn').hidden = !up;
-  if (up) $('outBtn').innerHTML = `<span aria-hidden="true">⤢</span> ${cap(up)}`;
-  renderCrumbs();
+  $('viewTitle').innerHTML = v.title || '';
+  renderScale();
 }
-const cap = (s) => s[0].toUpperCase() + s.slice(1);
 
-function renderCrumbs() {
-  const { hd, wd } = x;
-  const pos = hd.year % 7 || 7;
-  const h = hourOf(view.focus, x.jd);
-  const label = {
-    world: `${Math.floor(hd.year / 1000) + 1}th millennium`,
-    shemitah: pos === 7 ? 'Shemitah' : `Shemitah ${pos}/7`,
-    year: `<span class="he" lang="he">${gematria(hd.year % 1000)}</span>`,
-    month: esc(hd.month),
-    week: 'Week',
-    day: `<bdi class="he" lang="he">${WEEKDAYS[wd].he}</bdi> · ${hd.day} ${esc(hd.month.split(' ').pop())}`,
-    hour: `${ordinal(h.hour)} hour`,
-  };
-  const i = LEVELS.indexOf(view.level);
-  $('crumbs').innerHTML = LEVELS.slice(i).reverse().map((l) => `<button type="button" class="crumb${l === view.level ? ' cur' : ''}" data-level="${l}">${label[l]}</button>`).join('<span class="sep">›</span>');
-  const c = $('crumbs');
-  c.scrollLeft = c.scrollWidth;
+function renderSpace() {
+  if (rotMode === 'jer') rot = -spaceBearing();
+  else if (rotMode === 'phone' && heading != null) rot = -heading;
+  v = spaceView(x, rot);
+  $('dial').innerHTML = v.svg;
+  $('centerBtn').innerHTML = v.center;
+  $('viewTitle').textContent = v.title;
+  if (!document.getElementById('faceJ')) {
+    $('panel').innerHTML = v.panel;
+    $('faceJ').addEventListener('click', () => { rotMode = 'jer'; renderSpace(); });
+    $('northUp').addEventListener('click', () => { rotMode = 'north'; rot = 0; renderSpace(); });
+    $('compassBtn').addEventListener('click', startCompass);
+  } else {
+    const fresh = document.createElement('div');
+    fresh.innerHTML = v.panel;
+    $('panel').querySelector('.pcard').replaceWith(fresh.querySelector('.pcard'));
+    $('faceJ').addEventListener('click', () => { rotMode = 'jer'; renderSpace(); });
+    $('northUp').addEventListener('click', () => { rotMode = 'north'; rot = 0; renderSpace(); });
+    $('compassBtn').addEventListener('click', startCompass);
+  }
+}
+const spaceBearing = () => { const r = Math.PI / 180, T = { lat: 31.7781, lon: 35.2354 }; const y = Math.sin((T.lon - loc.lon) * r) * Math.cos(T.lat * r); const xx = Math.cos(loc.lat * r) * Math.sin(T.lat * r) - Math.sin(loc.lat * r) * Math.cos(T.lat * r) * Math.cos((T.lon - loc.lon) * r); return ((Math.atan2(y, xx) / r) + 360) % 360; };
+
+function renderScale() {
+  const rows = scales(x);
+  $('scale').innerHTML = rows.map((r) => {
+    const cells = Array.from({ length: r.parts }, (_, i) => `<i class="${i < r.at ? 'done' : ''}${i === r.at ? ' at' : ''}${r.split && i < r.split ? ' night' : ''}${r.split && i >= r.split ? ' day' : ''}"${i === r.at ? ` style="--p:${(r.frac * 100).toFixed(1)}%"` : ''}></i>`).join('');
+    return `<button type="button" class="sc${r.level === view.level ? ' cur' : ''}" data-level="${r.level}"><span class="sc-label">${r.label}</span><span class="sc-value">${r.value}</span><span class="sc-track${r.parts > 14 ? ' fine' : ''}">${cells}</span></button>`;
+  }).join('');
 }
 
 /** Live parts of the day view: hand, highlighted hour and the center. */
@@ -154,9 +160,10 @@ function updateDay(now) {
   const ht = hourTribe(h.hour);
   const { hd, wd } = x;
   const date = `${WEEKDAYS[wd].he} · ${gematria(hd.day)} ${hebrewDate(x.date).he.split(' ').slice(1, -1).join(' ')}`;
+  $('viewTitle').innerHTML = `<bdi class="he" lang="he">${date}</bdi>`;
   $('centerBtn').innerHTML = live
-    ? `<span class="c-eyebrow he" lang="he">${date}</span><span class="c-ico">${icon(ht.t.icon, 34)}</span><span class="c-big">${ordinal(h.hour)} hour</span><span class="c-line">of the ${h.isDay ? 'day' : 'night'} · ${ht.tribe}</span><span class="c-sub">${fmt(now)}</span>`
-    : `<span class="c-eyebrow">${WEEKDAYS[wd].en}</span><span class="c-big he" lang="he">${date}</span><span class="c-line">Tap an hour to step inside</span>`;
+    ? `<span class="c-art">${art(ht.t.icon, 58)}</span><span class="c-big">${ordinal(h.hour)} hour</span><span class="c-line">of the ${h.isDay ? 'day' : 'night'} · ${ht.tribe}</span><span class="c-sub">${fmt(now)}</span>`
+    : `<span class="c-art">${art(x.jd.info.wd >= 0 ? ['light','firmament','plants','lights','fishbirds','man','candles'][wd] : 'globe', 58)}</span><span class="c-line">${WEEKDAYS[wd].en}</span><span class="c-sub">Tap an hour to step inside</span>`;
   if (live) {
     document.querySelectorAll('#zmanim .z').forEach((li) => {
       const z = jd.list.find((q) => q.key + q.part === li.dataset.z);
@@ -202,7 +209,8 @@ async function startCompass() {
       const hd = e.webkitCompassHeading ?? (e.absolute && e.alpha != null ? 360 - e.alpha : null);
       if (hd == null || view.mode !== 'space') return;
       heading = hd;
-      if (Date.now() - last > 120) { last = Date.now(); const s = spaceView(x, heading); $('dial').innerHTML = s.svg; $('centerBtn').innerHTML = s.center; }
+      rotMode = 'phone';
+      if (Date.now() - last > 150) { last = Date.now(); renderSpace(); }
     };
     window.addEventListener('deviceorientationabsolute', on);
     window.addEventListener('deviceorientation', on);
@@ -225,6 +233,8 @@ function tick() {
   const minute = Math.floor(now / 60000);
   if (minute !== lastMinute) {
     lastMinute = minute;
+    if (view.mode === 'time') renderScale();
+    if (view.mode === 'space') renderSpace();
     if (view.mode === 'time' && view.level !== 'day') {
       // Move markers without disturbing the panel.
       const fresh = view.level === 'hour' ? hourView(context(view.focus, now, loc, opts()), hourOf(view.focus, x.jd)) : { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[view.level](context(view.focus, now, loc, opts()));
@@ -334,13 +344,25 @@ $('centerBtn').addEventListener('click', () => {
   const i = LEVELS.indexOf(view.level);
   if (i > 0) zoomTo(LEVELS[i - 1]);
 });
-$('outBtn').addEventListener('click', zoomOut);
 $('nowBtn').addEventListener('click', goNow);
 $('prevBtn').addEventListener('click', () => go(v?.prev, 'side'));
 $('nextBtn').addEventListener('click', () => go(v?.next, 'side'));
-$('crumbs').addEventListener('click', (e) => { const c = e.target.closest('[data-level]'); if (c && c.dataset.level !== view.level) zoomTo(c.dataset.level); });
+$('scale').addEventListener('click', (e) => {
+  const c = e.target.closest('[data-level]');
+  if (!c || c.dataset.level === view.level) return;
+  view.focus = Date.now(); view.follow = c.dataset.level === 'day';
+  zoomTo(c.dataset.level);
+});
+// Space: drag to turn.
+let drag = null;
+const angleAt = (e) => { const r = $('dial').getBoundingClientRect(); return Math.atan2(e.clientX - (r.left + r.width / 2), -(e.clientY - (r.top + r.height / 2))) * 180 / Math.PI; };
+$('dialWrap').addEventListener('pointerdown', (e) => { if (view.mode !== 'space' || e.target.closest('#centerBtn')) return; drag = { a: angleAt(e), rot }; $('dialWrap').setPointerCapture(e.pointerId); });
+$('dialWrap').addEventListener('pointermove', (e) => { if (!drag) return; rotMode = 'manual'; rot = drag.rot + angleAt(e) - drag.a; renderSpace(); });
+$('dialWrap').addEventListener('pointerup', () => { drag = null; });
+$('dialWrap').addEventListener('pointercancel', () => { drag = null; });
 $('modeTime').addEventListener('click', () => { if (view.mode !== 'time') { view.mode = 'time'; render('in'); } });
-$('modeSpace').addEventListener('click', () => { if (view.mode !== 'space') { view.mode = 'space'; render('out'); } });
+$('dial').style.touchAction = 'manipulation';
+$('modeSpace').addEventListener('click', () => { if (view.mode !== 'space') { view.mode = 'space'; $('panel').innerHTML = ''; render('out'); } });
 for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
 
 render();

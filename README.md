@@ -9,9 +9,10 @@ The clock's job is orientation: where you stand in Jewish time and space. It is 
 - **Day** (the start): 24 *sha'os zmaniyos*, gold across the top from sunrise to sunset, blue underneath for the night. The regular clock sits inside, bent to fit. Each hour carries its month and tribe, shown as a band in the tribe's flag colors (Bamidbar Rabbah 2:7).
 - **Inside an hour**: the ring is the hour itself, 60 zmani minutes filling as it passes. The tribe's emblem and name sit in the center; its month, letter, sense and mazal around it. Below: Yaakov's or Moshe's blessing, the tribe's story, flag, name, mother, stone, where it camped, the hour's planet, and the hour in Jewish and civil time.
 - **Zoom out**: week (the days of Creation, Shabbos at the top), month (the moon's face day by day), year (the months with their tribes and flags), shemitah (the seven years and their tithes), and the 6,000 years (Sanhedrin 97a's three eras and the cosmic week).
-- **The path** above the dial (6th millennium › Shemitah 5/7 › תשפ״ז › Kislev › Week › day › hour) shows where you are. Tap any step to go there, ‹ › to walk sideways, and Now to return.
+- **The path** above the dial (and the scale under the dial) shows where you are; ‹ › walk sideways, and Back to now returns.
 - **Space**: the dial becomes the camp around the Mishkan, oriented to north (or turning with your phone), with the dot on the rim pointing to Yerushalayim and the tribes of this hour and month marked.
-- **Emblems** are drawn line art in one style, matched to the Midrash and to Bereishis 1.
+- **Illustrated badges** for the twelve tribes and the seven days, in one style, matched to the Midrash and to Bereishis 1.
+- **The scale** under the dial shows every circle at once: millennium, shemitah, year, month, week, day, hour. Tap a row to turn the dial into that circle.
 - **Zmanim** (in the day view): each in Jewish time ("3:00 of the day") and civil time, with Shabbos, Yom Tov and fast times.
 
 ## Shitah
@@ -35,7 +36,7 @@ Any static host works (GitHub Pages, Netlify, Cloudflare Pages). On HTTPS it ins
 - `js/hebrew.js`: Hebrew date (built-in browser calendar), gematria, month data
 - `js/calendar.js`: holidays, Omer, molad, Kiddush Levanah, planetary hours
 - `js/levels.js`: the zoom levels, their rings and panels
-- `js/emblems.js`: the line emblems
+- `js/art.js`: the illustrated badges
 - `js/lore.js`: tribes, days, direction to Yerushalayim
 - `js/sky.js`: the sky gradient from the sun's altitude
 - `js/places.js`: geolocation, place names, city search
