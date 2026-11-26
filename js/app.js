@@ -61,7 +61,7 @@ function zoomTo(level) {
 
 // ---------- Render ----------
 // The next circle grows out of the segment you step into; stepping out, the old circle sinks back into its place.
-let lastMarker = null, pendingGhost = null, prevRingHtml = null;
+let lastMarker = null, pendingGhost = null;
 const DUR = 1500;
 function originOf(angle) {
   if (angle == null) return '50% 50%';
@@ -94,7 +94,6 @@ function render(dir) {
   const now = Date.now();
   if ((dir === 'in' || dir === 'out') && $('dial').firstChild) {
     pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), marker: lastMarker };
-    prevRingHtml = dir === 'in' ? pendingGhost.html : null;
   }
   if (view.follow) view.focus = now;
   x = context(view.focus, now, loc, opts());
@@ -114,6 +113,17 @@ function render(dir) {
   if (view.mode === 'space') {
     renderSpace();
     pendingGhost = null;
+    return;
+  }
+
+  if (journey && journey.step === 'nest') {
+    $('dial').innerHTML = nestDial();
+    $('centerBtn').innerHTML = '<span class="c-sub">now</span>';
+    $('centerBtn').dataset.level = 'nest';
+    $('panel').innerHTML = '';
+    $('viewTitle').innerHTML = '';
+    lastMarker = null;
+    showJourney();
     return;
   }
 
@@ -253,62 +263,115 @@ function howHTML() {
 const monthTribe = (hd) => monthLore(hd.month)?.tribe ?? '';
 const dayMade = (wd) => ({ 0: 'light', 1: 'the firmament', 2: 'the land and its plants', 3: 'the sun, moon and stars', 4: 'the fish and the birds', 5: 'the animals and man', 6: 'rest' })[wd];
 // ---------- The journey: from the outside in ----------
-const JOURNEY = ['world', 'shemitah', 'year', 'month', 'week', 'day'];
+// nest → world → shemitah → year → month → week → (swipe out) month → week → day → (tap the hour) hour → (tap the middle) today
+const STEPS = ['nest', 'world', 'shemitah', 'year', 'month', 'week', 'out', 'week2', 'day', 'hour'];
+const STEP_LEVEL = { nest: 'world', world: 'world', shemitah: 'shemitah', year: 'year', month: 'month', week: 'week', out: 'month', week2: 'week', day: 'day', hour: 'hour' };
+const OUTER = ['world', 'shemitah', 'year', 'month', 'week', 'day'];
 let journey = null;
-function journeyCopy() {
+const isTouch = () => matchMedia('(pointer: coarse)').matches;
+
+function journeyCopy(step) {
   const { hd, wd } = x, pos = hd.year % 7 || 7, mil = Math.floor(hd.year / 1000) + 1;
-  const lore = { world: [`The ${ordinal(mil)} millennium`, 'This is where you are in the six thousand years of the world: its sixth day, its Friday, getting ready for Shabbos (Sanhedrin 97a).'],
-    shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'Inside the millennium, the land keeps a seven-year rhythm. The seventh year, it rests.'],
-    year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'Inside the cycle, this year and its months. Each month belongs to one of the twelve tribes.'],
-    month: [`${hd.month}`, ''],
-    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, ''],
-    day: ['Today', 'And inside it all: today, live. Twelve hours of night and twelve of day, each held by a tribe. The line is now.'],
-  };
-  return lore[journey.level];
+  const h = hourOf(Date.now(), x.nowJd), ht = hourTribe(h.hour);
+  return {
+    nest: ['The circles of time', 'Each circle sits inside the one around it: the world, the shemitah cycle, the year, the month, the week, the day and the hour. You are at the center.', 'Tap the outer ring'],
+    world: [`The ${ordinal(mil)} millennium`, "This is where you are in the six thousand years of the world: its sixth day, its Friday, getting ready for Shabbos (Sanhedrin 97a).", 'Tap the middle to step in'],
+    shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'Inside the millennium, the land keeps a seven-year rhythm. The seventh year, it rests.', 'Tap the middle'],
+    year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'Inside the cycle, this year and its months. Each month belongs to one of the twelve tribes.', 'Tap the middle'],
+    month: [`${hd.month}`, `Inside the year, the moon's month: the month of ${monthTribe(hd)}. Today is the ${ordinal(hd.day)}.`, 'Tap the middle'],
+    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `Inside the month, the week, counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, isTouch() ? 'Now swipe in from the edge to step back out' : 'Now step back out'],
+    out: ['Back to the month', 'Every circle holds the one inside it. Step out any time to see the bigger picture.', 'Tap the middle to go back in'],
+    week2: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, 'And the week again.', 'Tap the middle'],
+    day: ['Today', 'And inside it all: today, live. Twelve hours of night and twelve of day, each held by a tribe. The line is now.', "Tap the hour you're in"],
+    hour: [`The ${ordinal(h.hour)} hour · ${ht.tribe}`, "This is the hour you're in: its tribe, its energy, its pasuk. Step in to any hour like this. The day is home.", 'Tap the middle to come back to today'],
+  }[step];
 }
+
+/** The landing view: every circle of time, nested in gold. */
+function nestDial() {
+  const rows = scales(x);
+  const C = 200, arc = (r, frac) => {
+    const a = Math.max(0.001, Math.min(0.9999, frac)) * Math.PI * 2;
+    return `M${C} ${C - r} A${r} ${r} 0 ${a > Math.PI ? 1 : 0} 1 ${(C + r * Math.sin(a)).toFixed(2)} ${(C - r * Math.cos(a)).toFixed(2)}`;
+  };
+  let svg = `<circle cx="${C}" cy="${C}" r="196" class="face"/>`;
+  rows.forEach((r, i) => {
+    const R = 178 - i * 22, frac = (r.at + r.frac) / r.parts, a = frac * Math.PI * 2;
+    svg += `<g class="nr nr-big${i === 0 ? ' tap-me' : ''}" data-ring="${r.level}"><circle cx="${C}" cy="${C}" r="${R}" class="nr-track"/><path d="${arc(R, frac)}" class="nr-arc"/><circle cx="${(C + R * Math.sin(a)).toFixed(2)}" cy="${(C - R * Math.cos(a)).toFixed(2)}" r="5" class="nr-dot"/><circle cx="${C}" cy="${C}" r="${R}" class="nr-hit"/></g>`;
+    svg += `<text x="${C + 5}" y="${C - R}" class="nr-label big">${r.label}</text>`;
+  });
+  return svg;
+}
+
+/** Around the dial during the journey: one thin gold ring for each circle you have come through. */
+function outerRings() {
+  const lvl = STEP_LEVEL[journey.step], n = Math.max(0, OUTER.indexOf(lvl === 'hour' ? 'day' : lvl) + (lvl === 'hour' ? 1 : 0));
+  if (!n) return '';
+  const rows = scales(x).slice(0, n).reverse(); // nearest first
+  const C = 200;
+  let svg = '';
+  rows.forEach((r, k) => {
+    const R = 206 + k * 13, frac = (r.at + r.frac) / r.parts, a = Math.max(0.001, Math.min(0.9999, frac)) * Math.PI * 2;
+    svg += `<circle cx="${C}" cy="${C}" r="${R}" class="nr-track thin"/><path d="M${C} ${C - R} A${R} ${R} 0 ${a > Math.PI ? 1 : 0} 1 ${(C + R * Math.sin(a)).toFixed(2)} ${(C - R * Math.cos(a)).toFixed(2)}" class="nr-arc thin"/>`;
+  });
+  return `<svg viewBox="-30 -30 460 460" class="outer-rings">${svg}</svg>`;
+}
+
 function showJourney() {
-  if (document.body.classList.contains('intro-on')) return;
-  const i = JOURNEY.indexOf(view.level);
-  journey.level = view.level;
-  const { hd, wd } = x;
-  const copy = journeyCopy();
-  if (view.level === 'month') copy[1] = `Inside the year, the moon's month: the month of ${monthTribe(hd)}. Today is the ${ordinal(hd.day)}.`;
-  if (view.level === 'week') copy[1] = `Inside the month, the week, counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`;
-  $('jBig').innerHTML = copy[0];
-  $('jText').textContent = copy[1];
-  $('jDots').innerHTML = JOURNEY.map((l, k) => `<i class="${k < i ? 'done' : ''}${k === i ? ' at' : ''}"></i>`).join('');
-  $('jTap').textContent = view.level === 'day' ? 'Tap the circle to enter this hour' : 'Tap the circle';
+  if (document.body.classList.contains('intro-on') || !journey) return;
+  const [big, text, prompt] = journeyCopy(journey.step);
+  $('jBig').innerHTML = big;
+  $('jText').textContent = text;
+  $('jTap').innerHTML = esc(prompt) + (journey.step === 'week' && !isTouch() ? ' <button type="button" class="btn ghost small" id="jOut">Step out</button>' : '');
+  $('jOut')?.addEventListener('click', () => journeyDo('swipe'));
+  const i = STEPS.indexOf(journey.step);
+  $('jDots').innerHTML = STEPS.map((_, k) => `<i class="${k < i ? 'done' : ''}${k === i ? ' at' : ''}"></i>`).join('');
   if ($('journey').hidden) { $('journey').classList.remove('pop'); void $('journey').offsetWidth; $('journey').classList.add('pop'); }
   $('journey').hidden = false;
   document.body.classList.add('journeying');
-  // The circle you came from stays around this one: a thick outer ring.
-  $('halos').innerHTML = i > 0 && prevRingHtml ? `<div class="outer-ring">${prevRingHtml}</div>` : '';
+  document.body.dataset.jstep = journey.step;
+  $('halos').innerHTML = outerRings();
 }
+
 function startJourney() {
-  journey = { level: 'world' };
+  journey = { step: 'nest' };
   Object.assign(view, { mode: 'time', level: 'world', focus: Date.now(), follow: false });
   $('panel').innerHTML = '';
+  document.body.classList.add('journeying'); // size the dial now, so the spiral lands exactly on it
   render();
-  // The card waits until the spiral has turned into the first ring.
   $('journey').hidden = true;
   document.body.classList.add('intro-on');
   intro($('dialWrap')).then(() => { document.body.classList.remove('intro-on'); showJourney(); });
 }
-function endJourney(intoHour) {
+
+function endJourney() {
   journey = null;
   store.set('journeyDone', true);
   $('journey').hidden = true;
   document.body.classList.remove('journeying');
+  delete document.body.dataset.jstep;
   $('halos').innerHTML = '';
-  if (intoHour) go({ level: 'hour', focus: Date.now() }, 'in');
-  else goNow();
+  goNow();
 }
-function journeyNext() {
-  const i = JOURNEY.indexOf(view.level);
-  if (i >= JOURNEY.length - 1) return endJourney(true);
-  const next = JOURNEY[i + 1];
-  view.focus = Date.now(); view.follow = next === 'day';
-  zoomTo(next);
+
+/** One action moves the journey on: 'outer' (the outer ring), 'middle', 'swipe', or 'hour' (a block of the day). */
+function journeyDo(action, arg) {
+  const st = journey.step;
+  const move = (step, level, dir, focus) => {
+    journey.step = step;
+    view.level = level; view.focus = focus ?? Date.now(); view.follow = level === 'day';
+    render(dir);
+  };
+  if (st === 'nest' && action === 'outer') return move('world', 'world', 'in');
+  if (action === 'middle') {
+    const next = { world: ['shemitah', 'shemitah'], shemitah: ['year', 'year'], year: ['month', 'month'], month: ['week', 'week'], out: ['week2', 'week'], week2: ['day', 'day'] }[st];
+    if (next) return move(next[0], next[1], 'in');
+    if (st === 'hour') return endJourney();
+  }
+  if (st === 'week' && action === 'swipe') return move('out', 'month', 'out');
+  if (st === 'day' && action === 'hour') return move('hour', 'hour', 'in', arg);
+  // Anything else: a gentle nudge toward the right place.
+  $('jTap').classList.remove('nudge'); void $('jTap').offsetWidth; $('jTap').classList.add('nudge');
 }
 
 // ---------- Compass ----------
@@ -368,7 +431,8 @@ function tick() {
     lastMinute = minute;
     if ($('nestDlg').open) renderNest();
     if (view.mode === 'space') renderSpace();
-    if (view.mode === 'time' && view.level !== 'day') {
+    if (journey) $('halos').innerHTML = outerRings();
+    if (view.mode === 'time' && view.level !== 'day' && !(journey && journey.step === 'nest')) {
       // Move markers without disturbing the panel.
       const fresh = view.level === 'hour' ? hourView(context(view.focus, now, loc, opts()), hourOf(view.focus, x.jd)) : { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[view.level](context(view.focus, now, loc, opts()));
       $('dial').innerHTML = fresh.svg;
@@ -454,7 +518,18 @@ function initSettings() {
 
 // ---------- Events ----------
 function onChild(e) {
-  if (journey) { if (e.currentTarget.id === 'dial') journeyNext(); return; }
+  if (journey) {
+    if (e.currentTarget.id !== 'dial') return;
+    const ring = e.target.closest('[data-ring]');
+    if (ring) return journeyDo(ring.dataset.ring === 'world' ? 'outer' : 'nudge');
+    const seg = e.target.closest('[data-seg],[data-band]');
+    if (seg && view.level === 'day') {
+      const id = seg.dataset.seg || seg.dataset.band, isDay = id[0] === 'd', n = +id.slice(1);
+      const len = isDay ? x.jd.day.hour : x.jd.night.hour, start = (isDay ? x.jd.day.netz : x.jd.night.start) + n * len;
+      return journeyDo('hour', x.now >= start && x.now < start + len ? x.now : start + len / 2);
+    }
+    return journeyDo('nudge');
+  }
   const t = e.target.closest('[data-seg],[data-band],[data-child]');
   if (!t || view.mode !== 'time') return;
   if (view.level === 'day' && (t.dataset.seg || t.dataset.band)) {
@@ -472,7 +547,7 @@ initSettings();
 $('dial').addEventListener('click', onChild);
 $('panel').addEventListener('click', onChild);
 $('centerBtn').addEventListener('click', () => {
-  if (journey) return journeyNext();
+  if (journey) return journeyDo('middle');
   if (view.mode !== 'time') return;
   if (view.level === 'day') { const live = x.now >= x.jd.start && x.now < x.jd.end; return go({ level: 'hour', focus: live ? x.now : view.focus }, 'in'); }
   if (view.level === 'hour') return zoomTo('day');
@@ -505,8 +580,8 @@ document.addEventListener('touchend', (e) => {
   const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y, s0 = sw;
   sw = null;
   if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
-  if (s0.edge) { if (journey) return; return zoomOut(); }
-  if (s0.mid && dx < 0) $('centerBtn').click();
+  if (s0.edge) { if (journey) return journeyDo('swipe'); return zoomOut(); }
+  if (s0.mid && dx < 0) { if (journey) return journeyDo('middle'); $('centerBtn').click(); }
 }, { passive: true });
 
 // Space: drag to turn.

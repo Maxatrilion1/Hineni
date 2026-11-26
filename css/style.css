@@ -614,14 +614,26 @@ body { touch-action: pan-y; }
 .dirrow { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .big-l { font-size: 20px; font-weight: 700; color: var(--accent); }
 
-/* Journey: the circle you came from, as one thick ring around this one */
-body.journeying .dial-wrap { width: min(74vw, 330px); }
-.outer-ring { position: absolute; inset: 0; transform: scale(1.21); pointer-events: none;
-  -webkit-mask-image: radial-gradient(circle closest-side, transparent 0 69.4%, #000 70%); mask-image: radial-gradient(circle closest-side, transparent 0 69.4%, #000 70%);
-  animation: ringArrive 1.4s ease .9s both; }
-.outer-ring svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.outer-ring .ray, .outer-ring .marker { display: none; }
-@keyframes ringArrive { from { opacity: 0; transform: scale(1.12); } to { opacity: .9; transform: scale(1.21); } }
+/* Journey */
+body.journeying .dial-wrap { width: min(72vw, 290px); }
+.outer-rings { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; animation: haloIn 1.2s ease .6s both; }
+.nr-track.thin { stroke-width: 7; }
+.nr-arc.thin { stroke-width: 7; }
+.nr-big .nr-track, .nr-big .nr-arc { stroke-width: 15; }
+.nr-big .nr-hit { stroke-width: 22; }
+.nr-big .nr-dot { r: 6; }
+.nr-label.big { font-size: 9px; font-weight: 700; fill: var(--muted); }
+.nr.tap-me .nr-arc, .nr.tap-me .nr-track { animation: tapme 1.8s ease-in-out infinite; }
+.nr.tap-me { cursor: pointer; }
+@keyframes tapme { 50% { opacity: .45; } }
+.nr.tap-me .nr-track { stroke: color-mix(in srgb, var(--gold) 40%, transparent); }
+.nr.tap-me .nr-arc { stroke: var(--gold); }
+body[data-jstep="nest"] .center, body[data-jstep="day"] .center { pointer-events: none; }
+body[data-jstep="day"] .seg.now { animation: tapme2 1.8s ease-in-out infinite; }
+@keyframes tapme2 { 50% { fill: #f3d68a; } }
+.j-tap.nudge { animation: nudge .5s ease; }
+@keyframes nudge { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+.j-tap .btn { margin-left: 8px; vertical-align: middle; text-transform: none; letter-spacing: 0; }
 .j-tap { margin: 4px 0 0; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: var(--accent); animation: breathe 2.4s ease-in-out infinite; }
 @keyframes breathe { 50% { opacity: .45; } }
 body.journeying #dialWrap { cursor: pointer; }
