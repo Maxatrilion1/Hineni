@@ -55,8 +55,9 @@ export function intro(target, { onLand, dots = [] } = {}) {
       ctx.clearRect(0, 0, W, H);
       const turns = 9;
       const step = 0.04, pts = [];
-      for (let t = -turns * Math.PI; t <= turns * Math.PI; t += step) {
-        const c = t / (2 * Math.PI) + rise;                  // which coil; time rises with c
+      for (let u = -turns * Math.PI; u <= turns * Math.PI; u += step) {
+        // u is a fixed place on the ribbon; the whole ribbon turns as one screw, marks and all.
+        const t = u - 2 * Math.PI * rise, c = u / (2 * Math.PI);
         const R = lerp(R0, ringR(c), e);
         const a = t + spin, x = R * Math.cos(a), z = R * Math.sin(a);
         const y = c * pitch;
@@ -67,7 +68,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
         al = al * Math.min(1, Math.min(Y - H * 0.24, H - Y) / (H * 0.16)) + e;
         const out = c < -3.4 ? -3.4 - c : c > 3.4 ? c - 3.4 : 0; // as it lands, keep only the seven coils that become the circles
         al *= 1 - e * Math.min(1, out * 2);
-        pts.push({ X, Y, sc, back: e < 0.5 && Math.sin(a) > 0, al: Math.max(0, Math.min(1, al)), t });
+        pts.push({ X, Y, sc, back: e < 0.5 && Math.sin(a) > 0, al: Math.max(0, Math.min(1, al)), t: u });
       }
       // Draw the far half of every coil first, then the near half, each as continuous ribbons.
       const runs = (back) => {
