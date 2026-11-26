@@ -16,7 +16,10 @@ const store = {
 };
 const $ = (id) => document.getElementById(id);
 /** Count a moment on the GoatCounter dashboard (no cookies, nothing personal). */
-const track = (name) => { try { window.goatcounter?.count?.({ path: name, title: name, event: true }); } catch {} };
+// The counter script loads a moment after the page: moments before it is ready wait in a queue instead of being lost.
+const tracked = [];
+const flushTrack = () => { if (!window.goatcounter?.count) return false; while (tracked.length) { const name = tracked.shift(); try { window.goatcounter.count({ path: name, title: name, event: true }); } catch {} } return true; };
+const track = (name) => { tracked.push(name); if (!flushTrack() && !track.wait) track.wait = setInterval(() => { if (flushTrack()) { clearInterval(track.wait); track.wait = 0; } }, 500); };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 let loc = store.get('loc') || NEW_YORK;
