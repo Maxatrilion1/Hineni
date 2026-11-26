@@ -81,7 +81,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
-      const step = 1 / 56, pts = [], wMax = phase === 'idle' ? 5.2 : 9;
+      const step = 1 / 60, pts = [], wMax = phase === 'idle' ? 5.2 : 9;
       const sample = (w) => {
         const q = at(w, lerp(R0, ringR(w), eAt(w)));
         q.al = alphaAt(w, q.Y); q.w = w;
@@ -89,7 +89,8 @@ export function intro(target, { onLand, dots = [] } = {}) {
         q.keep = 1 - Math.min(1, out * 2) * Math.min(1, p * 3);
         return q;
       };
-      for (let w = -wMax; w <= wMax + 1e-9; w += step) pts.push(sample(w));
+      // Finer through the turns, where the ribbon bends hardest on screen.
+      for (let w = -wMax; w <= wMax + 1e-9;) { const q = sample(w); pts.push(q); w += Math.abs(q.sa) < 0.4 ? step / 2 : step; }
       const ok = (q) => q.sc > 0 && q.sc <= 3;
       const farK = lerp(0.45, 1, e);   // the far side brightens smoothly as you come to look straight down
       // The ribbon is shaded point by point by how far it has turned away from you, so the bright front
@@ -112,38 +113,45 @@ export function intro(target, { onLand, dots = [] } = {}) {
       };
       ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
       // Neighbouring pieces of the same shade go out as one stroke, so the whole ribbon is a few dozen strokes.
-      // Every small step of the ribbon is a short straight stroke, shaded exactly from its start to its end, with flat
-      // ends, drawn from one step back inside the last: no caps, no seams, no squares, nothing to shimmer at the turn.
+      // The ribbon is a smooth band: both of its edges are computed exactly (each point pushed out along the ribbon's
+      // normal), and it is filled as small four-sided pieces that share their edges, so the outline has no steps.
+      // Each piece is shaded along its length; where the shade changes (at the turns) by an exact gradient.
       const shadeCache = new Map();
-      const colorAt = (rim, sa) => {
-        const k = (rim ? 10000 : 0) + Math.round((sa + 1) * 160);
+      const shadeAt = (rim, sa) => {
+        const k = (rim ? 10000 : 0) + Math.round((sa + 1) * 200);
         let c = shadeCache.get(k);
         if (!c) {
-          const t = awayOf((k % 10000) / 160 - 1) * DARK * (1 - e);
+          const t = awayOf((k % 10000) / 200 - 1) * DARK * (1 - e);
           let v = FACE.map((q, i) => lerp(q, NIGHT[i], t));
           if (rim) v = v.map((q, i) => lerp(q, RIMC[i], 0.38));
           c = `rgb(${v.map(Math.round).join(',')})`; shadeCache.set(k, c);
         }
         return c;
       };
+      // Unit tangent at each point, from its neighbours.
+      for (let i = 0; i < pts.length; i++) {
+        const p0 = pts[Math.max(0, i - 1)], p1 = pts[Math.min(pts.length - 1, i + 1)];
+        const tx = p1.X - p0.X, ty = p1.Y - p0.Y, L = Math.hypot(tx, ty) || 1;
+        pts[i].tx = tx / L; pts[i].ty = ty / L;
+      }
       const ribbon = (far) => {
         for (const rim of [true, false]) {
-          const kW = rim ? 1 : 0.72;
+          const kW = (rim ? 1 : 0.72) * band / 2;
           for (let i = 1; i < pts.length; i++) {
             const a = pts[i - 1], b = pts[i];
             if (!(ok(a) && ok(b) && (a.sa + b.sa > 0) === far)) continue;
             const keep = (a.keep + b.keep) / 2;
             if (keep <= 0.01) continue;
-            const back = pts[i - 2] && ok(pts[i - 2]) ? pts[i - 2] : null;
-            const s0 = back || a, c0 = colorAt(rim, s0.sa), ca = colorAt(rim, a.sa), cb = colorAt(rim, b.sa);
+            const wa = kW * a.sc, wb = kW * b.sc, X = 0.6; // a hair of overlap ahead hides the joins
+            const bx = b.X + b.tx * X, by = b.Y + b.ty * X;
+            const ca = shadeAt(rim, a.sa), cb = shadeAt(rim, b.sa);
             let st = cb;
-            if (!rim && Math.abs(b.sa) < 0.62 && c0 !== cb) { // only where the shade really changes: the turns
-              st = ctx.createLinearGradient(s0.X, s0.Y, b.X, b.Y);
-              const dx = b.X - s0.X, dy = b.Y - s0.Y, ta = back ? Math.max(0, Math.min(1, ((a.X - s0.X) * dx + (a.Y - s0.Y) * dy) / (dx * dx + dy * dy || 1))) : 0;
-              st.addColorStop(0, c0); if (back) st.addColorStop(ta, ca); st.addColorStop(1, cb);
-            }
-            ctx.globalAlpha = keep; ctx.strokeStyle = st; ctx.lineWidth = band * b.sc * kW;
-            ctx.beginPath(); if (back) { ctx.moveTo(back.X, back.Y); ctx.lineTo(a.X, a.Y); } else ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
+            if (ca !== cb && Math.abs(a.sa + b.sa) < 1.3) { st = ctx.createLinearGradient(a.X, a.Y, b.X, b.Y); st.addColorStop(0, ca); st.addColorStop(1, cb); }
+            ctx.globalAlpha = keep; ctx.fillStyle = st;
+            ctx.beginPath();
+            ctx.moveTo(a.X - a.ty * wa, a.Y + a.tx * wa); ctx.lineTo(bx - b.ty * wb, by + b.tx * wb);
+            ctx.lineTo(bx + b.ty * wb, by - b.tx * wb); ctx.lineTo(a.X + a.ty * wa, a.Y - a.tx * wa);
+            ctx.fill();
           }
         }
         ctx.globalAlpha = 1;
