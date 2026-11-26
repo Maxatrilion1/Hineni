@@ -1,74 +1,36 @@
 # Hineni · הִנֵּנִי
 
-*"Here I am."* A Jewish clock that tells you where you stand in Hashem's time, with the ordinary clock alongside.
+*"Here I am."* A Jewish clock for orienting yourself in Jewish time and space: where you stand in the hour, the day, the week, the month, the year, the shemitah cycle and the six thousand years.
 
-## What it shows
+**Open it:** https://maxatrilion1.github.io/hineni/
 
-- **First visit: the journey.** It opens on a spiral of time rising slowly through the screen. Begin tilts it until you look down its axis; it lands as all the circles of time nested in gold. Tap the outer ring to begin at the 6th millennium; tap the middle to step in through the shemitah cycle, the year and the month to the week; tap outside the circle to step back out once; step in again to the week and Today, live; tap the hour you're in; then tap the middle to come home to the day. The circles you have come through stay faintly around the dial during the journey; the everyday clock is just the dial. Replay it from Settings → The journey.
-- **The parshah of the week** on the week circle, for Israel and the diaspora. Worked out from the calendar itself and checked Shabbos by Shabbos against Hebcal for 2000–2080 (8,348 readings, no differences).
-- **A new hour** is marked gently: the center medallion turns to the next tribe and a small note slides up.
-- **Taps**: tap inside the circle to step in; tap outside it to step out.
-- **Clean / Detailed**: Detailed keeps the outer circles around the dial, each turned so its "now" lies on the hand's line; Clean shows only the dial.
-- **The circles button** opens all seven circles nested one inside the other, each showing where you are; tap one to go there. **Today** is always one tap away.
+Created by [Maxatrilion1](https://github.com/Maxatrilion1).
 
-The clock's job is orientation: where you stand in Jewish time and space. It is one dial you can climb into and out of.
+## What it is
 
-- **Day** (the start): 24 *sha'os zmaniyos*, gold across the top from sunrise to sunset, blue underneath for the night. The regular clock sits inside, bent to fit. Each hour carries its month and tribe, shown as a band in the tribe's flag colors (Bamidbar Rabbah 2:7).
-- **Inside an hour**: the ring is the hour itself, 60 zmani minutes filling as it passes. The tribe's emblem and name sit in the center; its month, letter, sense and mazal around it. Below: Yaakov's or Moshe's blessing, the tribe's story, flag, name, mother, stone, where it camped, the hour's planet, and the hour in Jewish and civil time.
-- **Zoom out**: week (the days of Creation, Shabbos at the top), month (the moon's face day by day), year (the months with their tribes and flags), shemitah (the seven years and their tithes), and the 6,000 years (Sanhedrin 97a's three eras and the cosmic week).
-- **The path** above the dial (and the scale under the dial) shows where you are; ‹ › walk sideways, and Back to now returns.
-- **Space**: the dial becomes the camp around the Mishkan with the Beis Hamikdash at its center, the dot on the rim pointing to Yerushalayim, and the letter of each direction from Sefer Yetzirah 4:3 (פ north, ד east, ר south, כ west, ב above, ג below, ת the Holy Palace in the middle). Drag to turn it, face Yerushalayim, or connect it to the phone's compass.
-- **Mosaic medallions** for the twelve tribes and the seven days, in the manner of an ancient synagogue floor: earthy stone grounds, ochre figures, fine tesserae, a tiled border, matched to the Midrash and to Bereishis 1.
-- **The scale** under the dial shows every circle at once: millennium, shemitah, year, month, week, day, hour. Tap a row to turn the dial into that circle.
-- **Zmanim** (in the day view): each in Jewish time ("3:00 of the day") and civil time, with Shabbos, Yom Tov and fast times.
-
-## On your iPhone
-
-**As an app icon:** open Hineni in Safari → Share → Add to Home Screen. Opens full screen once Hineni is on its own address.
-
-**As a live widget:** `widget/hineni-widget.js` runs in the free [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) app.
-
-1. Install Scriptable, open it, tap **+**, paste the whole file, and name it *Hineni*. Tap ▶ once and allow location.
-2. Long-press the home screen → **+** → Scriptable → choose a size → **Add Widget**.
-3. Long-press the new widget → **Edit Widget** → Script: **Hineni**.
-
-It shows the day dial with the hand, the hour you're in and its tribe, the Hebrew date, minutes left in the hour and the next zman. Tapping it opens Hineni. iOS decides how often widgets refresh, so the hand can lag a few minutes.
+- **One dial you can climb into and out of.** The day is home: 24 *sha'os zmaniyos*, gold across the top from sunrise to sunset, blue beneath for the night, with the ordinary clock bent to fit inside. Tap the gold to step in (into the hour); tap outside the circle to step out (to the week, the month, the year, the shemitah cycle, the 6,000 years).
+- **Each hour has its month and tribe**, shown in the tribe's flag colors (Bamidbar Rabbah 2:7), with its energy, focus, pasuk, the tribe's story and where it camped.
+- **Each page** opens with a box about the circle you are in, then **Here I am**: the ladder of circles from 5,787 of 6,000 down to this hour. Tap any rung to go there.
+- **Sourced.** Text with a faint dotted underline has a source: tap it to see it.
+- **The journey.** The first visit begins with a spiral of time that lands as the nested circles of time, and walks you in from the outside, step by step. Replay it from Settings.
+- **Space.** The dial becomes the camp around the Mishkan with the Beis Hamikdash at its center, pointing to Yerushalayim, with the Hebrew directions, the angels of the bedtime Shema, and the six directions sealed in Sefer Yetzirah. Turn it by hand or with the phone's compass.
+- **Zmanim** for where you are.
 
 ## Shitah
 
-Alter Rebbe / Chabad, as chabad.org publishes it: hours run from netz to shkiah, alos is at 16.1° below the horizon, tzeis at 6°, and candle lighting is 18 minutes before shkiah. Times are for sea level.
+Alter Rebbe (Chabad): hours from sunrise to sunset, dawn at 16.1°, nightfall at 6°, Israel locations keep one day of Yom Tov. Candle lighting 18 minutes before sunset (40 in Jerusalem, 30 in Haifa). Times are for sea level and may differ from your shul's luach by a minute or two; don't rely on them to the last minute.
 
-## Run
+## Privacy
 
-Plain static files with no build step and no dependencies. Serve the folder:
+Your location is used only on your device to work out the times. Nothing about you is sent anywhere.
 
-```bash
-npx serve .
-```
+## Install
 
-Any static host works (GitHub Pages, Netlify, Cloudflare Pages). On HTTPS it installs as a home-screen app and works offline.
+- **iPhone:** open the link in Safari → Share → Add to Home Screen.
+- **Android:** open the link in Chrome → ⋮ → Add to Home screen (or Install app).
+- **Computer:** in Chrome or Edge, click the install icon in the address bar.
+- **iPhone widget:** install the free [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) app, paste in [`widget/hineni-widget.js`](widget/hineni-widget.js), name it Hineni, and add a Scriptable widget (home screen or lock screen) set to that script.
 
-## Code
+## How it's built
 
-- `js/solar.js`: NOAA sun-position algorithm
-- `js/parshah.js`: the weekly parshah
-- `widget/hineni-widget.js`: the iPhone widget (Scriptable)
-- `js/zmanim.js`: zmanim, the Jewish-day model, dial angles
-- `js/hebrew.js`: Hebrew date (built-in browser calendar), gematria, month data
-- `js/calendar.js`: holidays, Omer, molad, Kiddush Levanah, planetary hours
-- `js/intro.js`: the opening spiral of time
-- `js/levels.js`: the zoom levels, their rings and panels
-- `js/art.js`: the illustrated badges
-- `js/lore.js`: tribes, days, direction to Yerushalayim
-- `js/sky.js`: the sky gradient from the sun's altitude
-- `js/places.js`: geolocation, place names, city search
-- `js/dial.js`: SVG dial
-- `js/app.js`: UI, location, the once-a-second tick
-
-Online services (optional, the clock works without them): Open-Meteo for city search, BigDataCloud for the place name of your coordinates.
-
-## Next ideas
-
-- Weekly parshah
-- Elevation-adjusted sunrise/sunset
-- Native home-screen widgets (iOS/Android) reusing `zmanim.js`
+Plain HTML, CSS and JavaScript, no build step and no dependencies: open `index.html` from any static host. The sun's position follows NOAA's algorithm; the Hebrew date uses the browser's Hebrew calendar; the parshah is worked out from the calendar and was checked Shabbos by Shabbos against Hebcal for 2000–2080 (8,348 readings, Israel and the diaspora, no differences).
