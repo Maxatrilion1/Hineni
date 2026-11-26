@@ -62,7 +62,7 @@ function zoomTo(level) {
 
 // ---------- Render ----------
 // The next circle grows out of the segment you step into; stepping out, the old circle sinks back into its place.
-let lastMarker = null, pendingGhost = null, shownLevel = null, ringT = {};
+let lastMarker = null, pendingGhost = null, shownLevel = null, ringT = {}, pendingBlock = null, pendingNest = null;
 const DUR = 1500;
 function originOf(angle) {
   if (angle == null) return '50% 50%';
@@ -125,6 +125,63 @@ function animateV2(dir) {
   }
 }
 
+/** The "now" block you stepped into stretches around until it closes into the next circle. */
+function morphBlock() {
+  const a = pendingBlock; pendingBlock = null;
+  if (!a || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const C = 200, R1 = 158, R2 = 188;
+  const pt = (r, d) => [C + r * Math.sin((d * Math.PI) / 180), C - r * Math.cos((d * Math.PI) / 180)];
+  const sector = (r1, r2, a1, a2) => {
+    const large = a2 - a1 > 180 ? 1 : 0, f = (n) => n.toFixed(2);
+    const [x1, y1] = pt(r2, a1), [x2, y2] = pt(r2, a2), [x3, y3] = pt(r1, a2), [x4, y4] = pt(r1, a1);
+    return `M${f(x1)} ${f(y1)}A${r2} ${r2} 0 ${large} 1 ${f(x2)} ${f(y2)}L${f(x3)} ${f(y3)}A${r1} ${r1} 0 ${large} 0 ${f(x4)} ${f(y4)}Z`;
+  };
+  const ov = document.createElementNS(SVGNS, 'svg');
+  ov.setAttribute('viewBox', '-30 -30 460 460');
+  ov.setAttribute('class', 'morph');
+  const path = document.createElementNS(SVGNS, 'path');
+  ov.appendChild(path);
+  $('dialWrap').appendChild(ov);
+  const mid = (a[0] + a[1]) / 2, w0 = a[1] - a[0], t0 = performance.now(), D = 1300;
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  (function step(now) {
+    const p = Math.min(1, (now - t0) / D), e = ease(p), w = w0 + (359.9 - w0) * e;
+    path.setAttribute('d', sector(R1, R2, mid - w / 2, mid + w / 2));
+    ov.style.opacity = p < 0.75 ? 0.95 : 0.95 * (1 - (p - 0.75) / 0.25);
+    if (p < 1) requestAnimationFrame(step); else ov.remove();
+  })(t0);
+}
+
+/** From the landing: the outermost gold ring grows a little into the first clock face; the inner rings melt away. */
+function nestToFace() {
+  const html = pendingNest; pendingNest = null;
+  if (!html || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const g = document.createElement('div');
+  g.className = 'ring-ghost';
+  g.innerHTML = html;
+  $('dialWrap').appendChild(g);
+  const opts = { duration: 1400, easing: 'cubic-bezier(.35, .1, .2, 1)', fill: 'forwards' };
+  g.querySelectorAll('.nr').forEach((r, i) => {
+    r.style.transformBox = 'view-box'; r.style.transformOrigin = '200px 200px';
+    if (i === 0) r.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.03)', opacity: 1, offset: 0.5 }, { transform: 'scale(1.05)', opacity: 0 }], opts);
+    else r.animate([{ transform: 'scale(1)', opacity: 1, filter: 'blur(0)' }, { transform: 'scale(.82)', opacity: 0, filter: 'blur(3px)', offset: 0.6 }, { opacity: 0 }], opts);
+  });
+  g.querySelectorAll('.nr-label, .face').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0, offset: 0.4 }, { opacity: 0 }], opts));
+  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0, transform: 'scale(.97)' }, { opacity: 0, offset: 0.3 }, { opacity: 1, transform: 'none' }], { duration: 1400, easing: 'ease' });
+  setTimeout(() => g.remove(), 1450);
+}
+
+/** V1 with a block to follow: the old circle fades back while the block closes, then the new one settles in. */
+function fadeOld() {
+  const g = pendingGhost; pendingGhost = null;
+  if (!g) return;
+  const ghost = document.createElement('div');
+  ghost.className = 'ring-ghost';
+  ghost.innerHTML = g.html;
+  $('dialWrap').appendChild(ghost);
+  ghost.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.06)' }], { duration: 800, easing: 'ease-out', fill: 'forwards' }).finished.then(() => ghost.remove(), () => ghost.remove());
+  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.45 }, { opacity: 1 }], { duration: 1400, easing: 'ease' });
+}
 function renderVer() {
   $('ver').innerHTML = ['v1', 'v2'].map((k) => `<button type="button" data-ver="${k}" class="${prefs.rings === k ? 'on' : ''}">${k.toUpperCase()}</button>`).join('');
 }
@@ -132,6 +189,8 @@ function renderVer() {
 function render(dir) {
   const now = Date.now();
   if ((dir === 'in' || dir === 'out') && $('dial').firstChild) {
+    const nb = $('dial').querySelector('.rs.now[data-a], .seg.now[data-a]');
+    pendingBlock = dir === 'in' && nb ? nb.dataset.a.split(',').map(Number) : null;
     pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), center: $('centerBtn').innerHTML, marker: lastMarker, level: shownLevel, T: { ...ringT, [shownLevel]: { rot: 0, s: 1 } } };
   }
   if (view.follow) view.focus = now;
@@ -194,7 +253,11 @@ function render(dir) {
   lastMarker = view.level === 'day' ? (x.now >= x.jd.start && x.now < x.jd.end ? angleOf(x.now, x.jd) : null) : v.marker ?? null;
   shownLevel = view.level;
   setHalos(outerRings());
-  if (prefs.rings === 'v2') animateV2(dir); else animate(dir, lastMarker);
+  if (pendingNest) { pendingGhost = null; pendingBlock = null; nestToFace(); }
+  else {
+    if (prefs.rings === 'v2') animateV2(dir); else if (pendingBlock) fadeOld(); else animate(dir, lastMarker);
+    morphBlock();
+  }
   if (journey) showJourney();
   renderVer();
 }
@@ -383,7 +446,7 @@ function outerRingsV2() {
     const face = levelFace(L);
     const rot = face.marker == null ? 0 : hand - face.marker;
     ringT[L] = { rot, s };
-    html += `<div class="or2" data-level="${L}" style="--o:${[0.95, 0.7, 0.5, 0.36, 0.26][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
+    html += `<div class="or2" data-level="${L}" style="--o:${[0.72, 0.52, 0.38, 0.28, 0.2][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
   });
   if (lastMarker != null) {
     const a = (hand * Math.PI) / 180, p = (r) => `${(200 + r * Math.sin(a)).toFixed(1)} ${(200 - r * Math.cos(a)).toFixed(1)}`;
@@ -454,7 +517,7 @@ function journeyDo(action, arg) {
     view.level = level; view.focus = focus ?? Date.now(); view.follow = level === 'day';
     render(dir);
   };
-  if (st === 'nest' && action === 'outer') return move('world', 'world', 'in');
+  if (st === 'nest' && action === 'outer') { pendingNest = $('dial').outerHTML.replace(/ id="[^"]*"/g, ''); return move('world', 'world'); }
   if (action === 'middle') {
     const next = { world: ['shemitah', 'shemitah'], shemitah: ['year', 'year'], year: ['month', 'month'], month: ['week', 'week'], out: ['week2', 'week'], week2: ['day', 'day'] }[st];
     if (next) return move(next[0], next[1], 'in');

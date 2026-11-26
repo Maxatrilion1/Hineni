@@ -48,7 +48,7 @@ export function buildDial(svg, jd, tz) {
   for (const [part, base] of [['n', 90], ['d', 270]]) {
     for (let i = 0; i < 12; i++) {
       const a1 = base + 15 * i, a2 = a1 + 15;
-      el('path', { d: sector(R_IN, R_OUT, a1, a2), class: `seg ${part === 'd' ? 'day' : 'night'}${i % 2 ? ' alt' : ''}`, 'data-seg': part + i, role: 'button', 'aria-label': `${part === 'd' ? 'Day' : 'Night'} hour ${i + 1}` }, segs);
+      el('path', { d: sector(R_IN, R_OUT, a1, a2), class: `seg ${part === 'd' ? 'day' : 'night'}${i % 2 ? ' alt' : ''}`, 'data-seg': part + i, 'data-a': `${a1},${a2}`, role: 'button', 'aria-label': `${part === 'd' ? 'Day' : 'Night'} hour ${i + 1}` }, segs);
       // Thin band in the flag colors of the hour's tribe (Bamidbar Rabbah 2:7).
       const tribe = TRIBES[monthLore(hourMonth(i + 1).month).tribe];
       const k = tribe.flag.length;

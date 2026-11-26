@@ -2,7 +2,7 @@
 // Each level is a ring of its parts with "now" marked, plus a panel of lore.
 import { jewishDay, hourOf, zmanimFor, addDays, weekday, dayInfo } from './zmanim.js';
 import { hebrewDate, gematria, WEEKDAYS, monthLore, moonPhase } from './hebrew.js';
-import { MONTH_NUM, isLeap, molad, moladText, nextMonth, kiddushLevanah, planetOf } from './calendar.js';
+import { MONTH_NUM, isLeap, molad, moladText, nextMonth, kiddushLevanah, planetOf, omerDay, omerSefirah } from './calendar.js';
 import { TRIBES, CAMPS, DAYS, MONTH_FOCUS, DAY_DEPTH, hourMonth, towardJerusalem, compassWord } from './lore.js';
 import { art, artAt } from './art.js';
 import { parshahFor } from './parshah.js';
@@ -84,7 +84,7 @@ const DEFS = `<defs><radialGradient id="sunGlow2"><stop offset="0%" stop-color="
 function ring(segs, { marker = null, extra = '' } = {}) {
   let s = DEFS + `<circle cx="${C}" cy="${C}" r="${R_OUT + 6}" class="face"/>`;
   segs.forEach((g, i) => {
-    s += `<path d="${sector(R_IN, R_OUT, g.a1, g.a2)}" class="rs${i % 2 ? ' alt' : ''} ${g.cls || ''}${g.isNow ? ' now' : ''}${g.isFocus && !g.isNow ? ' focus' : ''}" data-child="${g.id}"/>`;
+    s += `<path d="${sector(R_IN, R_OUT, g.a1, g.a2)}" class="rs${i % 2 ? ' alt' : ''} ${g.cls || ''}${g.isNow ? ' now' : ''}${g.isFocus && !g.isNow ? ' focus' : ''}" data-child="${g.id}" data-a="${g.a1.toFixed(2)},${g.a2.toFixed(2)}"/>`;
     if (g.band) {
       const k = g.band.length;
       g.band.forEach((c, j) => { s += `<path d="${sector(R_BAND, R_IN - 1, g.a1 + ((g.a2 - g.a1) * j) / k, g.a1 + ((g.a2 - g.a1) * (j + 1)) / k)}" fill="${c}" class="band" data-child="${g.id}"/>`; });
@@ -338,9 +338,26 @@ function hourPanel(x, sel, ht, a, b, live) {
 }
 
 export function dayPanel(x) {
-  const { wd, hols } = x.jd.info, D = DAYS[wd], W = WEEKDAYS[wd], Q = DAY_DEPTH[wd];
+  const { wd, hols, hd } = x.jd.info, D = DAYS[wd], W = WEEKDAYS[wd], Q = DAY_DEPTH[wd];
+  const L = monthLore(hd.month), T = TRIBES[L.tribe];
+  const P = parshahFor(addDays(x.date, -wd), x.opts.israel);
+  const om = omerDay(hd);
+  const len = monthLength(x.date, hd), ph = moonPhase(hd.day);
+  const moon = hd.day === 1 || hd.day === 30 ? 'Rosh Chodesh' : ph < 0.47 ? 'waxing' : ph < 0.53 ? 'full' : 'waning';
+  const live = x.now >= x.jd.start && x.now < x.jd.end;
+  const next = live ? x.jd.list.find((z) => z.t > x.now) : null;
+  const rows = [
+    ['Date', `${hd.day} ${hd.month} ${hd.year} · <bdi lang="he">${hebrewDate(x.date).he}</bdi>`],
+    ['Parshah', P.holiday ? esc(P.holiday) : `${esc(P.names)} · <bdi lang="he">${P.he}</bdi>`],
+    ['Month', `${hd.month}, the month of ${L.tribe} · letter <bdi lang="he">${L.letter}</bdi> · sense of ${L.sense.toLowerCase()}`],
+    ['Moon', `Day ${hd.day} of ${len} · ${moon}`],
+    ...(om ? [['Omer', `Tonight: day ${om} · ${omerSefirah(om).tr}`]] : []),
+    ...(hols.length ? [['Today', hols.map((h) => esc(h.name)).join(' · ')]] : []),
+    ...(next ? [['Next', `${esc(next.tr)} · ${fmtT(x, next.t)}`]] : []),
+    ['Shabbos', wd === 6 ? 'Today' : wd === 5 ? 'Tonight' : `In ${6 - wd} days`],
+  ];
   return `
-    ${hols.length ? `<div class="chips">${hols.map((h) => `<span class="chip k-${h.kind}">${esc(h.name)}</span>`).join('')}</div>` : ''}
+    ${card('Right now', rows.map(([k, v]) => kv(k, v)).join(''), 'feature now-card')}
     ${card(`${W.tr} · <span class="he" lang="he">${W.he}</span>`, `<div class="tribe-row">${art(D.icon, 76)}<div><b class="built">${D.creation}</b><div class="he muted" lang="he">${D.creationHe}</div></div></div>
       <p class="lore-p">${esc(Q.built)}</p>
       <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>`, 'feature')}

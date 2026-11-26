@@ -674,3 +674,16 @@ body.intro-on .journey { display: none; }
 /* While the spiral lands, the circles wait underneath, then appear as it fades */
 #dialWrap { transition: opacity 1.1s ease; }
 body.intro-on #dialWrap { opacity: 0; }
+
+/* The block that becomes the next circle */
+.morph { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 3; }
+.morph path { fill: var(--gold); }
+.ring-ghost { z-index: 2; }
+/* Outer rings stay quiet */
+.outer-rings { opacity: .7; }
+.now-card .kv b .he { font-size: 15px; }
+
+/* Clip the outer circles at the app's own edge, so the page itself never grows sideways */
+.app { overflow-x: clip; }
+.now-card .kv b { display: block; line-height: 1.5; }
+.now-card .kv b bdi { font-family: var(--he); font-size: 15px; }
