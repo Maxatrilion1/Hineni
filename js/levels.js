@@ -265,27 +265,6 @@ export function hourView(x, sel) {
   };
 }
 
-// ---------- Grounding: where you are, read from the inside out ----------
-const PARENT = { hour: 'day', day: 'week', week: 'month', month: 'year', year: 'shemitah', shemitah: 'world' };
-function places(x) {
-  const { hd, wd } = x.jd.info, pos = hd.year % 7 || 7, mil = Math.floor(hd.year / 1000) + 1;
-  const P = parshahFor(addDays(x.date, -wd), x.opts.israel);
-  return {
-    day: `the ${ordinal(wd + 1)} day`,
-    week: P.holiday ? 'this week' : `the week of ${P.names}`,
-    month: `the ${ordinal(hd.day)} of ${hd.month}`,
-    year: `${hd.year}`,
-    shemitah: `the ${ordinal(pos)} year of the shemitah cycle`,
-    world: `the ${ordinal(mil)} millennium`,
-  };
-}
-/** "Held within the week of Vayishlach ›": the one circle around this one. Tap it to step out. */
-export function bowl(x, level) {
-  const up = PARENT[level];
-  if (!up) return '';
-  const name = { day: places(x).day, week: places(x).week, month: x.jd.info.hd.month, year: `the year ${x.jd.info.hd.year}`, shemitah: 'the shemitah cycle', world: 'the six thousand years' }[up];
-  return `<button type="button" class="bowl" data-lad="${up}">Held within ${name} <span aria-hidden="true">›</span></button>`;
-}
 /** Here I am: the ladder of circles, from the six thousand years in to where you are; each one takes you there. */
 export function ladder(x, level) {
   const { hd, wd } = x.jd.info, pos = hd.year % 7 || 7, mil = Math.floor(hd.year / 1000) + 1;

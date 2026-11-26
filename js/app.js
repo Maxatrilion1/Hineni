@@ -7,7 +7,7 @@ import { intro } from './intro.js';
 import { art } from './art.js';
 import { DAYS } from './lore.js';
 import { monthLore } from './hebrew.js';
-import { src, bowl, ladder, RENDER, LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
+import { src, ladder, RENDER, LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
 import { NEW_YORK, CITIES, isIsrael, candleMinutes, geolocate, geoPermission, placeName, searchPlaces, distanceKm } from './places.js';
 
 const store = {
@@ -340,11 +340,11 @@ function render(dir) {
   renderVer();
 }
 
-// Every level's panel: its heading inside the first box, the circle around it, then the grounding sentence.
+// Every level's panel: its heading inside the first box, then Here I am: the ladder of circles.
 function framed(panel, title, level) {
   let out = panel;
   if (title) out = out.replace(/<section class="pcard([^"]*)">(\s*<h3>[\s\S]*?<\/h3>)?/, (m, cls) => `<section class="pcard${cls}"><h3 class="lvl-title">${title}</h3>`);
-  if (level) out = out.replace('</section>', `${bowl(x, level)}</section><section class="pcard here-box"><h3>Here I am</h3>${ladder(x, level)}</section>`);
+  if (level) out = out.replace('</section>', `</section><section class="pcard here-box"><h3>Here I am</h3>${ladder(x, level)}</section>`);
   return out;
 }
 
@@ -817,7 +817,7 @@ $('replayJourney').addEventListener('click', () => { $('setDlg').close(); startJ
 // Tap inside the circle to step in; tap outside it to step out.
 document.addEventListener('click', (e) => {
   if (view.mode !== 'time' || document.body.classList.contains('intro-on')) return;
-  if (e.target.closest('a, input, select, label, summary, dialog, .pcard, .card, .journey, .top, .grounding, .toast')) return;
+  if (e.target.closest('a, input, select, label, summary, dialog, .pcard, .card, .journey, .top, .toast')) return;
   if (e.target.closest('button') && e.target.closest('button').id !== 'centerBtn') return;
   if (!outsideDial(e)) return; // inside the circle: its own taps handle it
   if (journey) return journeyDo(journey.step !== 'hour' && inGoldAngle(e) ? 'middle' : 'outside');
