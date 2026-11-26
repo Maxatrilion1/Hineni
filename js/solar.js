@@ -46,3 +46,12 @@ export function sunAt(y, m, d, lat, lon, alt, rising) {
   }
   return t;
 }
+
+/** Sun's altitude in degrees above the horizon at a moment. */
+export function sunAltitude(ms, lat, lon) {
+  const { dec, eq } = sunParams(ms);
+  const minutes = (ms % 86400000) / 60000;
+  const ha = (minutes + eq + 4 * lon) / 4 - 180;
+  const s = Math.sin(rad(lat)) * Math.sin(rad(dec)) + Math.cos(rad(lat)) * Math.cos(rad(dec)) * Math.cos(rad(ha));
+  return deg(Math.asin(Math.max(-1, Math.min(1, s))));
+}

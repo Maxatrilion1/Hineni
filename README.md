@@ -9,6 +9,12 @@
 - **Zmanim** as dots on the dial and as a list, with the next one counted down.
 - **Hebrew date**, which rolls over at sunset, plus the weekday, moon and days until Shabbos.
 - **The month**, with its tribe, mazal, letter, sense and choshen stone (Sefer Yetzirah and the Arizal).
+- **Holidays and dates**: Yom Tov (one day in Israel, two outside), fasts with their postponements, Rosh Chodesh, Chanukah, Chabad dates, the Omer with its sefirah, and a "coming up" list.
+- **Candle lighting and havdalah** for Shabbos and Yom Tov, including after-nightfall lighting on second days.
+- **The moon**: the molad as announced in shul (Jerusalem time, with chalakim) and in your time, and the Kiddush Levanah window.
+- **Tap any hour** for its exact times and its ruling planet (Shabbos 156a).
+- **A live sky** behind the clock that follows the sun's real altitude where you are, with stars at night and clouds from the weather.
+- **Where you are**: geolocation with a place name, search for any city, New York by default.
 
 ## Shitah
 
@@ -29,14 +35,16 @@ Any static host works (GitHub Pages, Netlify, Cloudflare Pages). On HTTPS it ins
 - `js/solar.js`: NOAA sun-position algorithm
 - `js/zmanim.js`: zmanim, the Jewish-day model, dial angles
 - `js/hebrew.js`: Hebrew date (built-in browser calendar), gematria, month data
+- `js/calendar.js`: holidays, Omer, molad, Kiddush Levanah, planetary hours
+- `js/sky.js`: the sky gradient from the sun's altitude
+- `js/places.js`: geolocation, place names, city search, weather
 - `js/dial.js`: SVG dial
 - `js/app.js`: UI, location, the once-a-second tick
 
+Online services (optional, the clock works without them): Open-Meteo for weather and city search, BigDataCloud for the place name of your coordinates.
+
 ## Next ideas
 
-- Shitah switcher (Magen Avraham, Gra, 72-minute alos/tzeis)
-- Per-city candle-lighting customs (Jerusalem 40 min)
+- Weekly parshah
 - Elevation-adjusted sunrise/sunset
-- Holidays, molad and Kiddush Levanah window
-- Tap an hour for its planet (Shabbos 156a) and other layers
 - Native home-screen widgets (iOS/Android) reusing `zmanim.js`

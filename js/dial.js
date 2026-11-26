@@ -46,7 +46,7 @@ export function buildDial(svg, jd, tz) {
   for (const [part, base] of [['n', 90], ['d', 270]]) {
     for (let i = 0; i < 12; i++) {
       const a1 = base + 15 * i, a2 = a1 + 15;
-      el('path', { d: sector(R_IN, R_OUT, a1, a2), class: `seg ${part === 'd' ? 'day' : 'night'}${i % 2 ? ' alt' : ''}`, 'data-seg': part + i }, segs);
+      el('path', { d: sector(R_IN, R_OUT, a1, a2), class: `seg ${part === 'd' ? 'day' : 'night'}${i % 2 ? ' alt' : ''}`, 'data-seg': part + i, role: 'button', 'aria-label': `${part === 'd' ? 'Day' : 'Night'} hour ${i + 1}` }, segs);
       const [x, y] = pt(R_NUM, a1 + 7.5);
       const t = el('text', { x: f(x), y: f(y), class: `num ${part === 'd' ? 'day' : 'night'}`, 'data-num': part + i }, segs);
       t.textContent = gematria(i + 1).replace(/[׳״]/g, '');
@@ -79,6 +79,7 @@ export function buildDial(svg, jd, tz) {
   // Zmanim markers.
   const dots = el('g', { class: 'dots' }, svg);
   for (const z of jd.list) {
+    if (z.t < jd.start || z.t > jd.end) continue;
     const [x, y] = pt(R_DOT, angleOf(z.t, jd));
     el('circle', { cx: f(x), cy: f(y), r: 3, class: 'zdot', 'data-z': z.key + z.part }, dots);
   }
