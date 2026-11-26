@@ -47,8 +47,8 @@ export function intro(target, { onLand, dots = [] } = {}) {
       const phi = lerp(0.3, Math.PI / 2, e);                 // tilt: from nearly side-on to straight down the axis
       const pitch = lerp(R0 * 0.82, 0, e);
       const f = R0 * 4.2;
-      if (phase === 'idle') { spinAt = -time * 0.05; riseAt = (time * 0.025) % 1; } // slow, and the turn and the rise both climb
-      else spinAt = spinFrom - 0.05 * 3.8 * (p - (p * p) / 2); // eases to a stop, never backwards
+      if (phase === 'idle') { spinAt = time * 0.05; riseAt = (1 - ((time * 0.025) % 1)) % 1; } // slow; the spiral travels down, so you rise through time
+      else spinAt = spinFrom + 0.05 * 3.8 * (p - (p * p) / 2); // eases to a stop, never backwards
       const spin = spinAt, rise = riseAt;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -81,8 +81,8 @@ export function intro(target, { onLand, dots = [] } = {}) {
       ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
       // Each half-coil is one unbroken ribbon; its fade toward the screen edges comes from a gradient along it.
       const strokeRuns = (back, color, k) => {
-        for (const whole of runs(back)) for (let k = 0; k < whole.length - 1; k += 36) {
-          const run = whole.slice(k, k + 37); // short pieces, so each one's fade follows the ribbon
+        for (const whole of runs(back)) for (let j0 = 0; j0 < whole.length - 1; j0 += 36) {
+          const run = whole.slice(j0, j0 + 37); // short pieces, so each one's fade follows the ribbon
           if (run.length < 2) continue;
           const sc = run.reduce((a, q) => a + q.sc, 0) / run.length;
           const A = run[0], B = run[run.length - 1];
@@ -146,7 +146,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
       dots.forEach((frac, i) => {
         const theta = frac * 2 * Math.PI, a = theta - Math.PI / 2;
         const cIdle = i - 3 + ((frac + 0.37 * i) % 1) - 0.5;
-        let c = (a - (spinFrom - 0.05 * 3.8 * 0.5)) / (2 * Math.PI) + riseAt;       // one solution; shift by whole turns to the nearest
+        let c = (a - (spinFrom + 0.05 * 3.8 * 0.5)) / (2 * Math.PI) + riseAt;       // one solution; shift by whole turns to the nearest
         c += Math.round(cIdle - c);
         cFinal[i] = c;
       });
