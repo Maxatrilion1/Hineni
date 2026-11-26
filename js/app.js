@@ -18,7 +18,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 let loc = store.get('loc') || NEW_YORK;
-let prefs = { ma: false, candles: 'auto', rings: 'v2', ...(store.get('prefs') || {}) };
+let prefs = { ma: false, candles: 'auto', view: 'detailed', ...(store.get('prefs') || {}) };
 const view = { mode: 'time', level: 'day', focus: Date.now(), follow: true };
 let x = null, v = null, renderedKey = '', heading = null, rot = 0, rotMode = 'north';
 
@@ -176,15 +176,29 @@ function nestToFace() {
   g.className = 'ring-ghost';
   g.innerHTML = html;
   $('dialWrap').appendChild(g);
-  const opts = { duration: 2000, easing: 'cubic-bezier(.35, .1, .2, 1)', fill: 'forwards' };
+  // Beat 1 (0–0.9 s): the inner rings melt away; the outer ring stays.
+  // Beat 2 (0.9–1.9 s): the outer ring alone becomes the new circle.
+  // Beat 3 (1.9–2.6 s): the circle's words and pictures arrive.
+  const T = 2600, ease = 'cubic-bezier(.4, .1, .2, 1)';
   g.querySelectorAll('.nr').forEach((r, i) => {
     r.style.transformBox = 'view-box'; r.style.transformOrigin = '200px 200px';
-    if (i === 0) r.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.03)', opacity: 1, offset: 0.5 }, { transform: 'scale(1.05)', opacity: 0 }], opts);
-    else r.animate([{ transform: 'scale(1)', opacity: 1, filter: 'blur(0)' }, { transform: 'scale(.82)', opacity: 0, filter: 'blur(3px)', offset: 0.6 }, { opacity: 0 }], opts);
+    if (i === 0) r.animate([{ opacity: 1 }, { opacity: 1, offset: 0.35 }, { opacity: 1, offset: 0.62 }, { opacity: 0, offset: 0.75 }, { opacity: 0 }], { duration: T, easing: ease, fill: 'forwards' });
+    else {
+      r.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.9)', offset: 0.32 }, { opacity: 0 }], { duration: T, easing: ease, fill: 'forwards' });
+      r.querySelectorAll('.nr-dot').forEach((d) => d.animate([{ opacity: 1 }, { opacity: 0, offset: 0.2 }, { opacity: 0 }], { duration: T, fill: 'forwards' }));
+    }
   });
-  g.querySelectorAll('.nr-label, .face').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0, offset: 0.4 }, { opacity: 0 }], opts));
-  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0, transform: 'scale(.97)' }, { opacity: 0, offset: 0.3 }, { opacity: 1, transform: 'none' }], { duration: 2000, easing: 'ease' });
-  setTimeout(() => g.remove(), 2050);
+  g.querySelectorAll('.nr-label').forEach((el, i) => el.animate([{ opacity: 1 }, { opacity: 0, offset: i === 0 ? 0.45 : 0.25 }, { opacity: 0 }], { duration: T, fill: 'forwards' }));
+  g.querySelectorAll('.face').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 1, offset: 0.35 }, { opacity: 0, offset: 0.7 }, { opacity: 0 }], { duration: T, fill: 'forwards' }));
+  g.querySelector('.c-sub, .nr-now')?.remove();
+  // The new circle: its ring first (beat 2), then everything inside it (beat 3).
+  const dial = $('dial');
+  const inner = [...dial.querySelectorAll('text, .art-at, .moonph, .ray, .marker, .band')];
+  dial.animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: ease });
+  inner.forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: 'ease' }));
+  $('centerBtn').animate([{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: 'ease' });
+  $('journey').animate([{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: 'ease' });
+  setTimeout(() => g.remove(), T + 50);
 }
 
 /** V1 with a block to follow: the old circle fades back while the block closes, then the new one settles in. */
@@ -230,7 +244,7 @@ function flyLetters(dir) {
 }
 
 function renderVer() {
-  $('ver').innerHTML = ['v1', 'v2'].map((k) => `<button type="button" data-ver="${k}" class="${prefs.rings === k ? 'on' : ''}">${k.toUpperCase()}</button>`).join('');
+  $('ver').innerHTML = [['clean', 'Clean'], ['detailed', 'Detailed']].map(([k, t]) => `<button type="button" data-ver="${k}" class="${prefs.view === k ? 'on' : ''}">${t}</button>`).join('');
 }
 
 function render(dir) {
@@ -303,7 +317,7 @@ function render(dir) {
   setHalos(outerRings());
   if (pendingNest) { pendingGhost = null; pendingBlock = null; pendingLetters = null; nestToFace(); }
   else {
-    if (prefs.rings === 'v2') animateV2(dir); else if (pendingBlock) fadeOld(); else animate(dir, lastMarker);
+    animateV2(dir);
     morphBlock();
     flyLetters(dir);
   }
@@ -418,7 +432,7 @@ function howHTML() {
 const monthTribe = (hd) => monthLore(hd.month)?.tribe ?? '';
 const dayMade = (wd) => ({ 0: 'light', 1: 'the firmament', 2: 'the land and its plants', 3: 'the sun, moon and stars', 4: 'the fish and the birds', 5: 'the animals and man', 6: 'rest' })[wd];
 // ---------- The journey: from the outside in ----------
-// nest → world → shemitah → year → month → week → (swipe out) month → week → day → (tap the hour) hour → (tap the middle) today
+// nest → world → shemitah → year → month → week → (tap outside: out) month → week → day → (tap the hour) hour → (tap the middle) today
 const STEPS = ['nest', 'world', 'shemitah', 'year', 'month', 'week', 'out', 'week2', 'day', 'hour'];
 const STEP_LEVEL = { nest: 'world', world: 'world', shemitah: 'shemitah', year: 'year', month: 'month', week: 'week', out: 'month', week2: 'week', day: 'day', hour: 'hour' };
 const OUTER = ['world', 'shemitah', 'year', 'month', 'week', 'day'];
@@ -434,7 +448,7 @@ function journeyCopy(step) {
     shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'Inside the millennium, the land keeps a seven-year rhythm. The seventh year, it rests.', 'Tap the middle'],
     year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'Inside the cycle, this year and its months. Each month belongs to one of the twelve tribes.', 'Tap the middle'],
     month: [`${hd.month}`, `Inside the year, the moon's month: the month of ${monthTribe(hd)}. Today is the ${ordinal(hd.day)}.`, 'Tap the middle'],
-    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `Inside the month, the week, counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, isTouch() ? 'Now swipe in from the edge to step back out' : 'Now step back out'],
+    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `Inside the month, the week, counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, 'Now tap outside the circle to step back out'],
     out: ['Back to the month', 'Every circle holds the one inside it. Step out any time to see the bigger picture.', 'Tap the middle to go back in'],
     week2: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, 'And the week again.', 'Tap the middle'],
     day: ['Today', 'And inside it all: today, live. Twelve hours of night and twelve of day, each held by a tribe. The line is now.', "Tap the hour you're in"],
@@ -467,7 +481,8 @@ function setHalos(html) {
 }
 
 // The outer circles belong to the journey; the everyday clock is just the dial.
-function outerRings() { if (!journey) { ringT = {}; return ''; } return prefs.rings === 'v2' ? outerRingsV2() : outerRingsV1(); }
+// The journey always shows the circles around you; afterwards, Detailed keeps them and Clean shows only the dial.
+function outerRings() { if (!journey && prefs.view === 'clean') { ringT = {}; return ''; } return outerRingsV2(); }
 
 /** The clock face of a circle, as SVG markup, and where its "now" is. */
 function levelFace(level) {
@@ -530,8 +545,7 @@ function showJourney() {
   const [big, text, prompt] = journeyCopy(journey.step);
   $('jBig').innerHTML = big;
   $('jText').textContent = text;
-  $('jTap').innerHTML = esc(prompt) + (journey.step === 'week' && !isTouch() ? ' <button type="button" class="btn ghost small" id="jOut">Step out</button>' : '');
-  $('jOut')?.addEventListener('click', () => journeyDo('swipe'));
+  $('jTap').innerHTML = esc(prompt);
   const i = STEPS.indexOf(journey.step);
   $('jDots').innerHTML = STEPS.map((_, k) => `<i class="${k < i ? 'done' : ''}${k === i ? ' at' : ''}"></i>`).join('');
   if ($('journey').hidden) { $('journey').classList.remove('pop'); void $('journey').offsetWidth; $('journey').classList.add('pop'); }
@@ -561,7 +575,7 @@ function endJourney() {
   goNow();
 }
 
-/** One action moves the journey on: 'outer' (the outer ring), 'middle', 'swipe', or 'hour' (a block of the day). */
+/** One action moves the journey on: 'outer' (the outer ring), 'middle', 'outside', or 'hour' (a block of the day). */
 function journeyDo(action, arg) {
   const st = journey.step;
   const move = (step, level, dir, focus) => {
@@ -575,7 +589,7 @@ function journeyDo(action, arg) {
     if (next) return move(next[0], next[1], 'in');
     if (st === 'hour') return endJourney();
   }
-  if (st === 'week' && action === 'swipe') return move('out', 'month', 'out');
+  if (st === 'week' && action === 'outside') return move('out', 'month', 'out');
   if (st === 'day' && action === 'hour') return move('hour', 'hour', 'in', arg);
   // Anything else: a gentle nudge toward the right place.
   $('jTap').classList.remove('nudge'); void $('jTap').offsetWidth; $('jTap').classList.add('nudge');
@@ -719,9 +733,9 @@ async function locationOnLoad() {
 function initVer() {
   $('ver').addEventListener('click', (e) => {
     const b = e.target.closest('[data-ver]');
-    if (!b || b.dataset.ver === prefs.rings) return;
-    prefs.rings = b.dataset.ver; store.set('prefs', prefs);
-    $('halos').dataset.h = '';
+    if (!b || b.dataset.ver === prefs.view) return;
+    prefs.view = b.dataset.ver; store.set('prefs', prefs);
+    $('halos').dataset.h = 'stale';
     render();
   });
 }
@@ -734,7 +748,9 @@ function initSettings() {
 }
 
 // ---------- Events ----------
+const outsideDial = (e) => { const r = $('dial').getBoundingClientRect(); return Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)) > r.width * (194 / 460); };
 function onChild(e) {
+  if (e.currentTarget.id === 'dial' && outsideDial(e)) return; // the corners of the square belong to "outside"
   if (journey) {
     if (e.currentTarget.id !== 'dial') return;
     if (journey.step === 'nest') return journeyDo('outer'); // any tap on the circles begins at the outer ring
@@ -784,22 +800,15 @@ $('scale').addEventListener('click', pickLevel);
 $('nestRings').addEventListener('click', pickLevel);
 $('nestBtn').addEventListener('click', () => { renderNest(); $('nestDlg').showModal(); });
 $('nestClose').addEventListener('click', () => $('nestDlg').close());
-// Swipe left from the middle: step in one circle. Swipe in from the edge: step out one circle.
-let sw = null;
-document.addEventListener('touchstart', (e) => {
-  if (view.mode !== 'time' || e.touches.length !== 1) return;
-  const t = e.touches[0], r = $('dialWrap').getBoundingClientRect();
-  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-  sw = { x: t.clientX, y: t.clientY, edge: t.clientX < 28 || t.clientX > innerWidth - 28, mid: Math.hypot(t.clientX - cx, t.clientY - cy) < r.width * 0.36 };
-}, { passive: true });
-document.addEventListener('touchend', (e) => {
-  if (!sw) return;
-  const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y, s0 = sw;
-  sw = null;
-  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
-  if (s0.edge) { if (journey) return journeyDo('swipe'); return zoomOut(); }
-  if (s0.mid && dx < 0) { if (journey) return journeyDo('middle'); $('centerBtn').click(); }
-}, { passive: true });
+// Tap inside the circle to step in; tap outside it to step out.
+document.addEventListener('click', (e) => {
+  if (view.mode !== 'time' || document.body.classList.contains('intro-on')) return;
+  if (e.target.closest('a, input, select, label, summary, dialog, .pcard, .card, .journey, .top, .controls, .titlebar, .toast')) return;
+  if (e.target.closest('button') && e.target.closest('button').id !== 'centerBtn') return;
+  if (!outsideDial(e)) return; // inside the circle: its own taps handle it
+  if (journey) return journeyDo('outside');
+  zoomOut();
+});
 
 // Space: drag to turn.
 let drag = null;
