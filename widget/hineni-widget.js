@@ -5,6 +5,8 @@
 // Setup: install Scriptable from the App Store → tap + → paste this whole file → name it "Hineni".
 // Then long-press the home screen → + → Scriptable → pick a size → tap the widget → Script: Hineni.
 // Lock screen too: long-press the lock screen → Customize → Lock Screen → add a Scriptable widget → Script: Hineni.
+// Location: open the script once in Scriptable (allow "While Using"); the widget uses that place and never asks again.
+// Or type coordinates in the widget's Parameter field, e.g. 31.778, 35.235 for Jerusalem.
 
 const SITE = 'https://maxatrilion1.github.io/Hineni/';
 const FALLBACK = { lat: 40.7128, lon: -74.006, name: 'New York' };
@@ -122,8 +124,17 @@ function drawDial(s, size) {
   return ctx.getImage();
 }
 
+/** Where you are. The widget itself never asks for your location (iOS would want "Always" access for that):
+ *  1. If you typed coordinates into the widget's Parameter field ("31.778, 35.235"), those are used.
+ *  2. Otherwise the place saved the last time you opened this script in the Scriptable app.
+ *  3. Otherwise New York.
+ *  Opening the script in the app (needs only "While Using") finds you once and saves it for the widget. */
 async function location() {
   const fm = FileManager.local(), path = fm.joinPath(fm.documentsDirectory(), 'hineni-loc.json');
+  const param = (typeof args !== 'undefined' && args.widgetParameter) || '';
+  const m = param.match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+  if (m) return { lat: +m[1], lon: +m[2] };
+  if (config.runsInWidget) return fm.fileExists(path) ? JSON.parse(fm.readString(path)) : FALLBACK;
   try {
     Location.setAccuracyToThreeKilometers();
     const l = await Location.current();
@@ -131,8 +142,7 @@ async function location() {
     fm.writeString(path, JSON.stringify(loc));
     return loc;
   } catch (e) {
-    if (fm.fileExists(path)) return JSON.parse(fm.readString(path));
-    return FALLBACK;
+    return fm.fileExists(path) ? JSON.parse(fm.readString(path)) : FALLBACK;
   }
 }
 
