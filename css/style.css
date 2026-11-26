@@ -749,7 +749,7 @@ body[data-jstep="month"] #dial .rs.now, body[data-jstep="week"] #dial .rs.now { 
 .day-marks { margin: 10px 0 0; font-weight: 600; color: var(--accent); }
 
 .nr-label { fill: var(--muted); font-size: 7.5px; letter-spacing: .1em; text-transform: uppercase; dominant-baseline: central; pointer-events: none; }
-.nr-label.big { font-size: 9px; font-weight: 700; fill: var(--muted); }
+.nr-label.big { font-size: 8.5px; font-weight: 700; fill: #5a4320; letter-spacing: 0; text-anchor: middle; }
 
 /* The gold block: softly rounded, one clear thing to tap */
 .rs.now, .seg.now { stroke: var(--gold); stroke-width: 5; stroke-linejoin: round; paint-order: stroke; }
