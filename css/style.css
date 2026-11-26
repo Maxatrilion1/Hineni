@@ -356,11 +356,8 @@ button:focus-visible, .seg:focus-visible, input:focus-visible, select:focus-visi
 /* Rings */
 .seg.focus { stroke: var(--accent); stroke-width: 2.4; }
 .seg.shabbos { fill: #e9d7a3; }
-body.night .seg.shabbos { fill: #3b4378; }
 .seg.yt { fill: #f0c95c; }
 .seg.day.now, .seg.shabbos.now { fill: var(--gold); }
-body.night .seg.day:not(.now):not(.shabbos) { fill: var(--night-a); }
-body.night .num:not(.day):not(.night) { fill: var(--night-ink); }
 body.night .num.now { fill: #fff; }
 .num { fill: var(--day-ink); }
 .num.small { font-size: 11px; }
@@ -373,7 +370,9 @@ body.night .num.now { fill: #fff; }
 .moonph.now .moon-lit { fill: #ffd54a; }
 .hour-ring.day { fill: var(--day-a); }
 .hour-ring.night { fill: var(--night-a); }
-.seg.progress { fill: var(--gold); opacity: .85; }
+.seg.progress.day { fill: var(--gold); }
+.seg.progress.night { fill: #5866c4; }
+.notnow-veil { fill: none; stroke: var(--muted); stroke-width: 2; stroke-dasharray: 6 6; }
 .mtick { stroke: var(--day-ink); stroke-width: 1; opacity: .5; }
 .mtick.big { stroke-width: 2; opacity: .8; }
 body.night .mtick { stroke: var(--night-ink); }
@@ -415,3 +414,11 @@ button.wkrow { width: calc(100% + 16px); border: 0; background: none; text-align
 .zmanim .z { border-radius: 10px; }
 .zmanim .z.next { background: color-mix(in srgb, var(--accent) 16%, transparent); margin: 0 -8px; padding: 0 8px; }
 .z-time { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 4.6em; text-align: right; }
+
+.c-eyebrow.here { color: var(--accent); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 11px; }
+.c-eyebrow.notnow { color: var(--ink); background: color-mix(in srgb, var(--muted) 22%, transparent); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; justify-self: center; }
+.c-line .he { color: var(--accent); }
+/* Version switch */
+.ver { display: inline-flex; padding: 2px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: 12px; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.ver a, .ver span { padding: 3px 10px; border-radius: 999px; color: var(--muted); text-decoration: none; font-weight: 600; }
+.ver .on { background: var(--accent); color: var(--solid); }

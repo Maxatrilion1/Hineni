@@ -51,6 +51,8 @@ function zoomOut() {
 function zoomTo(level) {
   const dir = LEVELS.indexOf(level) > LEVELS.indexOf(view.level) ? 'out' : 'in';
   view.level = level;
+  // Back at the day you're living in: follow the clock again.
+  if (level === 'day' && x && x.now >= x.jd.start && x.now < x.jd.end) view.follow = true;
   render(dir);
 }
 
@@ -73,6 +75,7 @@ function render(dir) {
   $('modeSpace').setAttribute('aria-selected', view.mode === 'space');
   const atNow = view.follow && view.level === 'day' && view.mode === 'time';
   $('nowBtn').hidden = atNow;
+  $('nowBtn').textContent = view.mode === 'space' ? 'Back to time' : 'Back to now';
   animate(dir);
 
   if (x.jd.polar) {
@@ -327,6 +330,7 @@ $('panel').addEventListener('click', onChild);
 $('centerBtn').addEventListener('click', () => {
   if (view.mode !== 'time') return;
   if (view.level === 'day') { const live = x.now >= x.jd.start && x.now < x.jd.end; return go({ level: 'hour', focus: live ? x.now : view.focus }, 'in'); }
+  if (view.level === 'hour') return zoomTo('day');
   const i = LEVELS.indexOf(view.level);
   if (i > 0) zoomTo(LEVELS[i - 1]);
 });

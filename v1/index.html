@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hineni</title>
+  <meta name="description" content="A Jewish clock: sha'os zmaniyos, zmanim and the Hebrew date, with civil time alongside.">
+  <meta name="theme-color" content="#11153a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="night">
+  <div class="sky" aria-hidden="true"></div>
+  <main class="app">
+    <header class="top">
+      <div class="brand"><span class="he" lang="he">הִנֵּנִי</span><nav class="ver" aria-label="Version"><span class="on">V1</span><a href="../">V2</a></nav></div>
+      <div class="top-actions">
+        <button id="locBtn" class="pill" type="button" aria-label="Change location">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+          <span id="locName">…</span>
+        </button>
+        <button id="setBtn" class="pill icon" type="button" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4 7h10a2.5 2.5 0 0 0 5 0h1V5h-1a2.5 2.5 0 0 0-5 0H4v2zm0 12h4a2.5 2.5 0 0 0 5 0h7v-2h-7a2.5 2.5 0 0 0-5 0H4v2zm0-6h12a2.5 2.5 0 0 0 5 0v-2a2.5 2.5 0 0 0-5 0H4v2z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="clock">
+      <div id="geoBanner" class="card banner" hidden>
+        <div><b>Hineni: where are you?</b><p>Jewish time is set by the sun where you stand. Share your location for exact hours. It stays on your device.</p><p id="geoBannerMsg" class="fine tight"></p></div>
+        <div class="banner-actions"><button id="geoYes" class="btn" type="button">Use my location</button><button id="geoNo" class="btn ghost" type="button">Keep New York</button></div>
+      </div>
+      <div class="dial-wrap">
+        <svg id="dial" viewBox="-12 -12 424 424" role="img" aria-label="Jewish clock dial. Tap an hour for details."></svg>
+        <button id="centerBtn" class="center" type="button" aria-label="Details for the current hour">
+          <span id="cEyebrow" class="c-eyebrow he" lang="he"></span>
+          <span id="cBadge" class="c-badge" aria-hidden="true"></span>
+          <span id="cHour" class="c-hour"></span>
+          <span id="cPart" class="c-part"></span>
+          <span id="cTribe" class="c-tribe"></span>
+          <span id="cCivil" class="c-civil"></span>
+        </button>
+      </div>
+      <div id="chips" class="chips center-chips"></div>
+    </section>
+
+    <section class="info">
+      <div class="card">
+        <h2>Where you are in time</h2>
+        <div id="stack" class="stack"></div>
+      </div>
+      <div class="card">
+        <h2>Where you are in space</h2>
+        <div id="space"></div>
+      </div>
+      <details class="card fold" id="zFold">
+        <summary><span class="fold-title">Zmanim</span><span id="zSum" class="fold-sum"></span></summary>
+        <ol id="zmanim" class="zmanim"></ol>
+        <p class="fine" id="hourLen"></p>
+      </details>
+      <details class="card fold">
+        <summary><span class="fold-title">Coming up</span><span id="upSum" class="fold-sum"></span></summary>
+        <div id="upcoming"></div>
+      </details>
+      <details class="card fold how">
+        <summary><span class="fold-title">How to read the clock</span></summary>
+        <p>A Jewish day begins at sunset. The night is divided into 12 hours, and the day, from sunrise to sunset, into another 12. These are <em>sha'os zmaniyos</em>: each is one twelfth of the darkness or the daylight, so they stretch in summer and shrink in winter.</p>
+        <p>On the dial the day's hours (gold) run across the top, from sunrise on the left to sunset on the right, the way the sun crosses the sky. The night's hours (blue) run underneath. The marker on the rim is where you are now.</p>
+        <p>Each hour belongs to one of the twelve months and its tribe: the first hour to Nisan and Yehudah, the second to Iyar and Yissachar, and so on. The thin colored band shows each tribe's flag. Tap any hour to meet it.</p>
+        <p>The thin inner ring is the ordinary clock, bent to fit. Jewish times like "3:00 of the day" count hours and minutes from sunrise (or from sunset at night) in these stretched hours.</p>
+      </details>
+    </section>
+
+    <footer class="fine foot">
+      Times are calculated for sea level and may differ from your shul's luach by a minute or two. Don't rely on them to the last minute.
+    </footer>
+  </main>
+
+  <dialog id="locDlg" class="sheet">
+    <div class="sheet-head"><h2>Location</h2><button id="locClose" class="pill" type="button">Done</button></div>
+    <button id="useGeo" class="btn wide" type="button">Use my location</button>
+    <p id="geoMsg" class="fine tight"></p>
+    <input id="citySearch" class="search" type="search" placeholder="Search any city" autocomplete="off">
+    <div id="cityList" class="cities"></div>
+  </dialog>
+
+  <dialog id="sheet" class="sheet">
+    <div class="sheet-head"><h2 id="sheetTitle"></h2><button id="sheetClose" class="pill" type="button">Done</button></div>
+    <div id="sheetBody"></div>
+  </dialog>
+
+  <dialog id="setDlg" class="sheet">
+    <div class="sheet-head"><h2>Settings</h2><button id="setClose" class="pill" type="button">Done</button></div>
+    <label class="opt"><span><b>Magen Avraham times</b><small>Also show latest Shema and Shacharis counted from dawn to nightfall.</small></span><input id="optMA" type="checkbox"></label>
+    <label class="opt"><span><b>Candle lighting</b><small>Minutes before sunset. Auto: 40 in Jerusalem, 30 in Haifa, 18 elsewhere.</small></span>
+      <select id="optCandles"><option value="auto">Auto</option><option value="18">18</option><option value="20">20</option><option value="22">22</option><option value="30">30</option><option value="40">40</option></select>
+    </label>
+    <p class="fine">Shitah: Alter Rebbe (Chabad). Hours run from sunrise to sunset; dawn 16.1°, nightfall 6°. Israel locations keep one day of Yom Tov.</p>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -226,7 +226,8 @@ export function hourView(x, sel) {
   const frac = live ? (x.now - a) / len : null;
   let s = `<circle cx="${C}" cy="${C}" r="${R_OUT + 6}" class="face"/>`;
   s += `<path d="${sector(R_IN, R_OUT, 0, 359.99)}" class="seg ${sel.isDay ? 'day' : 'night'} hour-ring"/>`;
-  if (frac != null && frac > 0) s += `<path d="${sector(R_IN, R_OUT, 0, Math.max(0.5, frac * 360))}" class="seg progress"/>`;
+  if (frac != null && frac > 0) s += `<path d="${sector(R_IN, R_OUT, 0, Math.max(0.5, frac * 360))}" class="seg progress ${sel.isDay ? 'day' : 'night'}"/>`;
+  if (!live) s += `<circle cx="${C}" cy="${C}" r="${R_OUT + 6}" class="notnow-veil"/>`;
   for (let m = 0; m < 60; m++) {
     const big = m % 5 === 0;
     const [x1, y1] = pt(R_OUT - (big ? 9 : 4), m * 6), [x2, y2] = pt(R_OUT, m * 6);
@@ -241,7 +242,7 @@ export function hourView(x, sel) {
   const step = (d) => { const t = d > 0 ? b + 60000 : a - 60000; return { level: 'hour', focus: t, hourAt: true }; };
   return {
     svg: s,
-    center: centerHTML({ icon: T.icon, iconSize: 44, big: T.he, line: `${ht.tribe} · ${T.emblem}`, sub: live ? `${Math.floor(frac * 60)} of 60 minutes` : `${fmtT(x, a)}–${fmtT(x, b)}` }),
+    center: centerHTML({ eyebrow: live ? '● You are here' : x.now < a ? 'Not now · still to come' : 'Not now · already passed', eyebrowCls: live ? 'here' : 'notnow', icon: T.icon, iconSize: 40, big: `${ordinal(sel.hour)} hour`, line: `of the ${sel.isDay ? 'day' : 'night'} · ${ht.tribe} <span class="he" lang="he">${T.he}</span>`, sub: live ? `${Math.floor(frac * 60)} of 60 minutes gone` : `${fmtT(x, a)} – ${fmtT(x, b)}`, raw: true }),
     panel: hourPanel(x, sel, ht, a, b),
     children: {}, prev: step(-1), next: step(1),
   };
@@ -280,8 +281,8 @@ export function spaceView(x, heading) {
 }
 
 // ---------- Center ----------
-function centerHTML({ eyebrow = '', icon: ic, iconSize = 34, big = '', line = '', sub = '' }) {
-  return `<span class="c-eyebrow">${esc(eyebrow)}</span>${ic ? `<span class="c-ico">${icon(ic, iconSize)}</span>` : ''}<span class="c-big he" lang="he">${big}</span><span class="c-line">${esc(line)}</span>${sub ? `<span class="c-sub">${esc(sub)}</span>` : ''}`;
+function centerHTML({ eyebrow = '', eyebrowCls = '', icon: ic, iconSize = 34, big = '', line = '', sub = '', raw = false }) {
+  return `<span class="c-eyebrow ${eyebrowCls}">${esc(eyebrow)}</span>${ic ? `<span class="c-ico">${icon(ic, iconSize)}</span>` : ''}<span class="c-big he" lang="he">${big}</span><span class="c-line">${raw ? line : esc(line)}</span>${sub ? `<span class="c-sub">${esc(sub)}</span>` : ''}`;
 }
 const fmtT = (x, t) => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZone: x.loc.tz }).format(new Date(t));
 const fmtD = (x, t) => new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: x.loc.tz }).format(new Date(t));
