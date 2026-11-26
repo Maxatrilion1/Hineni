@@ -1,9 +1,11 @@
 import { angleOf } from './zmanim.js';
 import { gematria } from './hebrew.js';
+import { TRIBES, hourMonth } from './lore.js';
+import { monthLore } from './hebrew.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const C = 200;
-const R_OUT = 188, R_IN = 150, R_NUM = 169, R_CIVIL = 140, R_DOT = 145;
+const R_OUT = 188, R_IN = 158, R_BAND = 150, R_NUM = 173, R_CIVIL = 138, R_DOT = 144;
 
 const pt = (r, a) => [C + r * Math.sin((a * Math.PI) / 180), C - r * Math.cos((a * Math.PI) / 180)];
 const f = (n) => n.toFixed(2);
@@ -47,6 +49,12 @@ export function buildDial(svg, jd, tz) {
     for (let i = 0; i < 12; i++) {
       const a1 = base + 15 * i, a2 = a1 + 15;
       el('path', { d: sector(R_IN, R_OUT, a1, a2), class: `seg ${part === 'd' ? 'day' : 'night'}${i % 2 ? ' alt' : ''}`, 'data-seg': part + i, role: 'button', 'aria-label': `${part === 'd' ? 'Day' : 'Night'} hour ${i + 1}` }, segs);
+      // Thin band in the flag colors of the hour's tribe (Bamidbar Rabbah 2:7).
+      const tribe = TRIBES[monthLore(hourMonth(i + 1).month).tribe];
+      const k = tribe.flag.length;
+      tribe.flag.forEach((c, j) => {
+        el('path', { d: sector(R_BAND, R_IN - 1, a1 + (15 * j) / k, a1 + (15 * (j + 1)) / k), fill: c, class: 'band', 'data-band': part + i }, segs);
+      });
       const [x, y] = pt(R_NUM, a1 + 7.5);
       const t = el('text', { x: f(x), y: f(y), class: `num ${part === 'd' ? 'day' : 'night'}`, 'data-num': part + i }, segs);
       t.textContent = gematria(i + 1).replace(/[׳״]/g, '');

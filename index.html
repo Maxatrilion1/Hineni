@@ -34,26 +34,32 @@
 
     <section class="clock">
       <div id="geoBanner" class="card banner" hidden>
-        <div><b>Hineni: where are you?</b><p>Zmanim change with every mile. Share your location for exact times. It stays on your device.</p><p id="geoBannerMsg" class="fine tight"></p></div>
+        <div><b>Hineni: where are you?</b><p>Jewish time is set by the sun where you stand. Share your location for exact hours. It stays on your device.</p><p id="geoBannerMsg" class="fine tight"></p></div>
         <div class="banner-actions"><button id="geoYes" class="btn" type="button">Use my location</button><button id="geoNo" class="btn ghost" type="button">Keep New York</button></div>
       </div>
       <div class="dial-wrap">
         <svg id="dial" viewBox="-12 -12 424 424" role="img" aria-label="Jewish clock dial. Tap an hour for details."></svg>
         <button id="centerBtn" class="center" type="button" aria-label="Details for the current hour">
-          <span id="cEyebrow" class="c-eyebrow"></span>
-          <span id="cWindowHe" class="c-window he" lang="he"></span>
-          <span id="cWindowEn" class="c-window-en"></span>
-          <span id="cDetail" class="c-detail"></span>
-          <span class="c-rule"></span>
+          <span id="cEyebrow" class="c-eyebrow he" lang="he"></span>
+          <span id="cBadge" class="c-badge" aria-hidden="true"></span>
           <span id="cHour" class="c-hour"></span>
+          <span id="cPart" class="c-part"></span>
+          <span id="cTribe" class="c-tribe"></span>
           <span id="cCivil" class="c-civil"></span>
         </button>
       </div>
-      <div id="next" class="next-card" aria-live="polite"></div>
+      <div id="chips" class="chips center-chips"></div>
     </section>
 
     <section class="info">
-      <div id="date" class="card date"></div>
+      <div class="card">
+        <h2>Where you are in time</h2>
+        <div id="stack" class="stack"></div>
+      </div>
+      <div class="card">
+        <h2>Where you are in space</h2>
+        <div id="space"></div>
+      </div>
       <details class="card fold" id="zFold">
         <summary><span class="fold-title">Zmanim</span><span id="zSum" class="fold-sum"></span></summary>
         <ol id="zmanim" class="zmanim"></ol>
@@ -63,20 +69,12 @@
         <summary><span class="fold-title">Coming up</span><span id="upSum" class="fold-sum"></span></summary>
         <div id="upcoming"></div>
       </details>
-      <details class="card fold">
-        <summary><span class="fold-title">The moon</span><span id="moonSum" class="fold-sum"></span></summary>
-        <div id="moon"></div>
-      </details>
-      <details class="card fold">
-        <summary><span class="fold-title">The month</span><span id="monthSum" class="fold-sum"></span></summary>
-        <div id="month"></div>
-      </details>
       <details class="card fold how">
         <summary><span class="fold-title">How to read the clock</span></summary>
-        <p>A Jewish day begins at sunset. The night is divided into 12 hours, and the day, from sunrise to sunset, into another 12. These are <em>sha'os zmaniyos</em>: each is one twelfth of the daylight or the darkness, so they stretch in summer and shrink in winter.</p>
+        <p>A Jewish day begins at sunset. The night is divided into 12 hours, and the day, from sunrise to sunset, into another 12. These are <em>sha'os zmaniyos</em>: each is one twelfth of the darkness or the daylight, so they stretch in summer and shrink in winter.</p>
         <p>On the dial the day's hours (gold) run across the top, from sunrise on the left to sunset on the right, the way the sun crosses the sky. The night's hours (blue) run underneath. The marker on the rim is where you are now.</p>
-        <p>The thin inner ring is the ordinary clock, bent to fit: where its hours crowd together the Jewish hours are short, and where they spread out the Jewish hours are long. The small dots are the zmanim.</p>
-        <p>The center tells you where you stand: which part of the day it is, what can be davened, and until when. Tap it, or any hour, for that hour's details.</p>
+        <p>Each hour belongs to one of the twelve months and its tribe: the first hour to Nisan and Yehudah, the second to Iyar and Yissachar, and so on. The thin colored band shows each tribe's flag. Tap any hour to meet it.</p>
+        <p>The thin inner ring is the ordinary clock, bent to fit. Jewish times like "3:00 of the day" count hours and minutes from sunrise (or from sunset at night) in these stretched hours.</p>
       </details>
     </section>
 
@@ -93,9 +91,9 @@
     <div id="cityList" class="cities"></div>
   </dialog>
 
-  <dialog id="hourDlg" class="sheet">
-    <div class="sheet-head"><h2>Hour</h2><button id="hourClose" class="pill" type="button">Done</button></div>
-    <div id="hourBody"></div>
+  <dialog id="sheet" class="sheet">
+    <div class="sheet-head"><h2 id="sheetTitle"></h2><button id="sheetClose" class="pill" type="button">Done</button></div>
+    <div id="sheetBody"></div>
   </dialog>
 
   <dialog id="setDlg" class="sheet">

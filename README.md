@@ -4,17 +4,16 @@
 
 ## What it shows
 
-- **The dial.** 24 *sha'os zmaniyos*: 12 day hours (gold, across the top from sunrise on the left to sunset on the right) and 12 night hours (blue, underneath). The Jewish day starts on the right, at sunset. The sun or moon on the rim is the hand.
-- **The civil clock, warped.** The inner ring shows ordinary hours placed where they fall on the Jewish dial, so you can see how the two line up.
-- **Zmanim** as dots on the dial and as a list, with the next one counted down.
-- **Hebrew date**, which rolls over at sunset, plus the weekday, moon and days until Shabbos.
-- **The month**, with its tribe, mazal, letter, sense and choshen stone (Sefer Yetzirah and the Arizal).
-- **Holidays and dates**: Yom Tov (one day in Israel, two outside), fasts with their postponements, Rosh Chodesh, Chanukah, Chabad dates, the Omer with its sefirah, and a "coming up" list.
-- **Candle lighting and havdalah** for Shabbos and Yom Tov, including after-nightfall lighting on second days.
-- **The moon**: the molad as announced in shul (Jerusalem time, with chalakim) and in your time, and the Kiddush Levanah window.
-- **Tap any hour** for its exact times and its ruling planet (Shabbos 156a).
-- **A live sky** behind the clock that follows the sun's real altitude where you are.
-- **Where you are**: geolocation with a place name, search for any city, New York by default.
+The clock's job is orientation: where you stand in Jewish time and space.
+
+- **The dial.** 24 *sha'os zmaniyos*: 12 day hours (gold, across the top from sunrise on the left to sunset on the right) and 12 night hours (blue, underneath). The Jewish day starts on the right, at sunset. The regular clock sits inside, bent to fit.
+- **Each hour has a month and a tribe.** Hour 1 is Nisan's and Yehudah's, hour 2 Iyar's and Yissachar's, and so on (Arizal: hours and months share the twelve permutations of the Name; the cycle repeats at night). A thin band shows each tribe's flag colors (Bamidbar Rabbah 2:7).
+- **The center** shows the hour, its tribe and emblem, the Hebrew day and date.
+- **Tap an hour** for its tribe (emblem, flag, Yaakov's and Moshe's blessings, name, mother, camp, stone), its month (letter, sense, mazal), its ruling planet (Shabbos 156a) and the zmanim in it, in Jewish and civil time.
+- **Where you are in time**: a stack from hour to day to week to month to year to the shemitah cycle to the 6,000 years (Sanhedrin 97a), each tappable: the day's Creation, Shir shel Yom, sefirah and ushpiz; the month's molad and Kiddush Levanah; the 19-year cycle, shemitah and maaser.
+- **Where you are in space**: distance and direction to Yerushalayim, with a live compass on phones, and the camp around the Mishkan with the tribes of the hour and month marked.
+- **Zmanim** (folded): each in Jewish time ("3:00 of the day") and civil time, with Shabbos, Yom Tov and fast times.
+- **Coming up** (folded): holidays, fasts, Chabad dates.
 
 ## Shitah
 
