@@ -70,6 +70,7 @@ function originOf(angle) {
   return `${(50 + r * Math.sin(a)).toFixed(2)}% ${(50 - r * Math.cos(a)).toFixed(2)}%`;
 }
 function animate(dir, newMarker) {
+  if (pendingGhost && (dir === 'in' || dir === 'out')) pushRings(pendingGhost, dir, 0);
   if (!dir || !pendingGhost || matchMedia('(prefers-reduced-motion: reduce)').matches) { pendingGhost = null; return; }
   const w = $('dialWrap');
   const origin = originOf(dir === 'in' ? pendingGhost.marker : newMarker);
@@ -102,22 +103,7 @@ function animateV2(dir) {
   const w = $('dialWrap'), delay = dir === 'in' && pendingBlock ? STAGE : 0;
   const opts = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'both' };
   const S = (s) => `scale(${s.toFixed(4)})`;
-  // The old outer rings: pushed out (in) or drawn in (out), fading.
-  const old = document.createElement('div');
-  old.className = 'halos-ghost';
-  old.innerHTML = g.halos || '';
-  w.prepend(old);
-  old.querySelectorAll('.or2').forEach((el) => {
-    const L = el.dataset.level, t = g.T[L];
-    if (!t) return el.remove();
-    const f = dir === 'in' ? 1.22 : 1 / 1.22;
-    el.style.transform = `rotate(${t.rot.toFixed(2)}deg) ${S(t.s)}`;
-    el.animate([{ transform: `rotate(${t.rot.toFixed(2)}deg) ${S(t.s)}`, opacity: 1 }, { transform: `rotate(${t.rot.toFixed(2)}deg) ${S(t.s * f)}`, opacity: 0 }], opts);
-  });
-  old.querySelectorAll('.or-hand').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { ...opts, duration: 400 }));
-  setTimeout(() => old.remove(), delay + SETTLE + 60);
-  // The new outer rings: settle into place.
-  document.querySelectorAll('#halos .or2, #halos .or-hand').forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }], opts));
+  pushRings(g, dir, delay);
   // The dial you leave: expands into the outer ring (in), or sinks to the middle (out).
   const ghost = document.createElement('div');
   ghost.className = 'ring-ghost';
@@ -133,6 +119,26 @@ function animateV2(dir) {
     el.style.transformOrigin = '50% 50%';
     el.animate([{ transform: from, opacity: 0 }, { opacity: 0, offset: 0.2 }, { transform: 'none', opacity: 1 }], opts);
   }
+}
+
+/** Stage 2 for the rings around the dial: the old ones are pushed out one place and fade,
+ *  the new ones slide in from one place further in and settle into their slots. */
+function pushRings(g, dir, delay) {
+  if (!(dir === 'in' || dir === 'out')) return;
+  const w = $('dialWrap'), opts = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'both' };
+  const f = dir === 'in' ? 1.18 : 1 / 1.18, v = dir === 'in' ? 1.06 : 1 / 1.06;
+  const old = document.createElement('div');
+  old.className = 'halos-ghost';
+  old.innerHTML = g.halos || '';
+  w.prepend(old);
+  old.querySelectorAll('.or2').forEach((el) => { const t = el.style.transform; el.animate([{ transform: t, opacity: 1 }, { transform: `${t} scale(${f})`, opacity: 0 }], opts); });
+  old.querySelectorAll('.outer-rings').forEach((el) => el.animate([{ transform: 'none', opacity: 1 }, { transform: `scale(${v})`, opacity: 0 }], opts));
+  old.querySelectorAll('.or-hand').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }], opts));
+  setTimeout(() => old.remove(), delay + SETTLE + 80);
+  // The new rings stay hidden until their turn, then slide in from one place further in.
+  document.querySelectorAll('#halos .or2').forEach((el) => { const t = el.style.transform; el.animate([{ transform: `${t} scale(${1 / f})`, opacity: 0 }, { transform: `${t} scale(${(1 / f + 1) / 2})`, opacity: 0, offset: 0.25 }, { transform: t, opacity: 1 }], opts); });
+  document.querySelectorAll('#halos .outer-rings').forEach((el) => el.animate([{ transform: `scale(${1 / v})`, opacity: 0 }, { transform: 'none', opacity: 1 }], opts));
+  document.querySelectorAll('#halos .or-hand').forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }], opts));
 }
 
 /** The "now" block you stepped into stretches around until it closes into the next circle. */
@@ -185,6 +191,7 @@ function nestToFace() {
 function fadeOld() {
   const g = pendingGhost; pendingGhost = null;
   if (!g) return;
+  pushRings(g, 'in', STAGE);
   const ghost = document.createElement('div');
   ghost.className = 'ring-ghost';
   ghost.innerHTML = g.html;
@@ -453,8 +460,9 @@ function nestDial() {
 
 function setHalos(html) {
   const h = $('halos');
-  if (h.dataset.h === html) return; // redrawing would restart the fade-in
-  h.dataset.h = html;
+  const key = html.replace(/ id="[^"]*"|url\(#[^)]*\)/g, '');
+  if (h.dataset.h === key) return; // redrawing would restart the motion
+  h.dataset.h = key;
   h.innerHTML = html;
 }
 
@@ -530,7 +538,6 @@ function showJourney() {
   $('journey').hidden = false;
   document.body.classList.add('journeying');
   document.body.dataset.jstep = journey.step;
-  setHalos(outerRings());
 }
 
 function startJourney() {

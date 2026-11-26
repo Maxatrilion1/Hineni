@@ -695,3 +695,5 @@ body.intro-on #dialWrap { opacity: 0; }
 body.journeying #geoBanner, body.intro-on #geoBanner { display: none; }
 
 .halos-ghost { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.outer-rings { transform-origin: 50% 50%; }
+.halos-ghost .outer-rings { position: absolute; inset: 0; }
