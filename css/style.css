@@ -487,7 +487,7 @@ body.journeying #panel { display: none; }
 
 
 /* Passing through the rings */
-.ring-ghost { position: absolute; inset: 0; pointer-events: none; z-index: 2; will-change: transform, opacity; }
+.ring-ghost { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .ring-ghost svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
 
@@ -515,7 +515,7 @@ body.journeying #panel { display: none; }
 html, body { overflow-x: hidden; overflow-x: clip; overscroll-behavior-x: none; }
 body { touch-action: pan-y; }
 .clock { overflow: visible; }
-#dial, .center { will-change: transform; }
+
 
 /* No side arrows: the title stands alone */
 
@@ -600,8 +600,7 @@ body.intro-on .journey { display: none; }
 
 /* V2: the outer circles as clock faces, each turned so its "now" lies on the hand's line */
 .or2 { position: absolute; inset: 0; pointer-events: none; transform-origin: 50% 50%;
-  -webkit-mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%);
-  mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%); }
+}
 .or2 svg { width: 100%; height: 100%; display: block; overflow: visible; opacity: var(--o, 1); }
 .or2 .ray, .or2 .marker, .or2 .hand, .or2 .sun, .or2 .moon { display: none; }
 .or-hand { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
@@ -637,7 +636,7 @@ body.journeying #geoBanner, body.intro-on #geoBanner { display: none; }
 .halos-ghost .outer-rings { position: absolute; inset: 0; }
 
 /* The old dial on its way to becoming the outer ring: its ring band, and its middle */
-.ghost-band { -webkit-mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%); mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%); transform-origin: 50% 50%; }
+.ghost-band { transform-origin: 50% 50%; }
 /* The leaving ring carries no gold "now"; its words travel on their own layer and fade early */
 .no-now .rs.now:not(.alt):not(.sab) { fill: var(--day-a); } .no-now .rs.now.alt { fill: var(--day-b); } .no-now .rs.now.sab { fill: var(--sab); }
 .no-now .seg.day.now { fill: var(--day-a); } .no-now .seg.day.now.alt { fill: var(--day-b); }
@@ -646,7 +645,7 @@ body.journeying #geoBanner, body.intro-on #geoBanner { display: none; }
 .no-now .rnum.now { fill: var(--day-ink); font-weight: 500; }
 .ghost-words text { opacity: 1 !important; }
 .ghost-words path, .ghost-words circle, .ghost-words line, .ghost-words rect, .ghost-words image, .ghost-words polygon, .ghost-words ellipse { display: none; }
-.ghost-mid { -webkit-mask-image: radial-gradient(circle closest-side, #000 68.4%, transparent 68.8%); mask-image: radial-gradient(circle closest-side, #000 68.4%, transparent 68.8%); }
+
 
 /* Tidy: nothing spills out of its box */
 .facets > div, .facets b, .facets small { overflow-wrap: anywhere; hyphens: auto; }

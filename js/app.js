@@ -40,7 +40,7 @@ function jewishTime(t, jd) {
 
 // ---------- Navigation ----------
 // While a step is moving, a new tap does not wait: the step jumps straight to its end, and the new one begins.
-let busyUntil = 0, goldTimer = 0;
+let busyUntil = 0, goldTimer = 0, cutN = 0;
 const busy = () => performance.now() < busyUntil;
 const hold = (ms) => { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) busyUntil = performance.now() + ms; };
 function settle() {
@@ -110,16 +110,20 @@ function animateV2(dir) {
   // The dial you leave. Stepping in: its ring fades a little as it expands, turns gently, and settles
   // exactly where it now belongs as the first outer ring; its middle melts away. Stepping out: it sinks.
   const to = ringT[g.level];
-  const mk = (cls, html = g.html) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; w.appendChild(d); return d; };
+  // Copies of a circle, cut inside the drawing (a band, or the middle) rather than with a CSS mask, which costs a whole extra layer.
+  const cut = (html, d) => html.replace(/^(<svg[^>]*>)([\s\S]*)(<\/svg>)$/, (m, a, body, z) => `${a}<defs><clipPath id="cut${++cutN}"><path clip-rule="evenodd" d="${d}"/></clipPath></defs><g clip-path="url(#cut${cutN})">${body}</g>${z}`);
+  const mk = (cls, html = g.html) => {
+    const d = document.createElement('div'); d.className = cls;
+    d.innerHTML = /ghost-band/.test(cls) ? cut(html, BAND) : /ghost-mid/.test(cls) ? cut(html, ring(157.8)) : html;
+    w.appendChild(d); return d;
+  };
   const gone = (anim, el) => anim.finished.then(() => el.remove(), () => el.remove());
   if (dir === 'in' && to) {
     // Its ring band, with no gold "now" (that belongs to the new circle), moves out and turns into its outer place,
     // dimming as it goes, then hands over to the real ring. Its words fade early and come back, upright, with the real ring.
-    const ring = mk('ring-ghost ghost-band no-now'), words = mk('ring-ghost ghost-band ghost-words no-now'), mid = mk('ring-ghost ghost-mid');
+    const ring = mk('ring-ghost ghost-band no-now'), mid = mk('ring-ghost ghost-mid');
     const end = `rotate(${to.rot.toFixed(2)}deg) scale(${to.s.toFixed(4)})`;
     gone(ring.animate([{ transform: 'none', opacity: 1, easing: calm }, { transform: end, opacity: 0.4, offset: 0.82 }, { transform: end, opacity: 0 }], { ...opts, easing: 'linear' }), ring);
-    gone(words.animate([{ transform: 'none', opacity: 1, easing: calm }, { transform: end, opacity: 0, offset: 0.82 }, { transform: end, opacity: 0 }], { ...opts, easing: 'linear' }), words);
-    words.animate([{ opacity: 1 }, { opacity: 0, offset: 0.22 }, { opacity: 0 }], { duration: STEP, fill: 'both', composite: 'replace' });
     gone(mid.animate([{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }], opts), mid);
     // The real ring takes over only once the old one has arrived.
     document.querySelectorAll(`#halos .or2[data-level="${g.level}"]`).forEach((el) => {
@@ -502,6 +506,8 @@ function levelFace(level, rot = 0) {
 }
 
 /** V2: the outer circles as real clock faces, turned so every "now" lies on the hand's line. */
+const ring = (r) => `M${200 - r} 200a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+const BAND = ring(188.1) + ring(157.8);
 function outerRingsV2() {
   ringT = {};
   if (view.mode !== 'time' || (journey && journey.step === 'nest')) return '';
@@ -510,7 +516,8 @@ function outerRingsV2() {
   if (idx <= 0) return '';
   const hand = lastMarker ?? 0;
   let outer = 188, html = '';
-  OUTER.slice(0, idx).reverse().forEach((L, k) => {
+  // At most the three nearest circles: each outer ring is a large picture, and phones have little memory to spare.
+  OUTER.slice(0, idx).reverse().slice(0, 3).forEach((L, k) => {
     const s = (outer + (k ? 6 : 10)) / 158;
     outer = 188 * s;
     let face = levelFace(L);
@@ -520,7 +527,7 @@ function outerRingsV2() {
     ringT[L] = { rot, s };
     const upright = face.html.replace(/<text([^>]*?) x="(-?[\d.]+)" y="(-?[\d.]+)"([^>]*?)>/g, (m, a1, tx, ty, a2) => /transform=/.test(a1 + a2) ? m : `<text${a1} x="${tx}" y="${ty}"${a2} transform="rotate(${(-rot).toFixed(2)} ${tx} ${ty})">`);
     face.html = upright;
-    html += `<div class="or2" data-level="${L}" style="--o:${[0.36, 0.26, 0.2, 0.15, 0.11, 0.08][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
+    html += `<div class="or2" data-level="${L}" style="--o:${[0.36, 0.26, 0.2, 0.15, 0.11, 0.08][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460"><defs><clipPath id="orc-${L}"><path clip-rule="evenodd" d="${BAND}"/></clipPath></defs><g clip-path="url(#orc-${L})">${face.html.replace(/ id="[^"]*"/g, '')}</g></svg></div>`;
   });
   if (lastMarker != null) {
     const a = (hand * Math.PI) / 180, p = (r) => `${(200 + r * Math.sin(a)).toFixed(1)} ${(200 - r * Math.cos(a)).toFixed(1)}`;
