@@ -693,3 +693,5 @@ body.intro-on #dialWrap { opacity: 0; }
 .fly-l { fill: var(--day-ink); font-size: 15px; }
 .ring-ghost text { opacity: 0; }
 body.journeying #geoBanner, body.intro-on #geoBanner { display: none; }
+
+.halos-ghost { position: absolute; inset: 0; pointer-events: none; z-index: 0; }

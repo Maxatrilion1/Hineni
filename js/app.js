@@ -91,37 +91,47 @@ function animate(dir, newMarker) {
   }
 }
 
-/** V2 motion: every face moves from where it was to where it now belongs; the old dial expands into the first outer ring. */
+/** V2 motion, in two calm stages and with no turning:
+ *  1. the "now" block closes into a full ring while everything holds still (morphBlock);
+ *  2. the old circle expands outward into the first outer ring, pushing the outer rings out,
+ *     while the new circle fades in at the centre. Ring angles change by cross-fading, never by spinning. */
+const STAGE = 1200, SETTLE = 1500;
 function animateV2(dir) {
   const g = pendingGhost; pendingGhost = null;
   if (!g || !(dir === 'in' || dir === 'out') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const opts = { duration: 2200, easing: 'cubic-bezier(.35, .1, .2, 1)' };
-  const T = (t) => `rotate(${t.rot.toFixed(2)}deg) scale(${t.s.toFixed(4)})`;
-  const was = g.T, w = $('dialWrap');
-  // The rings: each from its old place.
-  document.querySelectorAll('#halos .or2').forEach((el) => {
-    const L = el.dataset.level, to = ringT[L], from = was[L];
-    if (from) el.animate([{ transform: T(from) }, { transform: T(to) }], opts);
-    else el.animate([{ transform: T({ rot: to.rot, s: to.s * 1.15 }), opacity: 0 }, { transform: T(to), opacity: 1 }], opts);
+  const w = $('dialWrap'), delay = dir === 'in' && pendingBlock ? STAGE : 0;
+  const opts = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'both' };
+  const S = (s) => `scale(${s.toFixed(4)})`;
+  // The old outer rings: pushed out (in) or drawn in (out), fading.
+  const old = document.createElement('div');
+  old.className = 'halos-ghost';
+  old.innerHTML = g.halos || '';
+  w.prepend(old);
+  old.querySelectorAll('.or2').forEach((el) => {
+    const L = el.dataset.level, t = g.T[L];
+    if (!t) return el.remove();
+    const f = dir === 'in' ? 1.22 : 1 / 1.22;
+    el.style.transform = `rotate(${t.rot.toFixed(2)}deg) ${S(t.s)}`;
+    el.animate([{ transform: `rotate(${t.rot.toFixed(2)}deg) ${S(t.s)}`, opacity: 1 }, { transform: `rotate(${t.rot.toFixed(2)}deg) ${S(t.s * f)}`, opacity: 0 }], opts);
   });
-  document.querySelectorAll('#halos .or-hand').forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }], opts));
-  // The main dial: from where its circle sat, or out of the middle.
-  const from = was[view.level];
+  old.querySelectorAll('.or-hand').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { ...opts, duration: 400 }));
+  setTimeout(() => old.remove(), delay + SETTLE + 60);
+  // The new outer rings: settle into place.
+  document.querySelectorAll('#halos .or2, #halos .or-hand').forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }], opts));
+  // The dial you leave: expands into the outer ring (in), or sinks to the middle (out).
+  const ghost = document.createElement('div');
+  ghost.className = 'ring-ghost';
+  ghost.innerHTML = g.html;
+  w.appendChild(ghost);
+  const s0 = ringT[g.level]?.s ?? 1.25;
+  ghost.animate(dir === 'in'
+    ? [{ transform: 'none', opacity: 1 }, { transform: S(s0), opacity: 0 }]
+    : [{ transform: 'none', opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], opts).finished.then(() => ghost.remove(), () => ghost.remove());
+  // The new dial: in from slightly smaller (in), or down from its outer-ring size (out).
+  const from = dir === 'in' ? 'scale(.9)' : S(g.T[view.level]?.s ?? 1.25);
   for (const el of [$('dial'), $('centerBtn')]) {
     el.style.transformOrigin = '50% 50%';
-    el.animate(from ? [{ transform: T(from), opacity: el.id === 'centerBtn' ? 0 : 1 }, { transform: 'none', opacity: 1 }]
-      : [{ transform: 'scale(.2)', opacity: 0 }, { transform: 'none', opacity: 1 }], opts);
-  }
-  // The dial you left: its middle fades as it expands into its ring (in), or it sinks into the middle (out).
-  if (!ringT[g.level] || dir === 'in') {
-    const ghost = document.createElement('div');
-    ghost.className = 'ring-ghost';
-    ghost.innerHTML = g.html;
-    w.appendChild(ghost);
-    const to = ringT[g.level];
-    const frames = to ? [{ transform: 'none', opacity: 1 }, { transform: T(to), opacity: 0, offset: 0.55 }, { transform: T(to), opacity: 0 }]
-      : [{ transform: 'none', opacity: 1 }, { transform: 'scale(.15)', opacity: 0 }];
-    ghost.animate(frames, opts).finished.then(() => ghost.remove(), () => ghost.remove());
+    el.animate([{ transform: from, opacity: 0 }, { opacity: 0, offset: 0.2 }, { transform: 'none', opacity: 1 }], opts);
   }
 }
 
@@ -142,12 +152,12 @@ function morphBlock() {
   const path = document.createElementNS(SVGNS, 'path');
   ov.appendChild(path);
   $('dialWrap').appendChild(ov);
-  const mid = (a[0] + a[1]) / 2, w0 = a[1] - a[0], t0 = performance.now(), D = 2200;
+  const mid = (a[0] + a[1]) / 2, w0 = a[1] - a[0], t0 = performance.now(), D = STAGE + 500;
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   (function step(now) {
-    const p = Math.min(1, (now - t0) / D), e = ease(p), w = w0 + (359.9 - w0) * e;
+    const p = Math.min(1, (now - t0) / D), e = ease(Math.min(1, (now - t0) / STAGE)), w = w0 + (359.9 - w0) * e;
     path.setAttribute('d', sector(R1, R2, mid - w / 2, mid + w / 2));
-    ov.style.opacity = p < 0.75 ? 0.95 : 0.95 * (1 - (p - 0.75) / 0.25);
+    ov.style.opacity = now - t0 < STAGE ? 0.95 : 0.95 * Math.max(0, 1 - (now - t0 - STAGE) / 500);
     if (p < 1) requestAnimationFrame(step); else ov.remove();
   })(t0);
 }
@@ -179,8 +189,8 @@ function fadeOld() {
   ghost.className = 'ring-ghost';
   ghost.innerHTML = g.html;
   $('dialWrap').appendChild(ghost);
-  ghost.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.06)' }], { duration: 1200, easing: 'ease-out', fill: 'forwards' }).finished.then(() => ghost.remove(), () => ghost.remove());
-  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.45 }, { opacity: 1 }], { duration: 2200, easing: 'ease' });
+  ghost.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.08)' }], { duration: SETTLE, delay: STAGE, easing: 'ease-out', fill: 'both' }).finished.then(() => ghost.remove(), () => ghost.remove());
+  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: SETTLE, delay: STAGE, easing: 'ease', fill: 'both' });
 }
 /** The old circle's letters travel to the new circle's places, fading as the new letters arrive. */
 function flyLetters(dir) {
@@ -193,7 +203,7 @@ function flyLetters(dir) {
   ov.setAttribute('viewBox', '-30 -30 460 460');
   ov.setAttribute('class', 'fly');
   $('dialWrap').appendChild(ov);
-  const D = 2200, toAng = to.map(ang);
+  const D = SETTLE, toAng = to.map(ang), delay = dir === 'in' ? STAGE : 0;
   from.forEach((p) => {
     // Each letter goes to the new place nearest its own angle, so the travel is short and gentle.
     const a = ang(p);
@@ -205,11 +215,11 @@ function flyLetters(dir) {
     t.textContent = p.s;
     ov.appendChild(t);
     t.animate([{ transform: 'translate(0px, 0px)', opacity: 1 }, { opacity: 1, offset: 0.55 }, { transform: `translate(${(q.x - p.x).toFixed(1)}px, ${(q.y - p.y).toFixed(1)}px)`, opacity: 0 }],
-      { duration: D, easing: 'cubic-bezier(.45, .05, .25, 1)', fill: 'forwards' });
+      { duration: D, delay, easing: 'cubic-bezier(.45, .05, .25, 1)', fill: 'both' });
   });
   // The new letters come in as the old ones arrive.
-  $('dial').querySelectorAll('text.rnum, text.num').forEach((t) => t.animate([{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }], { duration: D, easing: 'ease' }));
-  setTimeout(() => ov.remove(), D + 60);
+  $('dial').querySelectorAll('text.rnum, text.num').forEach((t) => t.animate([{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }], { duration: D, delay, easing: 'ease', fill: 'both' }));
+  setTimeout(() => ov.remove(), delay + D + 60);
 }
 
 function renderVer() {
@@ -222,7 +232,7 @@ function render(dir) {
     pendingLetters = [...$('dial').querySelectorAll('text.rnum, text.num')].map((t) => ({ x: +t.getAttribute('x'), y: +t.getAttribute('y'), s: t.textContent, he: true }));
     const nb = $('dial').querySelector('.rs.now[data-a], .seg.now[data-a]');
     pendingBlock = dir === 'in' && nb ? nb.dataset.a.split(',').map(Number) : null;
-    pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), center: $('centerBtn').innerHTML, marker: lastMarker, level: shownLevel, T: { ...ringT, [shownLevel]: { rot: 0, s: 1 } } };
+    pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), center: $('centerBtn').innerHTML, halos: $('halos').innerHTML, marker: lastMarker, level: shownLevel, T: { ...ringT, [shownLevel]: { rot: 0, s: 1 } } };
   }
   if (view.follow) view.focus = now;
   x = context(view.focus, now, loc, opts());

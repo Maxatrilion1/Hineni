@@ -47,8 +47,8 @@ export function intro(target, { onLand, dots = [] } = {}) {
       const phi = lerp(0.3, Math.PI / 2, e);                 // tilt: from nearly side-on to straight down the axis
       const pitch = lerp(R0 * 0.82, 0, e);
       const f = R0 * 4.2;
-      if (phase === 'idle') { spinAt = time * 0.05; riseAt = (1 - ((time * 0.025) % 1)) % 1; } // slow; the spiral travels down, so you rise through time
-      else spinAt = spinFrom + 0.05 * 3.8 * (p - (p * p) / 2); // eases to a stop, never backwards
+      if (phase === 'idle') { spinAt = 0; riseAt = (1 - ((time * 0.02) % 1)) % 1; } // no turning: the spiral only drifts down, so you rise through time
+      else spinAt = spinFrom; // still
       const spin = spinAt, rise = riseAt;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -120,8 +120,8 @@ export function intro(target, { onLand, dots = [] } = {}) {
         let al = (1 - e) * Math.min(1, Math.min(Y - H * 0.24, H - Y) / (H * 0.16)) + e;
         if (e < 0.5 && Math.sin(a) > 0) al *= 0.45;
         if (al <= 0.02) return;
-        const r = lerp(band * sc * 0.42, 6 * G.k, e);
-        ctx.globalAlpha = Math.max(0, Math.min(1, al));
+        const r = lerp(band * sc * 0.22, 6 * G.k, e);            // quiet at first, full size as they land
+        ctx.globalAlpha = Math.max(0, Math.min(1, al * lerp(0.35, 1, e)));
         ctx.fillStyle = '#fbf6ea'; ctx.strokeStyle = '#a07a2c'; ctx.lineWidth = Math.max(1.5, r * 0.4);
         ctx.beginPath(); ctx.arc(X, Y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       });
@@ -146,7 +146,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
       dots.forEach((frac, i) => {
         const theta = frac * 2 * Math.PI, a = theta - Math.PI / 2;
         const cIdle = i - 3 + ((frac + 0.37 * i) % 1) - 0.5;
-        let c = (a - (spinFrom + 0.05 * 3.8 * 0.5)) / (2 * Math.PI) + riseAt;       // one solution; shift by whole turns to the nearest
+        let c = (a - spinFrom) / (2 * Math.PI) + riseAt;       // one solution; shift by whole turns to the nearest
         c += Math.round(cIdle - c);
         cFinal[i] = c;
       });
