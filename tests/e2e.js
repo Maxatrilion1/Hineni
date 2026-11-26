@@ -22,13 +22,31 @@ const fails = [];
   const center = (sel) => p.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; if (!e.closest('#dialWrap')) e.scrollIntoView({ block: 'center', inline: 'center' }); const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, sel);
   const tap = async (sel) => { await center(sel); await p.waitForTimeout(250); const c = await center(sel); if (!c) { fails.push(`no ${sel} to tap`); return false; } await p.mouse.click(c[0], c[1]); return true; };
   const outside = async () => { await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(200); const r = await p.evaluate(() => { const d = document.getElementById('dial').getBoundingClientRect(); return [8, d.top + d.height / 2]; }); await p.mouse.click(r[0], r[1]); };
+  // Layout: text inside its boxes, nothing wider than the screen, words inside their blocks on the dial.
+  const layout = () => p.evaluate(() => {
+    const bad = [];
+    const vis = (el) => el.offsetParent || el.tagName === 'svg';
+    document.querySelectorAll('.info *, .journey *, dialog[open] *, .top *').forEach((el) => {
+      if (!vis(el)) return;
+      const cs = getComputedStyle(el);
+      if (el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0 && !['auto', 'hidden', 'clip', 'scroll'].includes(cs.overflowX) && cs.textOverflow !== 'ellipsis') bad.push(`spills: ${el.tagName}.${el.className} "${(el.textContent || '').trim().slice(0, 30)}"`);
+    });
+    document.querySelectorAll('.pcard, .kv, .btn, .pill, .lad, .facets > div, .seals > div, .set-row, .opt, .journey').forEach((box) => {
+      if (!vis(box)) return;
+      const b = box.getBoundingClientRect();
+      box.querySelectorAll('*').forEach((c) => { const r = c.getBoundingClientRect(); if (r.width && r.height && (r.right > b.right + 1.5 || r.left < b.left - 1.5) && !c.closest('.ladder')) bad.push(`out of box ${box.className.split(' ')[0]}: "${(c.textContent || '').trim().slice(0, 30)}"`); });
+    });
+    if (document.documentElement.scrollWidth > innerWidth + 1) bad.push('page wider than the screen');
+    return [...new Set(bad)].slice(0, 6);
+  });
   const check = async (label, want, wait = 4600) => {
     let m = 0; for (let t = 0; t < wait; t += 400) { await p.waitForTimeout(400); m = Math.max(m, await mem()); }
     peak = Math.max(peak, m);
     const s = await state(), bad = Object.entries(want).filter(([k, v]) => s[k] !== v);
     await p.screenshot({ path: `${OUT}/${String(++n).padStart(2, '0')}-${label}.png` });
-    const line = `${label.padEnd(22)} ${bad.length ? 'FAIL ' + JSON.stringify(s) : 'ok'}  ~${m} MB`;
-    if (bad.length) fails.push(line);
+    const lay = await layout();
+    const line = `${label.padEnd(22)} ${bad.length ? 'FAIL ' + JSON.stringify(s) : 'ok'}  ~${m} MB${lay.length ? '  LAYOUT: ' + lay.join(' | ') : ''}`;
+    if (bad.length || lay.length) fails.push(line);
     console.log(line);
   };
   await p.goto('http://localhost:8787/'); await p.waitForTimeout(2000);
@@ -62,6 +80,7 @@ const fails = [];
   await tap('#copyWidget'); await p.waitForTimeout(1000);
   const clip = await p.evaluate(() => navigator.clipboard.readText().then((t) => t.length));
   if (clip < 5000) fails.push('copy widget: clipboard empty');
+  const setLay = await layout(); if (setLay.length) fails.push('settings LAYOUT: ' + setLay.join(' | '));
   await p.screenshot({ path: `${OUT}/${String(++n).padStart(2, '0')}-settings.png` });
   console.log('settings'.padEnd(22), ver === 2 && clip > 5000 ? 'ok' : 'FAIL', `(widget copied: ${clip} characters)`);
   await tap('#donateBtn'); await p.waitForTimeout(600);
