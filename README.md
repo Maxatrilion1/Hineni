@@ -14,7 +14,7 @@ The clock's job is orientation: where you stand in Jewish time and space. It is 
 - **Zoom out**: week (the days of Creation, Shabbos at the top), month (the moon's face day by day), year (the months with their tribes and flags), shemitah (the seven years and their tithes), and the 6,000 years (Sanhedrin 97a's three eras and the cosmic week).
 - **The path** above the dial (and the scale under the dial) shows where you are; ‹ › walk sideways, and Back to now returns.
 - **Space**: the dial becomes the camp around the Mishkan, oriented to north (or turning with your phone), with the dot on the rim pointing to Yerushalayim and the tribes of this hour and month marked.
-- **Medallions** for the twelve tribes and the seven days: deep grounds, gold silhouettes, a fine rim, matched to the Midrash and to Bereishis 1.
+- **Mosaic medallions** for the twelve tribes and the seven days, in the manner of an ancient synagogue floor: earthy stone grounds, ochre figures, fine tesserae, a tiled border, matched to the Midrash and to Bereishis 1.
 - **The scale** under the dial shows every circle at once: millennium, shemitah, year, month, week, day, hour. Tap a row to turn the dial into that circle.
 - **Zmanim** (in the day view): each in Jewish time ("3:00 of the day") and civil time, with Shabbos, Yom Tov and fast times.
 

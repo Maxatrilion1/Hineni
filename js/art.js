@@ -1,5 +1,5 @@
-// Medallions: a deep, softly lit disc with a fine gold rim, and a refined silhouette
-// in warm gold (or bronze on light grounds). 64×64 grid.
+// Medallions in the manner of an ancient synagogue mosaic: earthy stone grounds, ochre figures
+// outlined in umber, fine tesserae and a tiled border. 64×64 grid.
 // Tribes follow the flags of Bamidbar Rabbah 2:7; days follow Bereishis 1–2.
 
 let uid = 0;
@@ -171,10 +171,15 @@ const ART = {
     <path d="M23 20c4 2 5 6 3 9s2 5 6 5 4 5 0 9M38 17c-2 3 1 5 5 5s4 3 2 6" fill="none" stroke="${L}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>` },
 };
 
+// Ancient mosaic palette: ochre and cream figures, umber detail, on earthy stone grounds.
 const INK = {
-  gold: ['#fbf1d4', '#dcb466', '#7a5525', '#fff8e6'],
-  bronze: ['#c99a4f', '#8a6028', '#5a3c18', '#f3e3c0'],
+  gold: ['#f1e3c0', '#c99f62', '#5e3a1e', '#f8eedb'],
+  bronze: ['#b88752', '#7c5428', '#4a2e14', '#efdcb6'],
 };
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const toHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+/** Pull a color toward weathered stone, so grounds read as old mosaic rather than paint. */
+const stone = (h, k = 0.45) => { const a = hex(h), s = [122, 104, 82]; return toHex(a.map((v, i) => v + (s[i] - v) * k)); };
 
 /** A medallion as a standalone SVG. */
 export function art(name, size = 48, cls = '') {
@@ -182,19 +187,25 @@ export function art(name, size = 48, cls = '') {
   if (!a) return '';
   const id = `m${++uid}`;
   const [g1, g2, D, L] = INK[a.ink || 'gold'];
+  const bg0 = stone(a.bg[0]), bg1 = stone(a.bg[1], 0.35);
+  const tile = (r, w, c, dash) => `<circle cx="32" cy="32" r="${r}" fill="none" stroke="${c}" stroke-width="${w}" stroke-dasharray="${dash}"/>`;
   const ring = a.ring
-    ? a.ring.map((c, i) => { const a1 = (i / a.ring.length) * Math.PI * 2, a2 = ((i + 1) / a.ring.length) * Math.PI * 2, p = (t) => `${P(32 + 30.6 * Math.sin(t))} ${P(32 - 30.6 * Math.cos(t))}`; return `<path d="M${p(a1)} A30.6 30.6 0 0 1 ${p(a2)}" stroke="${c}" stroke-width="2.4" fill="none"/>`; }).join('')
-    : `<circle cx="32" cy="32" r="30.6" fill="none" stroke="#d6b46a" stroke-width="1.6"/>`;
+    ? a.ring.map((c, i) => { const a1 = (i / a.ring.length) * Math.PI * 2, a2 = ((i + 1) / a.ring.length) * Math.PI * 2, p = (t) => `${P(32 + 30.4 * Math.sin(t))} ${P(32 - 30.4 * Math.cos(t))}`; return `<path d="M${p(a1)} A30.4 30.4 0 0 1 ${p(a2)}" stroke="${stone(c, .3)}" stroke-width="2.6" fill="none" stroke-dasharray="1.5 .7"/>`; }).join('')
+    : tile(30.4, 2.6, '#c49a5c', '1.5 .7');
   return `<svg class="art ${cls}" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true">
     <defs>
-      <radialGradient id="bg${id}" cx=".38" cy=".3" r=".85"><stop offset="0" stop-color="${a.bg[0]}"/><stop offset="1" stop-color="${a.bg[1]}"/></radialGradient>
-      <linearGradient id="ink${id}" x1="0" y1="0" x2=".4" y2="1"><stop offset="0" stop-color="${g1}"/><stop offset="1" stop-color="${g2}"/></linearGradient>
-      <clipPath id="c${id}"><circle cx="32" cy="32" r="29.6"/></clipPath>
+      <radialGradient id="bg${id}" cx=".45" cy=".4" r=".8"><stop offset="0" stop-color="${bg0}"/><stop offset="1" stop-color="${bg1}"/></radialGradient>
+      <linearGradient id="ink${id}" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="${g1}"/><stop offset="1" stop-color="${g2}"/></linearGradient>
+      <pattern id="t${id}" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(8)"><path d="M0 0H2.4V2.4" fill="none" stroke="#2a1c10" stroke-width=".32" opacity=".55"/></pattern>
+      <filter id="g${id}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${uid % 9}"/><feColorMatrix values="0 0 0 0 .2  0 0 0 0 .14  0 0 0 0 .08  0 0 0 .55 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+      <clipPath id="c${id}"><circle cx="32" cy="32" r="29"/></clipPath>
     </defs>
-    <circle cx="32" cy="32" r="31.8" fill="#fffaf0" opacity=".9"/>
-    <g clip-path="url(#c${id})"><rect width="64" height="64" fill="url(#bg${id})"/>${a.body(`url(#ink${id})`, D, L, id)}
-      <ellipse cx="24" cy="12" rx="22" ry="9" fill="#fff" opacity=".08"/></g>
-    ${ring}<circle cx="32" cy="32" r="28.2" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width=".6"/></svg>`;
+    <circle cx="32" cy="32" r="31.8" fill="#3a2a1c"/>
+    <g clip-path="url(#c${id})"><rect width="64" height="64" fill="url(#bg${id})"/>
+      <g stroke="${D}" stroke-width=".5" stroke-opacity=".55">${a.body(`url(#ink${id})`, D, L, id)}</g>
+      <rect width="64" height="64" fill="url(#t${id})" opacity=".35"/>
+      <rect width="64" height="64" fill="#fff" filter="url(#g${id})" opacity=".5"/></g>
+    ${ring}<circle cx="32" cy="32" r="29" fill="none" stroke="#2a1c10" stroke-width=".8" opacity=".6"/></svg>`;
 }
 
 export function artAt(name, x, y, size, cls = '') {
