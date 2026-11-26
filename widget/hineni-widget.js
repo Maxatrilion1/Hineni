@@ -49,7 +49,8 @@ function hebrewDate(d) {
   const p = {};
   new Intl.DateTimeFormat('en-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(d).forEach((x) => (p[x.type] = x.value));
   const m = MONTHS[p.month] || [p.month, p.month];
-  return { day: +p.day, month: m[0], he: `${gem(+p.day)} ${m[1]} ${gem(+p.year % 1000)}` };
+  const y = +String(p.year).replace(/\D/g, '');
+  return { day: +p.day, month: m[0], he: `${gem(+p.day)} ${m[1]} ${gem(y % 1000)}` };
 }
 const WEEKDAY_HE = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת קודש'];
 
@@ -81,7 +82,7 @@ function compute(now, loc) {
   const dayNum = D.getDay() + 1;
   // At sunset this Jewish day ends and the next begins.
   const after = dayNum === 6 ? 'Shabbos begins' : dayNum === 7 ? 'the 1st day begins' : `the ${ord(dayNum + 1)} day begins`;
-  return { isDay, hour, frac, angle: angle % 360, tribe: TRIBES[hour - 1], hd, weekday: WEEKDAY_HE[D.getDay()], dayNum, sunset: day.shkiah, after, year: +new Intl.DateTimeFormat('en-u-ca-hebrew', { year: 'numeric' }).format(D), hourEnd, next, minute: Math.min(60, Math.floor(frac * 60) + 1), minLeft: Math.round((hourEnd - now) / 60000) };
+  return { isDay, hour, frac, angle: angle % 360, tribe: TRIBES[hour - 1], hd, weekday: WEEKDAY_HE[D.getDay()], dayNum, sunset: day.shkiah, after, year: +String(new Intl.DateTimeFormat('en-u-ca-hebrew', { year: 'numeric' }).format(D)).replace(/\D/g, ''), hourEnd, next, minute: Math.min(60, Math.floor(frac * 60) + 1), minLeft: Math.round((hourEnd - now) / 60000) };
 }
 
 // ---------- Drawing (Scriptable) ----------
@@ -202,7 +203,13 @@ async function build() {
 }
 
 if (typeof config !== 'undefined') {
-  const w = await build();
+  let w;
+  try { w = await build(); } catch (e) {
+    // Never a blank tile: if something goes wrong, the widget says what.
+    w = new ListWidget(); w.url = SITE;
+    const t = w.addText('Hineni could not load'); t.font = Font.boldSystemFont(13);
+    const d = w.addText(String(e && e.message || e)); d.font = Font.systemFont(10); d.textColor = Color.gray();
+  }
   if (config.runsInWidget) Script.setWidget(w); else await w.presentMedium();
   Script.complete();
 } else if (typeof module !== 'undefined') {
