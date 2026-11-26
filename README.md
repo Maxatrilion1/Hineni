@@ -4,7 +4,7 @@
 
 ## What it shows
 
-- **First visit: a journey from the outside in.** The 6th millennium, then the shemitah cycle, the year, the month, the week, and finally Today, live, ending with an invitation to enter the hour you're in. It can be replayed from Settings.
+- **First visit: the journey.** It opens on a spiral of time rising slowly through the screen. Begin tilts it until you look down its axis; it closes into a circle and becomes the first ring, the 6th millennium. Tap the circle to step in, to the shemitah cycle, the year, the month, the week and Today, live, then into the hour. Each circle you came from stays around the current one as a thick outer ring. Replay it from Settings → The journey.
 - **The parshah of the week** on the week circle, for Israel and the diaspora. Worked out from the calendar itself and checked Shabbos by Shabbos against Hebcal for 2000–2080 (8,348 readings, no differences).
 - **A new hour** is marked gently: the center medallion turns to the next tribe and a small note slides up.
 - **Gestures**: swipe left from the middle of the dial to step in one circle; swipe in from the edge of the screen to step out one.
@@ -16,7 +16,7 @@ The clock's job is orientation: where you stand in Jewish time and space. It is 
 - **Inside an hour**: the ring is the hour itself, 60 zmani minutes filling as it passes. The tribe's emblem and name sit in the center; its month, letter, sense and mazal around it. Below: Yaakov's or Moshe's blessing, the tribe's story, flag, name, mother, stone, where it camped, the hour's planet, and the hour in Jewish and civil time.
 - **Zoom out**: week (the days of Creation, Shabbos at the top), month (the moon's face day by day), year (the months with their tribes and flags), shemitah (the seven years and their tithes), and the 6,000 years (Sanhedrin 97a's three eras and the cosmic week).
 - **The path** above the dial (and the scale under the dial) shows where you are; ‹ › walk sideways, and Back to now returns.
-- **Space**: the dial becomes the camp around the Mishkan, oriented to north (or turning with your phone), with the dot on the rim pointing to Yerushalayim and the tribes of this hour and month marked.
+- **Space**: the dial becomes the camp around the Mishkan with the Beis Hamikdash at its center, the dot on the rim pointing to Yerushalayim, and the letter of each direction from Sefer Yetzirah 4:3 (פ north, ד east, ר south, כ west, ב above, ג below, ת the Holy Palace in the middle). Drag to turn it, face Yerushalayim, or connect it to the phone's compass.
 - **Mosaic medallions** for the twelve tribes and the seven days, in the manner of an ancient synagogue floor: earthy stone grounds, ochre figures, fine tesserae, a tiled border, matched to the Midrash and to Bereishis 1.
 - **The scale** under the dial shows every circle at once: millennium, shemitah, year, month, week, day, hour. Tap a row to turn the dial into that circle.
 - **Zmanim** (in the day view): each in Jewish time ("3:00 of the day") and civil time, with Shabbos, Yom Tov and fast times.
@@ -55,6 +55,7 @@ Any static host works (GitHub Pages, Netlify, Cloudflare Pages). On HTTPS it ins
 - `js/zmanim.js`: zmanim, the Jewish-day model, dial angles
 - `js/hebrew.js`: Hebrew date (built-in browser calendar), gematria, month data
 - `js/calendar.js`: holidays, Omer, molad, Kiddush Levanah, planetary hours
+- `js/intro.js`: the opening spiral of time
 - `js/levels.js`: the zoom levels, their rings and panels
 - `js/art.js`: the illustrated badges
 - `js/lore.js`: tribes, days, direction to Yerushalayim

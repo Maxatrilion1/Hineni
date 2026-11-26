@@ -2,6 +2,7 @@ import { hourOf, civilDate, addDays, angleOf, SHITAH } from './zmanim.js';
 import { gematria, WEEKDAYS, hebrewDate } from './hebrew.js';
 import { buildDial, updateDial } from './dial.js';
 import { paintSky } from './sky.js';
+import { intro } from './intro.js';
 import { art } from './art.js';
 import { DAYS } from './lore.js';
 import { monthLore } from './hebrew.js';
@@ -60,7 +61,7 @@ function zoomTo(level) {
 
 // ---------- Render ----------
 // The next circle grows out of the segment you step into; stepping out, the old circle sinks back into its place.
-let lastMarker = null, pendingGhost = null;
+let lastMarker = null, pendingGhost = null, prevRingHtml = null;
 const DUR = 1500;
 function originOf(angle) {
   if (angle == null) return '50% 50%';
@@ -91,7 +92,10 @@ function animate(dir, newMarker) {
 
 function render(dir) {
   const now = Date.now();
-  if ((dir === 'in' || dir === 'out') && $('dial').firstChild) pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), marker: lastMarker };
+  if ((dir === 'in' || dir === 'out') && $('dial').firstChild) {
+    pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), marker: lastMarker };
+    prevRingHtml = dir === 'in' ? pendingGhost.html : null;
+  }
   if (view.follow) view.focus = now;
   x = context(view.focus, now, loc, opts());
   renderedKey = key();
@@ -153,14 +157,14 @@ function renderSpace() {
     $('panel').innerHTML = v.panel;
     $('faceJ').addEventListener('click', () => { rotMode = 'jer'; renderSpace(); });
     $('northUp').addEventListener('click', () => { rotMode = 'north'; rot = 0; renderSpace(); });
-    $('compassBtn').addEventListener('click', startCompass);
+    $('compassBtn')?.addEventListener('click', startCompass);
   } else {
     const fresh = document.createElement('div');
     fresh.innerHTML = v.panel;
     $('panel').querySelector('.pcard').replaceWith(fresh.querySelector('.pcard'));
     $('faceJ').addEventListener('click', () => { rotMode = 'jer'; renderSpace(); });
     $('northUp').addEventListener('click', () => { rotMode = 'north'; rot = 0; renderSpace(); });
-    $('compassBtn').addEventListener('click', startCompass);
+    $('compassBtn')?.addEventListener('click', startCompass);
   }
 }
 const spaceBearing = () => { const r = Math.PI / 180, T = { lat: 31.7781, lon: 35.2354 }; const y = Math.sin((T.lon - loc.lon) * r) * Math.cos(T.lat * r); const xx = Math.cos(loc.lat * r) * Math.sin(T.lat * r) - Math.sin(loc.lat * r) * Math.cos(T.lat * r) * Math.cos((T.lon - loc.lon) * r); return ((Math.atan2(y, xx) / r) + 360) % 360; };
@@ -263,6 +267,7 @@ function journeyCopy() {
   return lore[journey.level];
 }
 function showJourney() {
+  if (document.body.classList.contains('intro-on')) return;
   const i = JOURNEY.indexOf(view.level);
   journey.level = view.level;
   const { hd, wd } = x;
@@ -272,18 +277,22 @@ function showJourney() {
   $('jBig').innerHTML = copy[0];
   $('jText').textContent = copy[1];
   $('jDots').innerHTML = JOURNEY.map((l, k) => `<i class="${k < i ? 'done' : ''}${k === i ? ' at' : ''}"></i>`).join('');
-  $('jNext').textContent = view.level === 'day' ? 'Enter this hour' : 'Step in';
+  $('jTap').textContent = view.level === 'day' ? 'Tap the circle to enter this hour' : 'Tap the circle';
   if ($('journey').hidden) { $('journey').classList.remove('pop'); void $('journey').offsetWidth; $('journey').classList.add('pop'); }
   $('journey').hidden = false;
   document.body.classList.add('journeying');
-  // One faint ring for every circle you've already passed through, evenly spaced.
-  $('halos').innerHTML = Array.from({ length: i }, (_, k) => `<i style="--k:${k + 1}"></i>`).join('');
+  // The circle you came from stays around this one: a thick outer ring.
+  $('halos').innerHTML = i > 0 && prevRingHtml ? `<div class="outer-ring">${prevRingHtml}</div>` : '';
 }
 function startJourney() {
   journey = { level: 'world' };
   Object.assign(view, { mode: 'time', level: 'world', focus: Date.now(), follow: false });
   $('panel').innerHTML = '';
-  render('out');
+  render();
+  // The card waits until the spiral has turned into the first ring.
+  $('journey').hidden = true;
+  document.body.classList.add('intro-on');
+  intro($('dialWrap')).then(() => { document.body.classList.remove('intro-on'); showJourney(); });
 }
 function endJourney(intoHour) {
   journey = null;
@@ -470,9 +479,7 @@ $('centerBtn').addEventListener('click', () => {
   const i = LEVELS.indexOf(view.level);
   if (i > 0) zoomTo(LEVELS[i - 1]);
 });
-$('nowBtn').addEventListener('click', () => { if (journey) endJourney(false); else goNow(); });
-$('jNext').addEventListener('click', journeyNext);
-$('jSkip').addEventListener('click', () => endJourney(false));
+$('nowBtn').addEventListener('click', goNow);
 $('replayJourney').addEventListener('click', () => { $('setDlg').close(); startJourney(); });
 function pickLevel(e) {
   const c = e.target.closest('[data-level]');

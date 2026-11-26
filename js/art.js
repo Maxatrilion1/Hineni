@@ -163,6 +163,18 @@ const ART = {
     <path d="M19 43h12l-2 3h-8zM33 43h12l-2 3h-8z" fill="${G}"/><path d="M24 46v5h2v-5zM38 46v5h2v-5z" fill="${G}"/><rect x="16" y="51" width="32" height="2.6" rx="1.3" fill="${G}"/>` },
 
   // ----- Places -----
+  mikdash: { bg: ['#7a8db0', '#2c3a5a'], body: (G, D, L) => `
+    ${stars([[12, 14, .6], [52, 12, .7], [56, 26, .5]])}
+    <path d="M4 52c8-3 48-3 56 0v12H4z" fill="${D}" opacity=".55"/>
+    <path d="M12 50h40v3H12zM15 47h34v3H15z" fill="${G}"/>
+    <path d="M20 47V24h24v23z" fill="${G}"/>
+    <path d="M16 47V33h4v14zM44 47V33h4v14z" fill="${G}"/><path d="M16 33h4M44 33h4" stroke="${L}" stroke-width="1"/>
+    <path d="M20 24h24" stroke="${L}" stroke-width="1.6"/>
+    ${Array.from({ length: 9 }, (_, i) => `<path d="M${21.4 + i * 2.6} 24v-2.4h1.4V24" fill="${G}"/>`).join('')}
+    <path d="M28.6 47V33a3.4 3.4 0 0 1 6.8 0v14z" fill="#2a2416"/>
+    <path d="M27 31.5c1.6-2.6 3.4-3.6 5-3.6s3.4 1 5 3.6" stroke="#e8c464" stroke-width="1.4" fill="none"/>
+    <circle cx="29" cy="30" r=".9" fill="#e8c464"/><circle cx="32" cy="28.6" r=".9" fill="#e8c464"/><circle cx="35" cy="30" r=".9" fill="#e8c464"/>
+    <path d="M23 28v15M41 28v15" stroke="${D}" stroke-width=".8" opacity=".4"/>` },
   mishkan: { bg: ['#6e4c2c', '#2e1f12'], body: (G, D, L) => `
     <path d="M8 50h48" stroke="${G}" stroke-width="1.2" opacity=".6"/>
     <path d="M14 50V30h36v20z" fill="${G}"/><path d="M11 30.5L32 19l21 11.5z" fill="#9a3d3a"/><path d="M11 30.5h42" stroke="${L}" stroke-width="1.2"/>

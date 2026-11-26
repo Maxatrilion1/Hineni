@@ -285,9 +285,11 @@ export function spaceView(x, rot) {
     const [ix, iy] = pt(R_ICON, a1 + 15);
     segs += `<g transform="rotate(${f(-rot)} ${f(ix)} ${f(iy)})">${artAt(T.icon, ix, iy, 30, cls ? 'now' : 'dim')}</g>`;
   });
-  for (const [d, a] of [['N', 0], ['E', 90], ['S', 180], ['W', 270]]) {
-    const [tx, ty] = pt(R_OUT + 13, a);
+  for (const [d, a, l] of [['N', 0, 'פ'], ['E', 90, 'ד'], ['S', 180, 'ר'], ['W', 270, 'כ']]) {
+    const [tx, ty] = pt(R_OUT + 14, a + 3.4);
     segs += `<text x="${f(tx)}" y="${f(ty)}" class="dir${d === 'N' ? ' north' : ''}" transform="rotate(${f(-rot)} ${f(tx)} ${f(ty)})">${d}</text>`;
+    const [lx, ly] = pt(R_OUT + 14, a - 3.4);
+    segs += `<text x="${f(lx)}" y="${f(ly)}" class="dir-letter" transform="rotate(${f(-rot)} ${f(lx)} ${f(ly)})">${l}</text>`;
   }
   const [jx, jy] = pt(R_OUT + 3, j.bearing), [jx1, jy1] = pt(100, j.bearing);
   segs += `<line x1="${f(jx1)}" y1="${f(jy1)}" x2="${f(jx)}" y2="${f(jy)}" class="ray"/><circle cx="${f(jx)}" cy="${f(jy)}" r="8" class="marker jer"/>`;
@@ -302,7 +304,7 @@ export function spaceView(x, rot) {
   const offJ = Math.abs(((j.bearing - facing + 540) % 360) - 180);
   return {
     title: `Facing ${compassWord(facing)}`, svg, around, bearing: j.bearing, facing,
-    center: centerHTML({ badge: 'mishkan', badgeSize: 62, big: 'ירושלים', line: offJ < 12 ? 'Straight ahead' : `${mi.toLocaleString()} mi · ${compassWord(j.bearing)}`, sub: offJ < 12 ? `${mi.toLocaleString()} mi away` : 'Turn until the dot is at the top' }),
+    center: centerHTML({ badge: 'mikdash', badgeSize: 70, big: 'ירושלים', line: offJ < 12 ? 'Straight ahead' : `${mi.toLocaleString()} mi · ${compassWord(j.bearing)}`, sub: offJ < 12 ? `${mi.toLocaleString()} mi away` : 'Turn until the dot is at the top' }),
     panel: spacePanel(x, j, mi, hourTr, monthTr, around),
   };
 }
@@ -394,13 +396,16 @@ function worldPanel(x, c) {
     <p class="lore-p">${x.hd.year} is in the ${ordinal(c.mil)} millennium, the world's ${c.dayName}. Year ${x.hd.year % 1000} of it is like the ${ordinal(c.hour)} hour of ${c.isDay ? 'that day' : 'that night'}${c.dayName === 'Friday' ? ': Erev Shabbos afternoon, time to prepare.' : '.'}</p>`, 'feature');
 }
 
+const DIR_LETTER = { east: ['ד', 'Dalet'], west: ['כ', 'Kaf'], north: ['פ', 'Pei'], south: ['ר', 'Reish'] };
 function spacePanel(x, j, mi, hourTr, monthTr, around) {
-  const row = (lbl, side) => `<div class="kv"><span>${lbl}</span><b>${side[0].toUpperCase() + side.slice(1)}: ${CAMPS[side].map((t) => `${TRIBES[t].he}`).join(' · ')}</b></div>`;
+  const row = (lbl, side) => `<div class="kv"><span>${lbl}</span><b><span class="dirrow"><span class="he big-l" lang="he">${DIR_LETTER[side][0]}</span> ${side[0].toUpperCase() + side.slice(1)} · ${CAMPS[side].map((t) => TRIBES[t].he).join(' · ')}</span></b></div>`;
+  const phone = typeof DeviceOrientationEvent !== 'undefined' && matchMedia('(pointer: coarse)').matches;
   return `
     ${card('Around you', `${row('Ahead', around.ahead)}${row('Right', around.right)}${row('Behind', around.behind)}${row('Left', around.left)}
-      <div class="space-btns"><button id="faceJ" class="btn" type="button">Face Yerushalayim</button><button id="northUp" class="btn ghost" type="button">North up</button><button id="compassBtn" class="btn ghost" type="button">Use my phone</button></div>
-      <p class="fine">Drag the dial with your finger to turn it, or let your phone turn it. The top of the dial is the way you face.</p>`, 'feature')}
-    ${card('The camp', `<p class="lore-p">The dial is the camp in the desert (Bamidbar 2): Yehudah, Yissachar and Zevulun to the east; Reuven, Shimon and Gad to the south; Ephraim, Menashe and Binyamin to the west; Dan, Asher and Naftali to the north, with the Mishkan and the Levi'im in the middle.</p>
+      <div class="kv"><span>Above · below</span><b><span class="dirrow"><span class="he big-l" lang="he">ב</span> above · <span class="he big-l" lang="he">ג</span> below</span></b></div>
+      <div class="space-btns"><button id="faceJ" class="btn" type="button">Face Yerushalayim</button><button id="northUp" class="btn ghost" type="button">North up</button>${phone ? '<button id="compassBtn" class="btn ghost" type="button">Connect to compass</button>' : ''}</div>
+      <p class="fine">Drag the dial to turn it${phone ? ', or connect it to your phone\'s compass' : ''}. The top of the dial is the way you face. The letters of the six directions, and ת for the Holy Palace in the middle, follow Sefer Yetzirah 4:3 (editions differ in the order).</p>`, 'feature')}
+    ${card('The camp', `<p class="lore-p">The dial is the camp in the desert (Bamidbar 2): Yehudah, Yissachar and Zevulun to the east; Reuven, Shimon and Gad to the south; Ephraim, Menashe and Binyamin to the west; Dan, Asher and Naftali to the north. At the center, where the Mishkan stood and the Beis Hamikdash would stand, is the Holy Palace.</p>
       <p class="lore-p">Lit: <b>${hourTr}</b>, this hour's tribe. Outlined: <b>${monthTr}</b>, this month's. The gold dot points to Yerushalayim, ${mi.toLocaleString()} miles to the ${compassWord(j.bearing)}.</p>`)}`;
 }
 

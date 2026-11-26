@@ -1,6 +1,6 @@
 // Offline cache: serve the app shell from cache, refresh it in the background.
-const CACHE = 'hineni-v9';
-const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'js/dial.js', 'js/zmanim.js', 'js/solar.js', 'js/hebrew.js', 'js/calendar.js', 'js/lore.js', 'js/art.js', 'js/levels.js', 'js/parshah.js', 'js/sky.js', 'js/places.js', 'icon.svg', 'manifest.webmanifest'];
+const CACHE = 'hineni-v10';
+const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'js/dial.js', 'js/zmanim.js', 'js/solar.js', 'js/hebrew.js', 'js/calendar.js', 'js/lore.js', 'js/art.js', 'js/levels.js', 'js/parshah.js', 'js/intro.js', 'js/sky.js', 'js/places.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener('activate', (e) => e.waitUntil(
