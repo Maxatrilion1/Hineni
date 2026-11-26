@@ -230,7 +230,7 @@ function zmanimHTML(x) {
     if (z.part !== last) { rows += `<li class="part">${label[z.part]}</li>`; last = z.part; }
     const jt = jewishTime(z.t, jd);
     rows += `<li class="z${['candles', 'candlesNight', 'holyEnd', 'fastStart', 'fastStartEve', 'fastEnd'].includes(z.key) ? ' special' : ''}" data-z="${z.key + z.part}">
-      <div class="zrow"><span class="z-name">${esc(z.tr)}<small><span class="he" lang="he">${z.he}</span> · ${esc(z.en)}</small></span>
+      <div class="zrow"><span class="zd" aria-hidden="true"></span><span class="z-name">${esc(z.tr)}<small><span class="he" lang="he">${z.he}</span> · ${esc(z.en)}</small></span>
       <span class="z-jt">${jt.text}<small>${jt.part}</small></span><span class="z-time">${fmt(z.t)}</span></div></li>`;
   }
   const o = opts();

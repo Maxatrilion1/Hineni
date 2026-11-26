@@ -132,7 +132,7 @@ export function weekView(x) {
   return {
     title: P.holiday ? 'The week' : `The week of ${P.names}`, marker, svg: ring(segs, { marker }),
     center: centerHTML({ big: W.he, line: P.holiday ? P.holiday : `פרשת ${P.he}`, sub: x.wd === 6 ? 'Shabbos Kodesh' : `Shabbos in ${6 - x.wd} day${6 - x.wd === 1 ? '' : 's'}` }),
-    panel: legend([['hand', 'Now'], ['gold', 'A festival or special day'], ['sab', 'Shabbos']]) + (P.holiday ? '' : `<section class="pcard feature"><h3>This week's parshah</h3><div class="parshah"><span class="he" lang="he">פרשת ${P.he}</span><b>Parshas ${esc(P.names)}</b><small>Read on Shabbos, ${civ(P.date)}</small></div></section>`) + weekPanel(x, start),
+    panel: (P.holiday ? '' : `<section class="pcard feature"><h3>This week's parshah</h3><div class="parshah"><span class="he" lang="he">פרשת ${P.he}</span><b>Parshas ${esc(P.names)}</b><small>Read on Shabbos, ${civ(P.date)}</small></div></section>`) + weekPanel(x, start),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'day', focus: x.chatzos(s.date) }])),
     prev: { level: 'week', focus: x.chatzos(addDays(start, -4)) }, next: { level: 'week', focus: x.chatzos(addDays(start, 10)) },
   };
@@ -151,7 +151,7 @@ export function monthView(x) {
   return {
     title: `${x.hd.month} ${x.hd.year}`, marker, svg: ring(segs, { marker }),
     center: centerHTML({ badge: T.icon, badgeSize: 58, big: `${plain(gematria(x.hd.day))} ${monthHe(x.date)}`, line: `Month of ${lore.tribe}`, sub: `Day ${x.hd.day} of ${len}` }),
-    panel: legend([['hand', 'Now'], ['moon', "The moon's face that day"], ['gold', 'A festival or special day'], ['sab', 'Shabbos']]) + monthPanel(x, lore, T, start, len),
+    panel: monthPanel(x, lore, T, start, len),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'day', focus: x.chatzos(s.date) }])),
     prev: { level: 'month', focus: x.chatzos(addDays(start, -10)) }, next: { level: 'month', focus: x.chatzos(addDays(start, len + 10)) },
   };
@@ -171,7 +171,7 @@ export function yearView(x) {
   return {
     title: `Year ${x.hd.year}`, marker, svg: ring(segs, { marker }),
     center: centerHTML({ big: gematria(x.hd.year % 1000), line: `${x.hd.year} · ${isLeap(x.hd.year) ? 'a leap year' : 'twelve months'}`, sub: `Day ${dayIndex(Y.rh, x.date) + 1} of ${Y.len}` }),
-    panel: legend([['hand', 'Now'], ['band', "Each month's tribe and its flag colors"]]) + yearPanel(x, Y),
+    panel: yearPanel(x, Y),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'month', focus: x.chatzos(s.isNow ? x.nowJd.day.date : addDays(s.m.start, 14)) }])),
     prev: { level: 'year', focus: x.chatzos(dateForYear(x.hd.year - 1)) }, next: { level: 'year', focus: x.chatzos(dateForYear(x.hd.year + 1)) },
   };
@@ -210,7 +210,7 @@ export function worldView(x) {
   const marker = a1 + (a2 - a1) * ((x.nowJd.info.hd.year % 1000) / 1000);
   return {
     title: 'Six thousand years', marker, svg: ring(segs, { marker }),
-    center: centerHTML({ badge: 'globe', badgeSize: 52, big: x.hd.year.toLocaleString(), line: `The world's ${c.dayName}`, sub: `${ordinal(c.mil)} millennium` }),
+    center: centerHTML({ big: x.hd.year.toLocaleString(), line: `The world's ${c.dayName}`, sub: `${ordinal(c.mil)} millennium` }),
     panel: worldPanel(x, c),
     children: { [mil]: { level: 'shemitah', focus: x.focus } },
   };
@@ -339,7 +339,6 @@ export function dayPanel(x) {
   const { wd, hols } = x.jd.info, D = DAYS[wd], W = WEEKDAYS[wd], Q = DAY_DEPTH[wd];
   return `
     ${hols.length ? `<div class="chips">${hols.map((h) => `<span class="chip k-${h.kind}">${esc(h.name)}</span>`).join('')}</div>` : ''}
-    ${legend([['hand', 'Now'], ['band', "The hour's tribe and its flag colors"], ['dot', 'A zman (tap Zmanim below for the list)'], ['next', 'The next zman'], ['tick', 'Your ordinary clock, bent to fit']])}
     ${card(`${W.tr} · <span class="he" lang="he">${W.he}</span>`, `<div class="tribe-row">${art(D.icon, 76)}<div><b class="built">${D.creation}</b><div class="he muted" lang="he">${D.creationHe}</div></div></div>
       <p class="lore-p">${esc(Q.built)}</p>
       <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>`, 'feature')}
@@ -348,21 +347,6 @@ export function dayPanel(x) {
       <div><span>Guest</span><b>${D.ushpiz}</b><small>${esc(Q.guest.replace(/^\w+,? ?/, ''))}</small></div>
       <div><span>Song</span><b>Tehillim ${D.shir}</b><small class="he" lang="he">${D.shirHe}</small></div></div>
       <p class="fine">Each day of the week draws from one of the seven sefiros and one of the seven "guests" (Zohar). The song is the one the Levi'im sang that day (Tamid 7:4).</p>`)}`;
-}
-
-/** A small key to what the marks on the dial mean. */
-function legend(items) {
-  const sw = {
-    hand: '<svg width="22" height="14"><line x1="2" y1="7" x2="16" y2="7" class="ray"/><circle cx="17" cy="7" r="4" class="marker"/></svg>',
-    band: '<svg width="22" height="14"><rect x="1" y="4" width="7" height="6" fill="#a33a32"/><rect x="8" y="4" width="7" height="6" fill="#3d7a4c"/><rect x="15" y="4" width="6" height="6" fill="#7fa7d9"/></svg>',
-    dot: '<svg width="22" height="14"><circle cx="11" cy="7" r="3.2" class="zdot"/></svg>',
-    next: '<svg width="22" height="14"><circle cx="11" cy="7" r="5" class="zdot next"/></svg>',
-    tick: '<svg width="22" height="14"><line x1="4" y1="7" x2="18" y2="7" class="tick major"/></svg>',
-    moon: '<svg width="22" height="14"><circle cx="11" cy="7" r="5" class="mp-dark"/><path d="M11 2a5 5 0 0 1 0 10z" class="mp-lit"/></svg>',
-    gold: '<svg width="22" height="14"><rect x="1" y="4" width="20" height="6" fill="#c9973a"/></svg>',
-    sab: '<svg width="22" height="14"><rect x="1" y="2" width="20" height="10" rx="2" class="rs sab"/></svg>',
-  };
-  return `<div class="legend">${items.map(([k, t]) => `<span>${sw[k]}${esc(t)}</span>`).join('')}</div>`;
 }
 
 function weekPanel(x, start) {

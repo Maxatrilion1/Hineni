@@ -600,3 +600,13 @@ body { touch-action: pan-y; }
 .journey .j-big { font-size: clamp(20px, 6vw, 25px); }
 .journey .j-text { font-size: 14px; line-height: 1.5; }
 .journey .btn { padding: 9px 18px; }
+
+/* Zmanim rows carry the dial's dot; the next one is orange */
+.zrow { grid-template-columns: auto 1fr auto auto; }
+.zd { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); opacity: .8; }
+.z.past .zd { opacity: .35; }
+.z.next .zd { width: 11px; height: 11px; background: #ff8a5c; opacity: 1; }
+
+/* The view title: the name of where you are */
+.view-title { font-size: 19px; font-weight: 700; letter-spacing: .01em; }
+.view-title .he { font-size: 22px; font-family: var(--he); }
