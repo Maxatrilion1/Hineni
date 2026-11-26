@@ -114,11 +114,14 @@ export function intro(target, { onLand, dots = [] } = {}) {
       // Shade the ribbon continuously by how far each part has turned away: no hard line between light and dark.
       // Colours are solid (pre-mixed with the night behind), so short overlapping pieces join invisibly.
       const NIGHT = '#151a3c';
-      const shade = (base, sa) => {
+      const toHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+      const mixH = (h1, h2, t) => { const a = hex(h1), b = hex(h2); return toHex(a.map((v, i) => lerp(v, b[i], t))); };
+      const faceAt = (sa) => {
         const away = Math.max(0, Math.min(1, (sa + 0.35) / 0.7));       // 0 facing you … 1 turned away
-        const dim = away * away * (3 - 2 * away) * 0.55 * (1 - e);       // smooth, and gone once it lies flat
-        return mixA(base, NIGHT, dim, 1);
+        return mixH('#efdfb8', NIGHT, away * away * (3 - 2 * away) * 0.55 * (1 - e)); // smooth, and gone once it lies flat
       };
+      // The rim is always the same step darker than the face it surrounds, on the light side and the dark side alike.
+      const shade = (base, sa) => (base === '#efdfb8' ? faceAt(sa) : mixH(faceAt(sa), '#4a3418', 0.38));
       // Each half-coil is one unbroken stroke. A gradient across it darkens it toward its two sides, where it turns
       // away; the far half is darkest in its middle. Both meet the same shade at the turn, so there is no seam.
       const ribbon = (pass) => {

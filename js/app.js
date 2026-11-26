@@ -61,48 +61,22 @@ function zoomTo(level) {
 }
 
 // ---------- Render ----------
-// The next circle grows out of the segment you step into; stepping out, the old circle sinks back into its place.
+// State shared by the step animations.
 let lastMarker = null, pendingGhost = null, shownLevel = null, ringT = {}, pendingBlock = null, pendingNest = null, pendingLetters = null;
-const DUR = 2200;
-function originOf(angle) {
-  if (angle == null) return '50% 50%';
-  const r = 173 / 460 * 100, a = angle * Math.PI / 180;
-  return `${(50 + r * Math.sin(a)).toFixed(2)}% ${(50 - r * Math.cos(a)).toFixed(2)}%`;
-}
-function animate(dir, newMarker) {
-  if (pendingGhost && (dir === 'in' || dir === 'out')) pushRings(pendingGhost, dir, 0);
-  if (!dir || !pendingGhost || matchMedia('(prefers-reduced-motion: reduce)').matches) { pendingGhost = null; return; }
-  const w = $('dialWrap');
-  const origin = originOf(dir === 'in' ? pendingGhost.marker : newMarker);
-  const g = document.createElement('div');
-  g.className = 'ring-ghost';
-  g.innerHTML = pendingGhost.html;
-  g.style.transformOrigin = origin;
-  w.appendChild(g);
-  pendingGhost = null;
-  const grow = [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(3.2)', opacity: 0 }];
-  const sink = [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.08)', opacity: 0 }];
-  const opts = { duration: DUR, easing: 'cubic-bezier(.35, .1, .2, 1)' };
-  g.animate(dir === 'in' ? grow : sink, opts).finished.then(() => g.remove(), () => g.remove());
-  for (const el of [$('dial'), $('centerBtn')]) {
-    el.style.transformOrigin = origin;
-    el.animate(dir === 'in'
-      ? [{ transform: 'scale(.08)', opacity: 0 }, { transform: 'scale(.5)', opacity: .6, offset: .55 }, { transform: 'scale(1)', opacity: 1 }]
-      : [{ transform: 'scale(3.2)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], opts);
-  }
-}
 
 /** V2 motion, in two calm stages and with no turning:
  *  1. the "now" block closes into a full ring while everything holds still (morphBlock);
  *  2. the old circle expands outward into the first outer ring, pushing the outer rings out,
  *     while the new circle fades in at the centre. Ring angles change by cross-fading, never by spinning. */
-const STAGE = 3000, SETTLE = 3000; // the block becomes the gold ring, then the ring finds its place: same pace
+// One step is one gesture: as you tap, the circle you were in moves out and turns gently to its outer place,
+// and at the same moment the block you tapped grows into the gold ring of the new circle.
+const STEP = 4000, STAGE = 0, SETTLE = STEP;
 function animateV2(dir) {
   const g = pendingGhost; pendingGhost = null;
   if (!g || !(dir === 'in' || dir === 'out') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const w = $('dialWrap'), delay = dir === 'in' && pendingBlock ? STAGE : 0;
-  const opts = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'both' };      // for ghosts, removed when done
-  const keep = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'backwards' }; // for what stays
+  const w = $('dialWrap'), delay = 0, calm = 'cubic-bezier(.37, 0, .25, 1)';   // slow start, long gentle settle
+  const opts = { duration: STEP, delay, easing: calm, fill: 'both' };      // for ghosts, removed when done
+  const keep = { duration: STEP, delay, easing: calm, fill: 'backwards' }; // for what stays
   const S = (s) => `scale(${s.toFixed(4)})`;
   pushRings(g, dir, delay);
   // The dial you leave. Stepping in: its ring fades a little as it expands, turns gently, and settles
@@ -112,14 +86,14 @@ function animateV2(dir) {
   if (dir === 'in' && to) {
     const ring = mk('ring-ghost ghost-band'), mid = mk('ring-ghost ghost-mid');
     const end = `rotate(${to.rot.toFixed(2)}deg) scale(${to.s.toFixed(4)})`;
-    ring.animate([{ transform: 'none', opacity: 1 }, { transform: `rotate(${(to.rot * 0.15).toFixed(2)}deg) scale(${(1 + (to.s - 1) * 0.6).toFixed(4)})`, opacity: 0.9, offset: 0.4 },
-      { transform: end, opacity: 0.4, offset: 0.78 }, { transform: end, opacity: 0 }], { ...opts, easing: 'cubic-bezier(.45, .05, .3, 1)' })
+    // Moves out and turns in one continuous motion, dimming as it goes, then hands over to the real ring.
+    ring.animate([{ transform: 'none', opacity: 1, easing: calm }, { transform: end, opacity: 0.4, offset: 0.82 }, { transform: end, opacity: 0 }], { ...opts, easing: 'linear' })
       .finished.then(() => ring.remove(), () => ring.remove());
-    mid.animate([{ opacity: 1 }, { opacity: 0, offset: 0.45 }, { opacity: 0 }], opts).finished.then(() => mid.remove(), () => mid.remove());
+    mid.animate([{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }], opts).finished.then(() => mid.remove(), () => mid.remove());
     // The real ring takes over only once the old one has arrived.
     document.querySelectorAll(`#halos .or2[data-level="${g.level}"]`).forEach((el) => {
       el.getAnimations().forEach((a) => a.cancel());
-      el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }], { ...opts, fill: 'backwards', easing: 'linear' });
+      el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.74 }, { opacity: 1 }], { ...opts, fill: 'backwards', easing: 'linear' });
     });
   } else {
     const ghost = mk('ring-ghost');
@@ -129,7 +103,7 @@ function animateV2(dir) {
   const from = dir === 'in' ? 'scale(.9)' : S(g.T[view.level]?.s ?? 1.25);
   for (const el of [$('dial'), $('centerBtn')]) {
     el.style.transformOrigin = '50% 50%';
-    el.animate([{ transform: from, opacity: 0 }, { opacity: 0, offset: 0.2 }, { transform: 'none', opacity: 1 }], keep);
+    el.animate([{ transform: from, opacity: 0 }, { opacity: 0, offset: 0.45 }, { transform: 'none', opacity: 1 }], keep);
   }
 }
 
@@ -170,15 +144,14 @@ function morphBlock() {
   ov.setAttribute('class', 'morph');
   const path = document.createElementNS(SVGNS, 'path');
   ov.appendChild(path);
-  // The gold ring travels with the old circle as it moves out to its place.
-  ($('dialWrap').querySelector('.ghost-band') || $('dialWrap')).appendChild(ov);
-  const mid = (a[0] + a[1]) / 2, w0 = a[1] - a[0], t0 = performance.now(), D = STAGE + SETTLE;
+  $('dialWrap').appendChild(ov);
+  const mid = (a[0] + a[1]) / 2, w0 = a[1] - a[0], t0 = performance.now(), GROW = STEP * 0.7;
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   (function step(now) {
-    const p = Math.min(1, (now - t0) / D), e = ease(Math.min(1, (now - t0) / STAGE)), w = w0 + (359.9 - w0) * e;
+    const t = now - t0, w = w0 + (359.9 - w0) * ease(Math.min(1, t / GROW));
     path.setAttribute('d', sector(R1, R2, mid - w / 2, mid + w / 2));
-    ov.style.opacity = now - t0 < STAGE ? 0.95 : 0.95 * Math.max(0, 1 - (now - t0 - STAGE) / SETTLE);
-    if (p < 1) requestAnimationFrame(step); else ov.remove();
+    ov.style.opacity = t < GROW ? 0.9 : 0.9 * Math.max(0, 1 - (t - GROW) / (STEP - GROW));
+    if (t < STEP) requestAnimationFrame(step); else ov.remove();
   })(t0);
 }
 
@@ -237,18 +210,6 @@ function nestToFace() {
   setTimeout(() => g.remove(), T + 50);
 }
 
-/** V1 with a block to follow: the old circle fades back while the block closes, then the new one settles in. */
-function fadeOld() {
-  const g = pendingGhost; pendingGhost = null;
-  if (!g) return;
-  pushRings(g, 'in', STAGE);
-  const ghost = document.createElement('div');
-  ghost.className = 'ring-ghost';
-  ghost.innerHTML = g.html;
-  $('dialWrap').appendChild(ghost);
-  ghost.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.08)' }], { duration: SETTLE, delay: STAGE, easing: 'ease-out', fill: 'both' }).finished.then(() => ghost.remove(), () => ghost.remove());
-  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: SETTLE, delay: STAGE, easing: 'ease', fill: 'backwards' });
-}
 /** The old circle's letters travel to the new circle's places, fading as the new letters arrive. */
 function flyLetters(dir) {
   const from = pendingLetters; pendingLetters = null;
@@ -562,23 +523,6 @@ function outerRingsV2() {
     html += `<svg class="or-hand" viewBox="-30 -30 460 460"><path d="M${p(191)} L${p(1400)}"/></svg>`;
   }
   return html;
-}
-
-/** V1: one thin gold ring for each circle you have come through. */
-function outerRingsV1() {
-  ringT = {};
-  if (view.mode !== 'time' || (journey && journey.step === 'nest')) return '';
-  const lvl = journey ? STEP_LEVEL[journey.step] : view.level;
-  const n = Math.max(0, OUTER.indexOf(lvl === 'hour' ? 'day' : lvl) + (lvl === 'hour' ? 1 : 0));
-  if (!n) return '';
-  const rows = scales(x).slice(0, n).reverse(); // nearest first
-  const C = 200;
-  let svg = '';
-  rows.forEach((r, k) => {
-    const R = 206 + k * 13, frac = (r.at + r.frac) / r.parts, a = Math.max(0.001, Math.min(0.9999, frac)) * Math.PI * 2;
-    svg += `<circle cx="${C}" cy="${C}" r="${R}" class="nr-track thin"/><path d="M${C} ${C - R} A${R} ${R} 0 ${a > Math.PI ? 1 : 0} 1 ${(C + R * Math.sin(a)).toFixed(2)} ${(C - R * Math.cos(a)).toFixed(2)}" class="nr-arc thin"/>`;
-  });
-  return `<svg viewBox="-30 -30 460 460" class="outer-rings">${svg}</svg>`;
 }
 
 function showJourney() {

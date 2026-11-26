@@ -323,25 +323,8 @@ button:focus-visible, .seg:focus-visible, input:focus-visible, select:focus-visi
 .seg-toggle button[aria-selected="true"] { background: var(--accent); color: var(--solid); font-weight: 600; }
 #nowBtn { font-weight: 600; }
 
-.path { width: min(100%, 460px); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px; }
-.crumbs { display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); padding: 0 10px; }
-.crumbs::-webkit-scrollbar { display: none; }
-.crumb { border: 0; background: none; padding: 5px 7px; border-radius: 8px; font-size: 13px; color: var(--sky-ink); opacity: .75; cursor: pointer; }
-.crumb.cur { opacity: 1; font-weight: 700; background: var(--card); color: var(--ink); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
-.crumb .he { font-size: 15px; }
-.sep { color: var(--sky-ink); opacity: .45; font-size: 13px; }
-.arrow { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font-size: 22px; line-height: 1; cursor: pointer; display: grid; place-items: center; padding-bottom: 3px; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
-.arrow[hidden] { display: grid !important; visibility: hidden; }
 
-.out-btn {
-  position: absolute; top: 2%; right: 0; border: 1px solid var(--line); background: var(--card); border-radius: 999px;
-  padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-}
-.dial-wrap.in { animation: zoomIn .38s cubic-bezier(.2, .8, .2, 1); }
-.dial-wrap.out { animation: zoomOut .38s cubic-bezier(.2, .8, .2, 1); }
 .dial-wrap.side { animation: side .3s ease; }
-@keyframes zoomIn { from { transform: scale(.72); opacity: .2; } to { transform: none; opacity: 1; } }
-@keyframes zoomOut { from { transform: scale(1.3); opacity: .2; } to { transform: none; opacity: 1; } }
 @keyframes side { from { opacity: .3; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .dial-wrap.in, .dial-wrap.out, .dial-wrap.side { animation: none; } }
 
@@ -535,13 +518,6 @@ body.journeying #panel { display: none; }
 /* Passing through the rings */
 .ring-ghost { position: absolute; inset: 0; pointer-events: none; z-index: 2; will-change: transform, opacity; }
 .ring-ghost svg { width: 100%; height: 100%; display: block; overflow: visible; }
-@keyframes ghostIn { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(1.45); } }
-@keyframes ghostOut { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(.6); } }
-.dial-wrap.in, .dial-wrap.out { animation: none; }
-.dial-wrap.in > #dial, .dial-wrap.in > .center { animation: ringIn .75s cubic-bezier(.25, .7, .2, 1); }
-.dial-wrap.out > #dial, .dial-wrap.out > .center { animation: ringOut .75s cubic-bezier(.25, .7, .2, 1); }
-@keyframes ringIn { from { transform: scale(.82); opacity: .1; } to { transform: none; opacity: 1; } }
-@keyframes ringOut { from { transform: scale(1.18); opacity: .1; } to { transform: none; opacity: 1; } }
 
 
 /* Names under the numerals */
@@ -580,7 +556,6 @@ body { touch-action: pan-y; }
 
 /* Halos: one thin ring per circle passed, with equal gaps */
 .halos { position: absolute; inset: 0; pointer-events: none; }
-.halos i { position: absolute; inset: calc(4.6% - var(--k) * 9px); border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--gold) calc(70% - var(--k) * 9%), transparent); animation: haloIn 1.2s ease both; }
 @keyframes haloIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
 
 /* Hour: one calm type scale */
