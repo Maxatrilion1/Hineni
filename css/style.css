@@ -725,7 +725,7 @@ body[data-jstep="month"] #dial .rs.now, body[data-jstep="week"] #dial .rs.now { 
 
 /* Where the day ends: right at the sunset line */
 .horizon.edge { opacity: .7; stroke-width: 2; stroke: var(--gold); }
-.edge-l { font-size: 9.5px; font-weight: 600; fill: var(--sky-ink); opacity: .9; letter-spacing: .02em; paint-order: stroke; stroke: var(--face); stroke-width: 3px; stroke-linejoin: round; }
+.edge-l { font-size: 9.5px; font-weight: 600; fill: var(--sky-ink); opacity: .9; letter-spacing: .02em; }
 .edge-l.began { opacity: .55; }
 .edge-note { margin: 10px 0 0; padding: 9px 11px; border-radius: 10px; font-size: 13.5px; line-height: 1.45; background: color-mix(in srgb, var(--gold) 14%, transparent); }
 

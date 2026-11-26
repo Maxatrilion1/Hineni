@@ -473,7 +473,9 @@ function nestDial() {
     const R = 178 - i * 22, frac = (r.at + r.frac) / r.parts, a = frac * Math.PI * 2;
     svg += `<g class="nr nr-big${i === 0 ? ' tap-me' : ''}" data-ring="${r.level}"><circle cx="${C}" cy="${C}" r="${R}" class="nr-track"/><path d="${arc(R, frac)}" class="nr-arc"/><circle cx="${(C + R * Math.sin(a)).toFixed(2)}" cy="${(C - R * Math.cos(a)).toFixed(2)}" r="5" class="nr-dot"/><circle cx="${C}" cy="${C}" r="${R}" class="nr-hit"/></g>`;
     // Its name sits inside its own gold band, at the top where every band begins: stacked, one per ring.
-    const a0 = 9 / R, a1 = Math.PI * 0.9;
+    // When this circle has only just begun, its "now" dot sits at the top where the name goes: the name then starts just past the dot.
+    const len = (r.label.length * 7.2) / R, dotA = frac * 2 * Math.PI;
+    const a0 = dotA < len + 22 / R ? dotA + 11 / R : 9 / R, a1 = a0 + Math.PI * 0.9;
     svg += `<path id="nrp${i}" d="M${(C + R * Math.sin(a0)).toFixed(2)} ${(C - R * Math.cos(a0)).toFixed(2)} A${R} ${R} 0 0 1 ${(C + R * Math.sin(a1)).toFixed(2)} ${(C - R * Math.cos(a1)).toFixed(2)}" fill="none"/>`;
     svg += `<text class="nr-label big" style="text-anchor:start;letter-spacing:.06em"><textPath href="#nrp${i}">${r.label.toUpperCase()}</textPath></text>`;
   });
