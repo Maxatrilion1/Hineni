@@ -7,7 +7,7 @@ import { intro } from './intro.js';
 import { art } from './art.js';
 import { DAYS } from './lore.js';
 import { monthLore } from './hebrew.js';
-import { src, ladder, RENDER, LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
+import { src, bowl, grounding, RENDER, LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
 import { NEW_YORK, CITIES, isIsrael, candleMinutes, geolocate, geoPermission, placeName, searchPlaces, distanceKm } from './places.js';
 
 const store = {
@@ -350,7 +350,7 @@ function render(dir) {
   lastMarker = view.level === 'day' ? (x.now >= x.jd.start && x.now < x.jd.end ? angleOf(x.now, x.jd) : null) : v.marker ?? null;
   shownLevel = view.level;
   $('dialWrap').classList.toggle('not-now', !journey && lastMarker == null);
-  centerLadder();
+  markSources();
   setHalos(outerRings());
   if (pendingNest) { pendingGhost = null; pendingBlock = null; pendingLetters = null; nestToFace(); }
   else {
@@ -367,22 +367,21 @@ function render(dir) {
   renderVer();
 }
 
-// Every level's panel: its heading inside the first box, then the ladder of circles it sits inside.
+// Every level's panel: its heading inside the first box, the circle around it, then the grounding sentence.
 function framed(panel, title, level) {
   let out = panel;
   if (title) out = out.replace(/<section class="pcard([^"]*)">(\s*<h3>[\s\S]*?<\/h3>)?/, (m, cls) => `<section class="pcard${cls}"><h3 class="lvl-title">${title}</h3>`);
-  if (level) out = out.replace('</section>', `</section>${ladder(x, level)}`);
+  if (level) out = out.replace('</section>', `${bowl(x, level)}</section>${grounding(x, level)}`);
   return out;
 }
 
-/** Keep the circle you're in visible in the ladder. */
-function centerLadder() {
-  const lad = $('panel').querySelector('.ladder'), h = lad?.querySelector('.here');
-  if (!h) return;
-  lad.scrollLeft += h.getBoundingClientRect().left - lad.getBoundingClientRect().left - (lad.clientWidth - h.offsetWidth) / 2;
+function markSources() {
+  // Mark every box that carries a source, so its text can be tapped to open it.
+  document.querySelectorAll('.src-body').forEach((b) => b.closest('.pcard, .journey')?.classList.add('has-src'));
 }
 
 function renderSpace() {
+  setTimeout(markSources);
   if (rotMode === 'jer') rot = -spaceBearing();
   else if (rotMode === 'phone' && heading != null) rot = -heading;
   v = spaceView(x, rot);
@@ -416,7 +415,7 @@ function updateDay(now) {
   const ht = hourTribe(h.hour);
   const { wd } = x;
   $('centerBtn').innerHTML = live
-    ? `<span class="c-art">${art(ht.t.icon, 58)}</span><span class="c-big">${ordinal(h.hour)} hour</span><span class="c-line">of the ${h.isDay ? 'day' : 'night'} · ${ht.tribe}</span><span class="c-sub civil-now">(${fmt(now)})</span>`
+    ? `<span class="c-art">${art(ht.t.icon, 58)}</span><span class="c-big">${ordinal(h.hour)} hour</span><span class="c-line">of the ${h.isDay ? 'day' : 'night'} · the hour of ${ht.tribe}</span><span class="c-sub civil-now">(${fmt(now)})</span>`
     : `<span class="c-art">${art(x.jd.info.wd >= 0 ? ['light','firmament','plants','lights','fishbirds','man','candles'][wd] : 'globe', 58)}</span><span class="c-line">${WEEKDAYS[wd].en}</span><span class="c-sub">Tap an hour to step inside</span>`;
   if (live) {
     document.querySelectorAll('#zmanim .z').forEach((li) => {
@@ -467,12 +466,12 @@ function journeyCopy(step) {
   const h = hourOf(Date.now(), x.nowJd), ht = hourTribe(h.hour);
   return {
     nest: ['Time, according to Judaism', 'In Judaism, time is not a straight line but circles inside circles: the six thousand years of the world, the seven-year shemitah cycle, the year, the month, the week, the day and the hour. You stand at the center of them all.', 'Tap the outer ring', "Shabbos every seventh day: Bereishis 2:1–3. Shemitah every seventh year: Vayikra 25:1–7. Six thousand years: Sanhedrin 97a. The month begins with the new moon: Shemos 12:2 with Rashi."],
-    world: [`The ${ordinal(mil)} millennium`, "Our sages teach that the world runs for six thousand years, like the six days of creation, and the seventh millennium is a Shabbos (Sanhedrin 97a). We are in the sixth: the world's Friday, getting ready.", 'Tap the gold, where we are, to step in', "Sanhedrin 97a: \"The world exists for six thousand years\"; Rashi there compares the seventh millennium to Shabbos."],
-    shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'The Torah counts years in sevens. Six years the land of Israel is worked, and in the seventh, the shemitah, it rests (Vayikra 25).', 'Tap the gold year to step in', "Vayikra 25:1–7. The years of the cycle and their tithes: Rambam, Hilchos Shemitah v'Yovel."],
-    year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'The Jewish year follows both the moon and the sun. It begins at Rosh Hashanah, and a thirteenth month is added in some years to keep Pesach in spring. Each month is linked to one of the twelve tribes.', 'Tap the gold month to step in', "Keeping Pesach in spring: \"Guard the month of spring\" (Devarim 16:1), the reason for a leap month (Sanhedrin 11b). The months and the tribes: the Arizal."],
-    month: [`${hd.month}`, `A Jewish month begins with the new moon, Rosh Chodesh, and grows and wanes with it. This is ${hd.month}, the month of ${monthTribe(hd)}. Today is its ${ordinal(hd.day)} day.`, 'Tap the gold, this week, to step in', "\"This month shall be for you the first of the months\" (Shemos 12:2); Rashi there: Hashem showed Moshe the new moon."],
-    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `In Hebrew the weekdays have no names of their own, only numbers counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, 'Tap the gold, today, to step in', "The days are counted toward Shabbos: Ramban on Shemos 20:8, \"Remember the day of Shabbos\". The work of each day: Bereishis 1."],
-    day: ['Today', 'A Jewish day begins at sunset: "there was evening and there was morning." It has twelve hours of night and twelve of day. Each is a twelfth of the dark or the light, so they stretch in summer and shrink in winter. At sunset this day ends and the next one begins. The line is now.', "Tap the gold hour you're in, or anywhere on the clock", "\"There was evening and there was morning, one day\" (Bereishis 1:5): the night comes first. The hours are a twelfth of the day or night, so they change with the seasons (sha'os zmaniyos)."],
+    world: [`The ${ordinal(mil)} millennium`, "Our sages teach that the world runs for six thousand years, like the six days of creation, and the seventh millennium is a Shabbos (Sanhedrin 97a). We are in the sixth: the world's Friday, getting ready.", 'Tap the gold section, where we are, to step in', "Sanhedrin 97a: \"The world exists for six thousand years\"; Rashi there compares the seventh millennium to Shabbos."],
+    shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'The Torah counts years in sevens. Six years the land of Israel is worked, and in the seventh, the shemitah, it rests (Vayikra 25).', 'Tap the gold section, where we are, to step in', "Vayikra 25:1–7. The years of the cycle and their tithes: Rambam, Hilchos Shemitah v'Yovel."],
+    year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'The Jewish year follows both the moon and the sun. It begins at Rosh Hashanah, and a thirteenth month is added in some years to keep Pesach in spring. Each month is linked to one of the twelve tribes.', 'Tap the gold section, where we are, to step in', "Keeping Pesach in spring: \"Guard the month of spring\" (Devarim 16:1), the reason for a leap month (Sanhedrin 11b). The months and the tribes: the Arizal."],
+    month: [`${hd.month}`, `A Jewish month begins with the new moon, Rosh Chodesh, and grows and wanes with it. This is ${hd.month}, the month of ${monthTribe(hd)}. Today is its ${ordinal(hd.day)} day.`, 'Tap the gold section, where we are, to step in', "\"This month shall be for you the first of the months\" (Shemos 12:2); Rashi there: Hashem showed Moshe the new moon."],
+    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `In Hebrew the weekdays have no names of their own, only numbers counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, 'Tap the gold section, where we are, to step in', "The days are counted toward Shabbos: Ramban on Shemos 20:8, \"Remember the day of Shabbos\". The work of each day: Bereishis 1."],
+    day: ['Today', 'A Jewish day begins at sunset: "there was evening and there was morning." It has twelve hours of night and twelve of day. Each is a twelfth of the dark or the light, so they stretch in summer and shrink in winter. At sunset this day ends and the next one begins. The line is now.', 'Tap the gold section, where we are, to step in', "\"There was evening and there was morning, one day\" (Bereishis 1:5): the night comes first. The hours are a twelfth of the day or night, so they change with the seasons (sha'os zmaniyos)."],
     hour: [`The ${ordinal(h.hour)} hour · ${ht.tribe}`, "This is the hour you're in. Each hour is linked to a month and its tribe, with its own quality and pasuk. Every circle holds the one inside it: tap the gold to step in, tap outside to step back out.", 'Tap outside the circle to step back out to today', "Each hour follows a month, from Nissan, after the Arizal's twelve permutations of the Name. The tribes' flags: Bamidbar Rabbah 2:7."],
   }[step];
 }
@@ -556,6 +555,7 @@ function showJourney() {
   $('jText').textContent = text;
   $('jTap').innerHTML = esc(prompt);
   $('jSrc').innerHTML = source ? src(esc(source)) : '';
+  $('journey').classList.toggle('has-src', !!source);
   const i = STEPS.indexOf(journey.step);
   $('jDots').innerHTML = STEPS.map((_, k) => `<i class="${k < i ? 'done' : ''}${k === i ? ' at' : ''}"></i>`).join('');
   if ($('journey').hidden) { $('journey').classList.remove('pop'); void $('journey').offsetWidth; $('journey').classList.add('pop'); }
@@ -799,6 +799,11 @@ initSettings();
 initVer();
 $('dial').addEventListener('click', onChild);
 $('panel').addEventListener('click', onChild);
+document.addEventListener('click', (e) => {
+  const box = e.target.closest('.has-src');
+  if (!box || e.target.closest('button, a, summary, [data-child], [data-lad]')) return;
+  box.querySelectorAll('.src-body').forEach((b) => b.classList.toggle('open'));
+});
 $('panel').addEventListener('click', (e) => {
   const b = e.target.closest('[data-lad]');
   if (!b || b.dataset.lad === view.level) return;
@@ -820,7 +825,7 @@ $('replayJourney').addEventListener('click', () => { $('setDlg').close(); startJ
 // Tap inside the circle to step in; tap outside it to step out.
 document.addEventListener('click', (e) => {
   if (view.mode !== 'time' || document.body.classList.contains('intro-on')) return;
-  if (e.target.closest('a, input, select, label, summary, dialog, .pcard, .card, .journey, .top, .controls, .titlebar, .toast')) return;
+  if (e.target.closest('a, input, select, label, summary, dialog, .pcard, .card, .journey, .top, .grounding, .toast')) return;
   if (e.target.closest('button') && e.target.closest('button').id !== 'centerBtn') return;
   if (!outsideDial(e)) return; // inside the circle: its own taps handle it
   if (journey) return journeyDo('outside');

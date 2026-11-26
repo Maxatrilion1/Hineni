@@ -150,7 +150,7 @@ export function weekView(x) {
   return {
     title: P.holiday ? 'The week' : `The week of ${P.names}`, marker, svg: ring(segs, { marker }),
     center: centerHTML({ big: W.he, line: P.holiday ? P.holiday : `פרשת ${P.he}`, sub: `Day ${x.wd + 1} of 7` }),
-    panel: (P.holiday ? '' : `<section class="pcard feature"><h3>This week's parshah</h3><div class="parshah"><span class="he" lang="he">פרשת ${P.he}</span><b>Parshas ${esc(P.names)}</b><small>Read on Shabbos, ${civ(P.date)}</small></div></section>`) + weekPanel(x, start),
+    panel: (P.holiday ? '' : `<section class="pcard feature"><h3>This week's parshah</h3><div class="parshah"><span class="he" lang="he">פרשת ${P.he}</span><small>Read on Shabbos, ${civ(P.date)}</small></div></section>`) + weekPanel(x, start),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'day', focus: x.chatzos(s.date) }])),
     prev: { level: 'week', focus: x.chatzos(addDays(start, -4)) }, next: { level: 'week', focus: x.chatzos(addDays(start, 10)) },
   };
@@ -256,29 +256,41 @@ export function hourView(x, sel) {
   if (frac != null) s += hand(frac * 360, sel.isDay ? 'sun' : 'moon', 146); // a short hand, outside the facets
   const step = (d) => ({ level: 'hour', focus: d > 0 ? b + 60000 : a - 60000 });
   return {
-    title: `${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'}`, live, marker: frac != null ? frac * 360 : null, svg: s,
-    center: centerHTML({ badge: T.icon, badgeSize: 54, big: T.he, line: ht.tribe, sub: live ? `Minute ${Math.floor(frac * 60) + 1} of 60` : `${fmtT(x, a)}–${fmtT(x, b)}` }),
+    title: `The ${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'}: the hour of ${ht.tribe}`, live, marker: frac != null ? frac * 360 : null, svg: s,
+    center: centerHTML({ badge: T.icon, badgeSize: 54, big: T.he, line: `the hour of ${ht.tribe}`, sub: live ? `Minute ${Math.floor(frac * 60) + 1} of 60` : `${fmtT(x, a)}–${fmtT(x, b)}` }),
     panel: hourPanel(x, sel, ht, a, b, live),
     children: {}, prev: step(-1), next: step(1),
   };
 }
 
-// ---------- The ladder: the circle you're in, inside the circles around it ----------
-export function ladder(x, level) {
+// ---------- Grounding: where you are, read from the inside out ----------
+const PARENT = { hour: 'day', day: 'week', week: 'month', month: 'year', year: 'shemitah', shemitah: 'world' };
+function places(x) {
   const { hd, wd } = x.jd.info, pos = hd.year % 7 || 7, mil = Math.floor(hd.year / 1000) + 1;
-  const live = x.now >= x.jd.start && x.now < x.jd.end;
   const P = parshahFor(addDays(x.date, -wd), x.opts.israel);
+  return {
+    day: `the ${ordinal(wd + 1)} day`,
+    week: P.holiday ? 'this week' : `the week of ${P.names}`,
+    month: `the ${ordinal(hd.day)} of ${hd.month}`,
+    year: `${hd.year}`,
+    shemitah: `the ${ordinal(pos)} year of the shemitah cycle`,
+    world: `the ${ordinal(mil)} millennium`,
+  };
+}
+/** "Held within the week of Vayishlach ›": the one circle around this one. Tap it to step out. */
+export function bowl(x, level) {
+  const up = PARENT[level];
+  if (!up) return '';
+  const name = { day: places(x).day, week: places(x).week, month: x.jd.info.hd.month, year: `the year ${x.jd.info.hd.year}`, shemitah: 'the shemitah cycle', world: 'the six thousand years' }[up];
+  return `<button type="button" class="bowl" data-lad="${up}">Held within ${name} <span aria-hidden="true">›</span></button>`;
+}
+/** The whole stack in one sentence, from the hour outward; each part takes you there. */
+export function grounding(x, level) {
+  const live = x.now >= x.jd.start && x.now < x.jd.end, pl = places(x);
   const h = hourOf(level === 'hour' ? x.focus : x.now, x.jd);
-  const rungs = [
-    ['world', hd.year.toLocaleString(), `of 6,000 · millennium ${mil}`],
-    ['shemitah', `${pos} of 7`, 'shemitah cycle'],
-    ['year', `<bdi class="he" lang="he">${gematria(hd.year % 1000)}</bdi>`, isLeap(hd.year) ? 'a leap year' : 'the year'],
-    ['month', `${ordinal(MONTH_NUM[hd.month])} month`, hd.month],
-    ['week', P.holiday ? 'This week' : P.names, P.holiday ? P.holiday : 'the parshah'],
-    ['day', `${ordinal(wd + 1)} day`, `${ordinal(hd.day)} of ${hd.month}`],
-    ...(level === 'hour' || (level === 'day' && live) ? [['hour', `${ordinal(h.hour)} hour`, `of the ${h.isDay ? 'day' : 'night'}`]] : []),
-  ];
-  return `<nav class="ladder" dir="rtl" aria-label="Where you are, inside the circles around it">${rungs.map(([l, big, small]) => `<button type="button" class="lad${l === level ? ' here' : ''}" data-lad="${l}" dir="ltr"><b>${big}</b><small>${small}</small></button>`).join('<i aria-hidden="true" dir="ltr">‹</i>')}</nav>`;
+  const part = (l, t) => `<button type="button" class="g-part${l === level ? ' here' : ''}" data-lad="${l}">${t}</button>`;
+  const hour = level === 'hour' || (level === 'day' && live) ? `${part('hour', `the ${ordinal(h.hour)} hour`)} of ` : '';
+  return `<p class="grounding"><b>Here I am:</b> in ${hour}${part('day', pl.day)}, in ${part('week', pl.week)}, on ${part('month', pl.month)}, in ${part('year', pl.year)}, ${part('shemitah', pl.shemitah)}, in ${part('world', pl.world)}.</p>`;
 }
 
 // ---------- The scale: every level at once ----------
@@ -352,7 +364,7 @@ function emblemPhrase(e) {
   return (/^[aeiou]/.test(l) ? 'an ' : 'a ') + l;
 }
 /** A source, folded: tap "Source" to open it, tap again to close. */
-export const src = (html) => `<details class="src"><summary>Source</summary><p>${html}</p></details>`;
+export const src = (html) => `<p class="src-body">${html}</p>`;
 const BUILT_REF = ['1:3–5', '1:6–8', '1:9–13', '1:14–19', '1:20–23', '1:24–31', '2:1–3'];
 const card = (title, body, cls = '') => `<section class="pcard ${cls}">${title ? `<h3>${title}</h3>` : ''}${body}</section>`;
 const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
@@ -395,7 +407,7 @@ export function dayPanel(x) {
   const live = x.now >= x.jd.start && x.now < x.jd.end;
   const marks = [...hols.map((h) => esc(h.name)), ...(om ? [`Omer tonight: day ${om}, ${omerSefirah(om).tr}`] : [])];
   const today = live ? 'Today · ' : '';
-  const head = `${today}The ${ordinal(wd + 1)} day<small class="day-sub">The ${ordinal(hd.day)} of the ${ordinal(MONTH_NUM[hd.month])} month · <bdi class="he" lang="he">${W.he} · ${hebrewDate(x.date).he.split(' ').slice(0, -1).join(' ')}</bdi></small>`;
+  const head = `${today}The ${ordinal(wd + 1)} day <bdi class="he head-he" lang="he">${W.he}</bdi>`;
   return `
     ${card(head, `<div class="tribe-row">${art(D.icon, 76)}<div><small class="made">Made on the ${ordinal(wd + 1)} day</small><b class="built">${D.creation}</b><div class="he muted" lang="he">${D.creationHe}</div></div></div>
       ${marks.length ? `<p class="day-marks">${marks.join(' · ')}</p>` : ''}
