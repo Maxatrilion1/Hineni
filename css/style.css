@@ -720,3 +720,8 @@ body.journeying #geoBanner, body.intro-on #geoBanner { display: none; }
 * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 body.night { --card: rgba(22, 27, 68, .92); }
 body.day { --card: rgba(255, 251, 241, .94); }
+
+/* The night behind the spiral fades slowly into the real sky as it lands (gradients can't fade, so the night is its own layer) */
+.intro, .intro.orienting { background: transparent; }
+.intro::before { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, #1d2350, #0b0e24 70%); opacity: 1; transition: opacity 5s cubic-bezier(.4, .1, .3, 1); pointer-events: none; }
+.intro.orienting::before { opacity: 0; }
