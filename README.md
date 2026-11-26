@@ -5,6 +5,7 @@
 ## What it shows
 
 - **First visit: a journey from the outside in.** The 6th millennium, then the shemitah cycle, the year, the month, the week, and finally Today, live, ending with an invitation to enter the hour you're in. It can be replayed from Settings.
+- **Gestures**: swipe left from the middle of the dial to step in one circle; swipe in from the edge of the screen to step out one.
 - **The circles button** opens all seven circles nested one inside the other, each showing where you are; tap one to go there. **Today** is always one tap away.
 
 The clock's job is orientation: where you stand in Jewish time and space. It is one dial you can climb into and out of.

@@ -62,7 +62,16 @@ function zoomTo(level) {
 function animate(dir) {
   if (!dir) return;
   const w = $('dialWrap');
-  w.classList.remove('in', 'out');
+  if (dir === 'in' || dir === 'out') {
+    // The ring you leave drifts past you: outward when you step in, inward when you step out.
+    let g = $('ghost');
+    if (!g) { g = document.createElement('div'); g.id = 'ghost'; g.className = 'ghost'; w.prepend(g); }
+    g.innerHTML = $('dial').outerHTML.replace(/ id="[^"]*"/g, '');
+    g.className = 'ghost';
+    void g.offsetWidth;
+    g.classList.add(dir);
+  }
+  w.classList.remove('in', 'out', 'side');
   void w.offsetWidth;
   w.classList.add(dir);
 }
@@ -252,6 +261,9 @@ function showJourney() {
   $('jNext').textContent = view.level === 'day' ? 'Enter this hour' : 'Step in';
   $('journey').hidden = false;
   document.body.classList.add('journeying');
+  // One faint halo for every circle you've already passed through.
+  const halos = Array.from({ length: i }, (_, k) => `0 0 0 ${(k + 1) * 6}px color-mix(in srgb, var(--gold) ${Math.max(8, 34 - k * 6)}%, transparent)`).join(', ');
+  $('dialWrap').style.setProperty('--halo', halos || 'none');
 }
 function startJourney() {
   journey = { level: 'world' };
@@ -264,6 +276,7 @@ function endJourney(intoHour) {
   store.set('journeyDone', true);
   $('journey').hidden = true;
   document.body.classList.remove('journeying');
+  $('dialWrap').style.setProperty('--halo', 'none');
   if (intoHour) go({ level: 'hour', focus: Date.now() }, 'in');
   else goNow();
 }
@@ -440,6 +453,23 @@ $('scale').addEventListener('click', pickLevel);
 $('nestRings').addEventListener('click', pickLevel);
 $('nestBtn').addEventListener('click', () => { renderNest(); $('nestDlg').showModal(); });
 $('nestClose').addEventListener('click', () => $('nestDlg').close());
+// Swipe left from the middle: step in one circle. Swipe in from the edge: step out one circle.
+let sw = null;
+document.addEventListener('touchstart', (e) => {
+  if (view.mode !== 'time' || e.touches.length !== 1) return;
+  const t = e.touches[0], r = $('dialWrap').getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  sw = { x: t.clientX, y: t.clientY, edge: t.clientX < 28 || t.clientX > innerWidth - 28, mid: Math.hypot(t.clientX - cx, t.clientY - cy) < r.width * 0.36 };
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  if (!sw) return;
+  const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y, s0 = sw;
+  sw = null;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+  if (s0.edge) { if (journey) return; return zoomOut(); }
+  if (s0.mid && dx < 0) $('centerBtn').click();
+}, { passive: true });
+
 // Space: drag to turn.
 let drag = null;
 const angleAt = (e) => { const r = $('dial').getBoundingClientRect(); return Math.atan2(e.clientX - (r.left + r.width / 2), -(e.clientY - (r.top + r.height / 2))) * 180 / Math.PI; };

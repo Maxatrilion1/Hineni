@@ -89,7 +89,7 @@ function ring(segs, { marker = null, extra = '' } = {}) {
       g.band.forEach((c, j) => { s += `<path d="${sector(R_BAND, R_IN - 1, g.a1 + ((g.a2 - g.a1) * j) / k, g.a1 + ((g.a2 - g.a1) * (j + 1)) / k)}" fill="${c}" class="band" data-child="${g.id}"/>`; });
     }
     const mid = (g.a1 + g.a2) / 2;
-    if (g.label) { const [x, y] = pt(R_NUM, mid); s += `<text x="${f(x)}" y="${f(y)}" class="rnum${g.isNow ? ' now' : ''} ${g.labelCls || ''}">${g.label}</text>`; }
+    if (g.label) { const [x, y] = pt(R_NUM, mid); s += `<text x="${f(x)}" y="${f(y)}" class="rnum${g.isNow ? ' now' : ''}${/sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : ''} ${g.labelCls || ''}">${g.label}</text>`; }
     if (g.art) { const [x, y] = pt(R_ICON, mid); s += artAt(g.art, x, y, g.artSize || 30, g.isNow ? 'now' : 'dim'); }
     if (g.moon != null) { const [x, y] = pt(R_ICON + 8, mid); s += moonShape(x, y, 5, g.moon, g.isNow); }
   });
@@ -227,11 +227,14 @@ export function hourView(x, sel) {
   }
   const k = T.flag.length, slices = k === 1 ? 1 : 24;
   for (let j = 0; j < slices; j++) s += `<path d="${sector(R_BAND, R_IN - 1, (360 * j) / slices, (360 * (j + 1)) / slices - (slices === 1 ? 0.01 : 0))}" fill="${T.flag[j % k]}" class="band"/>`;
+  const L = ht.lore;
+  const facet = (ang, label, value, he) => { const [fx, fy] = pt(ang % 180 ? 124 : 132, ang); return `<text x="${f(fx)}" y="${f(fy - 7)}" class="facet-l">${label}</text><text x="${f(fx)}" y="${f(fy + 8)}" class="facet-v${he ? ' he' : ''}">${value}</text>`; };
+  s += facet(0, 'MONTH', ht.monthHe, true) + facet(90, 'LETTER', L.letter, true) + facet(180, 'MAZAL', L.mazal) + facet(270, 'SENSE', L.sense);
   if (frac != null) s += hand(frac * 360, sel.isDay ? 'sun' : 'moon');
   const step = (d) => ({ level: 'hour', focus: d > 0 ? b + 60000 : a - 60000 });
   return {
     title: `${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'}`, live, svg: s,
-    center: centerHTML({ badge: T.icon, badgeSize: 84, big: T.he, line: `${ht.month}`, sub: live ? `${60 - Math.floor(frac * 60)} min left` : `${fmtT(x, a)} – ${fmtT(x, b)}` }),
+    center: centerHTML({ badge: T.icon, badgeSize: 70, big: T.he, line: `${ht.tribe}`, sub: live ? `${60 - Math.floor(frac * 60)} min left` : `${fmtT(x, a)} – ${fmtT(x, b)}` }),
     panel: hourPanel(x, sel, ht, a, b, live),
     children: {}, prev: step(-1), next: step(1),
   };

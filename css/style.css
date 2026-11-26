@@ -527,3 +527,25 @@ body.journeying #panel { display: none; }
 body.journeying .dial-wrap { width: min(100%, 340px); }
 body.journeying .controls { display: none; }
 body.journeying .clock { gap: 10px; }
+
+/* Shabbos is the dark day */
+.rs.sab { fill: var(--night-a); }
+.rs.sab.alt { fill: var(--night-b); }
+.rnum.on-dark { fill: var(--night-ink); }
+body.journeying .titlebar { display: none; }
+
+/* Passing through the rings */
+.dial-wrap { --halo: none; }
+.dial-wrap::before { content: ''; position: absolute; inset: 3%; border-radius: 50%; box-shadow: var(--halo); transition: box-shadow .8s ease; pointer-events: none; }
+.ghost { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 2; }
+.ghost svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.ghost.in { animation: ghostIn .75s cubic-bezier(.25, .7, .2, 1); }
+.ghost.out { animation: ghostOut .75s cubic-bezier(.25, .7, .2, 1); }
+@keyframes ghostIn { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(1.45); } }
+@keyframes ghostOut { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(.6); } }
+.dial-wrap.in, .dial-wrap.out { animation: none; }
+.dial-wrap.in > #dial, .dial-wrap.in > .center { animation: ringIn .75s cubic-bezier(.25, .7, .2, 1); }
+.dial-wrap.out > #dial, .dial-wrap.out > .center { animation: ringOut .75s cubic-bezier(.25, .7, .2, 1); }
+@keyframes ringIn { from { transform: scale(.82); opacity: .1; } to { transform: none; opacity: 1; } }
+@keyframes ringOut { from { transform: scale(1.18); opacity: .1; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ghost, .dial-wrap.in > *, .dial-wrap.out > * { animation: none !important; } }
