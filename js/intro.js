@@ -9,7 +9,7 @@ const mixA = (h1, h2, t, a) => { const c1 = hex(h1), c2 = hex(h2); return `rgba(
 
 const RISE = 1 / 30;   // coils per second the spiral slides down (the camera rising): one coil every 30 s
 const TURN = 1 / 60;   // turns per second of its own gentle turn: one turn every 60 s
-const ORIENT = 3;      // seconds for the tilt and landing
+const ORIENT = 3.8;      // seconds for the tilt and landing
 const TAU = Math.PI * 2;
 
 export function intro(target, { onLand, dots = [] } = {}) {
@@ -95,13 +95,15 @@ export function intro(target, { onLand, dots = [] } = {}) {
       // The ribbon is shaded point by point by how far it has turned away from you, so the bright front
       // bends smoothly round into the darker back: no edge, no cut, at the turn.
       const NIGHT = hex('#151a3c'), FACE = hex('#efdfb8'), RIMC = hex('#4a3418'), DARK = 0.78;
+      const ss = (v) => { v = Math.max(0, Math.min(1, v)); return v * v * (3 - 2 * v); };
+      const awayOf = (sa) => ss((sa + 0.6) / 1.2);  // 0 facing you … 1 turned away; half way exactly at the turn
       const cache = new Map();
       const color = (rim, sa) => {
-        const k = (rim ? 1000 : 0) + Math.round((sa + 1) * 24);
+        const k = (rim ? 1000 : 0) + Math.round((sa + 1) * 60);
         let c = cache.get(k);
         if (!c) {
-          const s2 = (k % 1000) / 24 - 1, away = Math.max(0, Math.min(1, (s2 + 0.85) / 1.4)); // starts dimming well before the turn
-          const t = away * away * (3 - 2 * away) * DARK * (1 - e);
+          const s2 = (k % 1000) / 60 - 1, away = awayOf(s2);
+          const t = away * DARK * (1 - e);
           let v = FACE.map((q, i) => lerp(q, NIGHT[i], t));
           if (rim) v = v.map((q, i) => lerp(q, RIMC[i], 0.38));      // the rim: always one step darker than its face
           c = `rgb(${v.map(Math.round).join(',')})`; cache.set(k, c);
@@ -136,7 +138,8 @@ export function intro(target, { onLand, dots = [] } = {}) {
         for (let m = m0; m <= m1; m++) {
           const w = m / 24 - s, q = at(w, lerp(R0, ringR(w), eAt(w)));
           if (q.far !== far || q.sc <= 0) continue;
-          const al = alphaAt(w, q.Y) * (far ? farK * 0.5 : 0.85);
+          const atTurn = lerp(ss(Math.abs(q.sa) / 0.3), 1, e); // passing round the edge they fade, so they never pop
+          const al = alphaAt(w, q.Y) * lerp(0.85, farK * 0.5, awayOf(q.sa)) * atTurn;
           if (al <= 0.01) continue;
           ctx.globalAlpha = al;
           ctx.fillStyle = m % 6 === 0 ? '#7a5422' : '#a07a42';
@@ -153,7 +156,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
         const ed = eAt(i - 3), w = phase === 'idle' ? wIdle : lerp(dotFrom[i][0], land[i], ed);
         const fade = phase === 'idle' ? fIdle : lerp(dotFrom[i][1], 1, e);
         const q = at(w, lerp(R0, (178 - 22 * i) * G.k, ed));
-        const away = Math.max(0, Math.min(1, (q.sa + 0.85) / 1.4)), dimD = away * away * (3 - 2 * away) * 0.78 * (1 - e);
+        const dimD = awayOf(q.sa) * 0.78 * (1 - e);
         let al = alphaAt(Math.max(-3.4, Math.min(3.4, w)), q.Y) * fade * (1 - dimD);
         if (al <= 0.02) return;
         const r = lerp(band * q.sc * 0.22, 6 * G.k, e);

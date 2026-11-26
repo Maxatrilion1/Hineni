@@ -90,7 +90,7 @@ function arcText(str, r, mid, cls, fs) {
   return chars.map((c, k) => {
     if (c === ' ') return '';
     const a = bottom ? mid - span / 2 + k * step : mid + span / 2 - k * step, [x, y] = pt(r, a);
-    return `<text x="${f(x)}" y="${f(y)}" class="${cls}" transform="rotate(${f(bottom ? a + 180 : a)} ${f(x)} ${f(y)})">${c}</text>`;
+    return `<text x="${f(x)}" y="${f(y)}" class="${cls}" data-w="${str}" transform="rotate(${f(bottom ? a + 180 : a)} ${f(x)} ${f(y)})">${c}</text>`;
   }).join('');
 }
 
@@ -149,7 +149,7 @@ export function weekView(x) {
   const pName = P.holiday ? P.holiday : `Parshas ${P.names}`;
   return {
     title: P.holiday ? 'The week' : `The week of ${P.names}`, marker, svg: ring(segs, { marker }),
-    center: centerHTML({ big: W.he, line: P.holiday ? P.holiday : `פרשת ${P.he}`, sub: x.wd === 6 ? 'Shabbos Kodesh' : `Shabbos in ${6 - x.wd} day${6 - x.wd === 1 ? '' : 's'}` }),
+    center: centerHTML({ big: W.he, line: P.holiday ? P.holiday : `פרשת ${P.he}`, sub: `Day ${x.wd + 1} of 7` }),
     panel: (P.holiday ? '' : `<section class="pcard feature"><h3>This week's parshah</h3><div class="parshah"><span class="he" lang="he">פרשת ${P.he}</span><b>Parshas ${esc(P.names)}</b><small>Read on Shabbos, ${civ(P.date)}</small></div></section>`) + weekPanel(x, start),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'day', focus: x.chatzos(s.date) }])),
     prev: { level: 'week', focus: x.chatzos(addDays(start, -4)) }, next: { level: 'week', focus: x.chatzos(addDays(start, 10)) },
@@ -210,7 +210,7 @@ export function shemitahView(x) {
   }
   return {
     title: `Shemitah cycle ${first}–${first + 6}`, marker, svg: ring(segs, { marker }),
-    center: centerHTML({ big: pos === 7 ? 'שמיטה' : `${pos}<small> / 7</small>`, line: pos === 7 ? 'The land rests' : `Year ${pos} of the cycle`, sub: pos === 7 ? '' : `Ma'aser ${MAASER(pos)}` }),
+    center: centerHTML({ big: pos === 7 ? 'שמיטה' : `${pos}<small> / 7</small>`, line: pos === 7 ? 'The land rests' : `Ma'aser ${MAASER(pos)}`, sub: `Year ${pos} of 7` }),
     panel: shemitahPanel(x, first, pos),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'year', focus: x.chatzos(dateForYear(s.year)) }])),
     prev: { level: 'shemitah', focus: x.chatzos(dateForYear(x.hd.year - 7)) }, next: { level: 'shemitah', focus: x.chatzos(dateForYear(x.hd.year + 7)) },
@@ -228,7 +228,7 @@ export function worldView(x) {
   const marker = a1 + (a2 - a1) * ((x.nowJd.info.hd.year % 1000) / 1000);
   return {
     title: 'Six thousand years', marker, svg: ring(segs, { marker }),
-    center: centerHTML({ big: x.hd.year.toLocaleString(), line: `The world's ${c.dayName}`, sub: `${ordinal(c.mil)} millennium` }),
+    center: centerHTML({ big: plain(gematria(c.mil)), line: `The world's ${c.dayName}`, sub: `Year ${x.hd.year.toLocaleString()} of 6,000` }),
     panel: worldPanel(x, c),
     children: { [mil]: { level: 'shemitah', focus: x.focus } },
   };
@@ -257,7 +257,7 @@ export function hourView(x, sel) {
   const step = (d) => ({ level: 'hour', focus: d > 0 ? b + 60000 : a - 60000 });
   return {
     title: `${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'}`, live, marker: frac != null ? frac * 360 : null, svg: s,
-    center: centerHTML({ badge: T.icon, badgeSize: 54, big: T.he, line: ht.tribe, sub: live ? `${60 - Math.floor(frac * 60)} min left` : `${fmtT(x, a)}–${fmtT(x, b)}` }),
+    center: centerHTML({ badge: T.icon, badgeSize: 54, big: T.he, line: ht.tribe, sub: live ? `Minute ${Math.floor(frac * 60) + 1} of 60` : `${fmtT(x, a)}–${fmtT(x, b)}` }),
     panel: hourPanel(x, sel, ht, a, b, live),
     children: {}, prev: step(-1), next: step(1),
   };
@@ -323,7 +323,7 @@ export function spaceView(x, rot) {
   return {
     title: `Facing ${compassWord(facing)}`, svg, around, bearing: j.bearing, facing,
     center: centerHTML({ badge: 'mikdash', badgeSize: 70, big: 'ירושלים', line: offJ < 12 ? 'Straight ahead' : `${mi.toLocaleString()} mi · ${compassWord(j.bearing)}`, sub: offJ < 12 ? `${mi.toLocaleString()} mi away` : 'Turn until the dot is at the top' }),
-    panel: spacePanel(x, j, mi, hourTr, monthTr, around),
+    panel: spacePanel(x, j, mi, hourTr, monthTr, around, rot),
   };
 }
 
@@ -351,8 +351,19 @@ function hourPanel(x, sel, ht, a, b, live) {
     ${card(`Its month: ${ht.month}`, `<div class="facets">
       <div><span>Letter</span><b class="he" lang="he">${L.letter}</b></div><div><span>Sense</span><b>${L.sense}</b></div>
       <div><span>Mazal</span><b>${L.mazal}</b><small>${L.mazalEn}</small></div><div><span>Planet</span><b>${p.tr}</b><small>${p.en}</small></div></div>`)}
-    ${card('The hour in time', `${kv('Jewish time', `${sel.hour - 1}:00 – ${sel.hour}:00 of the ${sel.isDay ? 'day' : 'night'}`)}${kv('Your clock', `${fmtT(x, a)} – ${fmtT(x, b)} · ${Math.round((b - a) / 60000)} min`)}${zs.map((z) => kv(esc(z.tr), fmtT(x, z.t))).join('')}`)}
+    ${card('The hour in time', `${live ? jewishNow(x, sel, a, b) : ''}${kv('Jewish time', `${sel.hour - 1}:00 – ${sel.hour}:00 of the ${sel.isDay ? 'day' : 'night'}`)}${kv('Part of the ' + (sel.isDay ? 'day' : 'night'), partOf(sel))}${kv('Your clock', `${fmtT(x, a)} – ${fmtT(x, b)} · ${Math.round((b - a) / 60000)} min`)}${zs.map((z) => kv(esc(z.tr), fmtT(x, z.t))).join('')}`)}
     <p class="fine src">Each hour follows a month: the first hour is Nisan's, the second Iyar's, as the Arizal ties hours and months to the same twelve permutations of the Name; Hineni repeats the cycle at night. Senses and letters: Sefer Yetzirah. The planet of the hour: Shabbos 156a, which concludes <bdi lang="he">אין מזל לישראל</bdi>.</p>`;
+}
+
+/** Where we are inside the hour, the Jewish way: its minutes, and its 1,080 chalakim. */
+function jewishNow(x, sel, a, b) {
+  const fr = (x.now - a) / (b - a), m = Math.floor(fr * 60), ch = Math.floor(fr * 1080) + 1;
+  return kv('Now', `${sel.hour - 1}:${String(m).padStart(2, '0')} of the ${sel.isDay ? 'day' : 'night'}<small>Minute ${m + 1} of the hour's 60 · chelek ${ch.toLocaleString()} of its 1,080 (Rambam, Kiddush HaChodesh 6:2)</small>`);
+}
+function partOf(sel) {
+  if (!sel.isDay) return `The ${ordinal(Math.ceil(sel.hour / 4))} watch of three<small>The night has three watches of four hours (Brachos 3a)</small>`;
+  const h = sel.hour;
+  return h <= 3 ? 'Morning: the time for Shema' : h === 4 ? 'Morning: the time for Shacharis' : h <= 6 ? 'Late morning, toward midday (chatzos)' : h <= 9 ? 'Afternoon: from Mincha Gedolah' : 'Late afternoon: Mincha Ketanah and plag';
 }
 
 export function dayPanel(x) {
@@ -374,16 +385,18 @@ export function dayPanel(x) {
     ...(next ? [['Next', `${esc(next.tr)} · ${fmtT(x, next.t)}`]] : []),
     ['Shabbos', wd === 6 ? 'Today' : wd === 5 ? 'Tonight' : `In ${6 - wd} days`],
   ];
+  const today = live ? 'Today · ' : '';
+  const head = `${today}The ${ordinal(wd + 1)} day<small class="day-sub">The ${ordinal(hd.day)} of the ${ordinal(MONTH_NUM[hd.month])} month · <bdi class="he" lang="he">${W.he} · ${hebrewDate(x.date).he.split(' ').slice(0, -1).join(' ')}</bdi></small>`;
   return `
-    ${card('Right now', rows.map(([k, v]) => kv(k, v)).join(''), 'feature now-card')}
-    ${card(`${W.tr} · <span class="he" lang="he">${W.he}</span>`, `<div class="tribe-row">${art(D.icon, 76)}<div><b class="built">${D.creation}</b><div class="he muted" lang="he">${D.creationHe}</div></div></div>
+    ${card(head, `<div class="tribe-row">${art(D.icon, 76)}<div><b class="built">${D.creation}</b><div class="he muted" lang="he">${D.creationHe}</div></div></div>
       <p class="lore-p">${esc(Q.built)}</p>
-      <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>`, 'feature')}
+      <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>`, 'feature day-head')}
     ${card('The day\'s light', `<div class="facets">
       <div><span>Sefirah</span><b>${D.sefirah}</b><small>${esc(Q.quality.split(': ')[1].split(',')[0])}</small></div>
       <div><span>Guest</span><b>${D.ushpiz}</b><small>${esc(Q.guest.replace(/^\w+,? ?/, ''))}</small></div>
       <div><span>Song</span><b>Tehillim ${D.shir}</b><small class="he" lang="he">${D.shirHe}</small></div></div>
-      <p class="fine">Each day of the week draws from one of the seven sefiros and one of the seven "guests" (Zohar). The song is the one the Levi'im sang that day (Tamid 7:4).</p>`)}`;
+      <p class="fine">Each day of the week draws from one of the seven sefiros and one of the seven "guests" (Zohar). The song is the one the Levi'im sang that day (Tamid 7:4).</p>`)}
+    <details class="pcard fold now-card"><summary><span class="fold-title">Right now</span><span class="fold-sum">${esc(P.holiday ? P.holiday : P.names)} · ${hd.day} ${hd.month}</span></summary>${rows.map(([k, v]) => kv(k, v)).join('')}</details>`;
 }
 
 function weekPanel(x, start) {
@@ -432,7 +445,7 @@ function worldPanel(x, c) {
 }
 
 const DIR_LETTER = { east: ['ד', 'Dalet'], west: ['כ', 'Kaf'], north: ['פ', 'Pei'], south: ['ר', 'Reish'] };
-function spacePanel(x, j, mi, hourTr, monthTr, around) {
+function spacePanel(x, j, mi, hourTr, monthTr, around, rot) {
   const row = (lbl, side) => `<div class="kv"><span>${lbl}</span><b><span class="dirrow"><span class="he big-l" lang="he">${DIR_LETTER[side][0]}</span> ${side[0].toUpperCase() + side.slice(1)} · ${CAMPS[side].map((t) => TRIBES[t].he).join(' · ')}</span></b></div>`;
   const phone = typeof DeviceOrientationEvent !== 'undefined' && matchMedia('(pointer: coarse)').matches;
   return `
@@ -440,18 +453,22 @@ function spacePanel(x, j, mi, hourTr, monthTr, around) {
       <div class="kv"><span>Above · below</span><b><span class="dirrow"><span class="he big-l" lang="he">ב</span> above · <span class="he big-l" lang="he">ג</span> below</span></b></div>
       <div class="space-btns"><button id="faceJ" class="btn" type="button">Face Yerushalayim</button><button id="northUp" class="btn ghost" type="button">North up</button>${phone ? '<button id="compassBtn" class="btn ghost" type="button">Connect to compass</button>' : ''}</div>
       <p class="fine">Drag the dial to turn it${phone ? ', or connect it to your phone\'s compass' : ''}. The top of the dial is the way you face. The letters of the six directions, and ת for the Holy Palace in the middle, follow Sefer Yetzirah 4:3 (editions differ in the order).</p>`, 'feature')}
+    ${card(`Where ${hourTr} camped`, campSvg(hourTr, rot) + `<p class="fine">This hour's tribe, in the camp around the Mishkan, turned with the dial to the way you face.</p>`, 'camp-card')}
     ${card('The camp', `<p class="lore-p">The dial is the camp in the desert (Bamidbar 2): Yehudah, Yissachar and Zevulun to the east; Reuven, Shimon and Gad to the south; Ephraim, Menashe and Binyamin to the west; Dan, Asher and Naftali to the north. At the center, where the Mishkan stood and the Beis Hamikdash would stand, is the Holy Palace.</p>
       <p class="lore-p">Lit: <b>${hourTr}</b>, this hour's tribe. Outlined: <b>${monthTr}</b>, this month's. The gold dot points to Yerushalayim, ${mi.toLocaleString()} miles to the ${compassWord(j.bearing)}.</p>`)}`;
 }
 
-export function campSvg(hi) {
+export function campSvg(hi, rot = null) {
   const slots = { north: (i) => [22 + i * 28, 10, 26], south: (i) => [22 + i * 28, 90, 26], east: (i) => [112, 28 + i * 22, 30], west: (i) => [-12, 28 + i * 22, 30] };
+  // In Space it turns with the dial; its words stay upright.
+  const up = (tx, ty) => (rot == null ? '' : ` transform="rotate(${f(-rot)} ${tx} ${ty})"`);
   let out = '';
   for (const [side, tribes] of Object.entries(CAMPS)) tribes.forEach((t, i) => {
     const [x, y, w] = slots[side](i);
-    out += `<g class="camp-t${t === hi ? ' hour' : ''}"><rect x="${x - w / 2}" y="${y - 6.5}" width="${w}" height="13" rx="3"/><text x="${x}" y="${y + 0.5}">${TRIBES[t].he}</text></g>`;
+    out += `<g class="camp-t${t === hi ? ' hour' : ''}"><rect x="${x - w / 2}" y="${y - 6.5}" width="${w}" height="13" rx="3"/><text x="${x}" y="${y + 0.5}"${up(x, y + 0.5)}>${TRIBES[t].he}</text></g>`;
   });
-  return `<svg class="camp" viewBox="-52 -12 204 124" role="img" aria-label="The tribes camped around the Mishkan">
-    <text x="50" y="-6" class="camp-dir">North</text><text x="50" y="106" class="camp-dir">South</text><text x="140" y="50" class="camp-dir">East</text><text x="-40" y="50" class="camp-dir">West</text>
-    <rect x="30" y="28" width="40" height="44" rx="2" class="mishkan"/><text x="50" y="47" class="camp-m">משכן</text><text x="50" y="58" class="camp-l">לוי</text>${out}</svg>`;
+  const body = `<text x="50" y="-6" class="camp-dir"${up(50, -6)}>North</text><text x="50" y="106" class="camp-dir"${up(50, 106)}>South</text><text x="140" y="50" class="camp-dir"${up(140, 50)}>East</text><text x="-40" y="50" class="camp-dir"${up(-40, 50)}>West</text>
+    <rect x="30" y="28" width="40" height="44" rx="2" class="mishkan"/><text x="50" y="47" class="camp-m"${up(50, 47)}>משכן</text><text x="50" y="58" class="camp-l"${up(50, 58)}>לוי</text>${out}`;
+  if (rot == null) return `<svg class="camp" viewBox="-52 -12 204 124" role="img" aria-label="The tribes camped around the Mishkan">${body}</svg>`;
+  return `<svg class="camp" viewBox="-52 -52 204 204" role="img" aria-label="The tribes camped around the Mishkan, turned to the way you face"><g transform="rotate(${f(rot)} 50 50)">${body}</g></svg>`;
 }

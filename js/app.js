@@ -37,29 +37,38 @@ function jewishTime(t, jd) {
 }
 
 // ---------- Navigation ----------
-// While a step is still moving, a new tap waits: two steps at once tangle into each other.
+// While a step is moving, a new tap does not wait: the step jumps straight to its end, and the new one begins.
 let busyUntil = 0;
 const busy = () => performance.now() < busyUntil;
 const hold = (ms) => { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) busyUntil = performance.now() + ms; };
+function settle() {
+  if (!busy()) return;
+  busyUntil = 0;
+  const w = $('dialWrap');
+  w.querySelectorAll('.ring-ghost, .halos-ghost, .morph, .fly').forEach((el) => el.remove());
+  w.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+  $('dial').classList.remove('no-now');
+}
 function go(next, dir) {
-  if (!next || busy()) return;
+  if (!next) return;
+  settle();
   view.level = next.level;
   view.focus = next.focus;
   view.follow = false;
   render(dir);
 }
 function goNow() {
-  if (busy()) return;
+  settle();
   Object.assign(view, { mode: 'time', level: 'day', focus: Date.now(), follow: true });
   render('out');
 }
 function zoomOut() {
-  if (busy()) return;
+  settle();
   const i = LEVELS.indexOf(view.level);
   if (i < LEVELS.length - 1) { view.level = LEVELS[i + 1]; render('out'); }
 }
 function zoomTo(level) {
-  if (busy()) return;
+  settle();
   const dir = LEVELS.indexOf(level) > LEVELS.indexOf(view.level) ? 'out' : 'in';
   view.level = level;
   // Back at the day you're living in: follow the clock again.
@@ -205,7 +214,10 @@ function nestToFace() {
   // The new circle: its ring first (beat 2), then everything inside it (beat 3).
   const dial = $('dial');
   const inner = [...dial.querySelectorAll('text, .art-at, .moonph, .ray, .marker, .band')];
-  dial.animate([{ opacity: 0 }, { opacity: 0, offset: 0.22 }, { opacity: 1, offset: 0.45 }, { opacity: 1 }], { duration: T, easing: ease });
+  dial.animate([{ opacity: 0 }, { opacity: 0, offset: 0.24 }, { opacity: 1, offset: 0.46 }, { opacity: 1 }], { duration: T, easing: ease });
+  // Its own gold "now" stays plain until the travelling arc has arrived on it: only one gold at a time.
+  dial.classList.add('no-now');
+  setTimeout(() => dial.classList.remove('no-now'), T * 0.8);
   inner.forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1 }], { duration: T, easing: 'ease' }));
   $('centerBtn').animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1 }], { duration: T, easing: 'ease' });
   $('journey').animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1 }], { duration: T, easing: 'ease' });
@@ -234,34 +246,25 @@ function nestToFace() {
   setTimeout(() => g.remove(), T + 50);
 }
 
-/** The old circle's letters travel to the new circle's places, fading as the new letters arrive. */
+/** Only the letters of the gold "now" block travel: they move into the middle and grow, becoming the new circle's
+ *  heading, while every other letter simply fades with its circle. */
 function flyLetters(dir) {
   const from = pendingLetters; pendingLetters = null;
-  if (!from || !from.length || !(dir === 'in' || dir === 'out') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const to = [...$('dial').querySelectorAll('text.rnum, text.num')].map((t) => ({ x: +t.getAttribute('x'), y: +t.getAttribute('y') }));
-  if (!to.length) return;
-  const ang = (p) => (Math.atan2(p.x - 200, -(p.y - 200)) * 180 / Math.PI + 360) % 360;
+  if (dir !== 'in' || !from || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const ov = document.createElementNS(SVGNS, 'svg');
   ov.setAttribute('viewBox', '-30 -30 460 460');
   ov.setAttribute('class', 'fly');
+  const t = document.createElementNS(SVGNS, 'text');
+  t.setAttribute('x', from.x.toFixed(1)); t.setAttribute('y', from.y.toFixed(1)); t.setAttribute('class', 'fly-w');
+  t.textContent = from.word;
+  ov.appendChild(t);
   $('dialWrap').appendChild(ov);
-  const D = SETTLE, toAng = to.map(ang), delay = dir === 'in' ? STAGE : 0;
-  from.forEach((p) => {
-    // Each letter goes to the new place nearest its own angle, so the travel is short and gentle.
-    const a = ang(p);
-    let best = 0, bd = 999;
-    toAng.forEach((b, j) => { const d = Math.abs(((b - a + 540) % 360) - 180); if (d < bd) { bd = d; best = j; } });
-    const q = to[best];
-    const t = document.createElementNS(SVGNS, 'text');
-    t.setAttribute('x', p.x); t.setAttribute('y', p.y); t.setAttribute('class', 'rnum fly-l');
-    t.textContent = p.s;
-    ov.appendChild(t);
-    t.animate([{ transform: 'translate(0px, 0px)', opacity: 1 }, { opacity: 1, offset: 0.55 }, { transform: `translate(${(q.x - p.x).toFixed(1)}px, ${(q.y - p.y).toFixed(1)}px)`, opacity: 0 }],
-      { duration: D, delay, easing: 'cubic-bezier(.45, .05, .25, 1)', fill: 'both' });
-  });
-  // The new letters come in as the old ones arrive.
-  $('dial').querySelectorAll('text.rnum, text.num').forEach((t) => t.animate([{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }], { duration: D, delay, easing: 'ease', fill: 'backwards' }));
-  setTimeout(() => ov.remove(), delay + D + 60);
+  t.style.transformBox = 'view-box'; t.style.transformOrigin = `${from.x}px ${from.y}px`;
+  const to = `translate(${(200 - from.x).toFixed(1)}px, ${(196 - from.y).toFixed(1)}px) scale(2.2)`;
+  // One upright word: it travels into the middle and grows, and hands over to the new circle's heading as it arrives.
+  t.animate([{ transform: 'none', opacity: 1 }, { opacity: 1, offset: 0.4 }, { transform: to, opacity: 0, offset: 0.66 }, { transform: to, opacity: 0 }],
+    { duration: STEP, easing: 'cubic-bezier(.37, 0, .25, 1)', fill: 'both' });
+  setTimeout(() => ov.remove(), STEP + 60);
 }
 
 function renderVer() {
@@ -271,7 +274,11 @@ function renderVer() {
 function render(dir) {
   const now = Date.now();
   if ((dir === 'in' || dir === 'out') && $('dial').firstChild) {
-    pendingLetters = [...$('dial').querySelectorAll('text.rnum, text.num')].map((t) => ({ x: +t.getAttribute('x'), y: +t.getAttribute('y'), s: t.textContent, he: true }));
+    const nowT = [...$('dial').querySelectorAll('text.rnum.now, text.num.now')];
+    if (nowT.length) {
+      const P = nowT.map((t) => [+t.getAttribute('x'), +t.getAttribute('y')]);
+      pendingLetters = { word: nowT[0].dataset.w || nowT.map((t) => t.textContent).join(''), x: P.reduce((q, p) => q + p[0], 0) / P.length, y: P.reduce((q, p) => q + p[1], 0) / P.length };
+    } else pendingLetters = null;
     const nb = $('dial').querySelector('.rs.now[data-a], .seg.now[data-a]');
     pendingBlock = dir === 'in' && nb ? nb.dataset.a.split(',').map(Number) : null;
     pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), center: $('centerBtn').innerHTML, halos: $('halos').innerHTML, marker: lastMarker, level: shownLevel, T: { ...ringT, [shownLevel]: { rot: 0, s: 1 } } };
@@ -324,12 +331,12 @@ function render(dir) {
     v = hourView(x, { isDay: h.isDay, hour: h.hour });
     $('dial').innerHTML = v.svg;
     $('centerBtn').innerHTML = v.center;
-    $('panel').innerHTML = v.panel;
+    $('panel').innerHTML = panelTitle(v.title) + v.panel;
   } else {
     v = { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[view.level](x);
     $('dial').innerHTML = v.svg;
     $('centerBtn').innerHTML = v.center;
-    $('panel').innerHTML = journey ? '' : v.panel;
+    $('panel').innerHTML = journey ? '' : panelTitle(v.title) + v.panel;
   }
   if (journey) $('panel').innerHTML = '';
   if (view.level !== 'day') $('viewTitle').innerHTML = v.title || ''; // the day's title is set live by updateDay
@@ -348,6 +355,9 @@ function render(dir) {
   renderVer();
 }
 
+// Every level's heading sits at the top of its own cards, in one style.
+const panelTitle = (t) => (t ? `<h2 class="panel-title">${t}</h2>` : '');
+
 function renderSpace() {
   if (rotMode === 'jer') rot = -spaceBearing();
   else if (rotMode === 'phone' && heading != null) rot = -heading;
@@ -356,7 +366,7 @@ function renderSpace() {
   $('centerBtn').innerHTML = v.center;
   $('viewTitle').textContent = v.title;
   if (!document.getElementById('faceJ')) {
-    $('panel').innerHTML = v.panel;
+    $('panel').innerHTML = panelTitle(`<span id="spaceTitle">${v.title}</span>`) + v.panel;
     $('faceJ').addEventListener('click', () => { rotMode = 'jer'; renderSpace(); });
     $('northUp').addEventListener('click', () => { rotMode = 'north'; rot = 0; renderSpace(); });
     $('compassBtn')?.addEventListener('click', startCompass);
@@ -364,6 +374,8 @@ function renderSpace() {
     const fresh = document.createElement('div');
     fresh.innerHTML = v.panel;
     $('panel').querySelector('.pcard').replaceWith(fresh.querySelector('.pcard'));
+    $('panel').querySelector('.camp-card')?.replaceWith(fresh.querySelector('.camp-card'));
+    if ($('spaceTitle')) $('spaceTitle').textContent = v.title;
     $('faceJ').addEventListener('click', () => { rotMode = 'jer'; renderSpace(); });
     $('northUp').addEventListener('click', () => { rotMode = 'north'; rot = 0; renderSpace(); });
     $('compassBtn')?.addEventListener('click', startCompass);
@@ -456,8 +468,8 @@ const monthTribe = (hd) => monthLore(hd.month)?.tribe ?? '';
 const dayMade = (wd) => ({ 0: 'light', 1: 'the firmament', 2: 'the land and its plants', 3: 'the sun, moon and stars', 4: 'the fish and the birds', 5: 'the animals and man', 6: 'rest' })[wd];
 // ---------- The journey: from the outside in ----------
 // nest → world → shemitah → year → month → week → (tap outside: out) month → week → day → (tap the hour) hour → (tap the middle) today
-const STEPS = ['nest', 'world', 'shemitah', 'year', 'month', 'week', 'out', 'week2', 'day', 'hour'];
-const STEP_LEVEL = { nest: 'world', world: 'world', shemitah: 'shemitah', year: 'year', month: 'month', week: 'week', out: 'month', week2: 'week', day: 'day', hour: 'hour' };
+const STEPS = ['nest', 'world', 'shemitah', 'year', 'month', 'week', 'day', 'hour'];
+const STEP_LEVEL = { nest: 'world', world: 'world', shemitah: 'shemitah', year: 'year', month: 'month', week: 'week', day: 'day', hour: 'hour' };
 const OUTER = ['world', 'shemitah', 'year', 'month', 'week', 'day'];
 let journey = null;
 const isTouch = () => matchMedia('(pointer: coarse)').matches;
@@ -467,15 +479,13 @@ function journeyCopy(step) {
   const h = hourOf(Date.now(), x.nowJd), ht = hourTribe(h.hour);
   return {
     nest: ['Time, according to Judaism', 'In Judaism, time is not a straight line but circles inside circles: the six thousand years of the world, the seven-year shemitah cycle, the year, the month, the week, the day and the hour. You stand at the center of them all.', 'Tap the outer ring'],
-    world: [`The ${ordinal(mil)} millennium`, "Our sages teach that the world runs for six thousand years, like the six days of creation, and the seventh millennium is a Shabbos (Sanhedrin 97a). We are in the sixth: the world's Friday, getting ready.", 'Tap the middle to step in'],
-    shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'The Torah counts years in sevens. Six years the land of Israel is worked, and in the seventh, the shemitah, it rests (Vayikra 25).', 'Tap the middle'],
-    year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'The Jewish year follows both the moon and the sun. It begins at Rosh Hashanah, and a thirteenth month is added in some years to keep Pesach in spring. Each month is linked to one of the twelve tribes.', 'Tap the middle'],
-    month: [`${hd.month}`, `A Jewish month begins with the new moon, Rosh Chodesh, and grows and wanes with it. This is ${hd.month}, the month of ${monthTribe(hd)}. Today is its ${ordinal(hd.day)} day.`, 'Tap the middle'],
-    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `In Hebrew the weekdays have no names of their own, only numbers counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, 'Now tap outside the circle to step back out'],
-    out: ['Back to the month', 'Every circle holds the one inside it. Step out any time to see the bigger picture.', 'Tap the middle to go back in'],
-    week2: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, 'And the week again.', 'Tap the middle'],
-    day: ['Today', 'A Jewish day begins at sunset: "there was evening and there was morning." It has twelve hours of night and twelve of day. Each is a twelfth of the dark or the light, so they stretch in summer and shrink in winter. The line is now.', "Tap the hour you're in"],
-    hour: [`The ${ordinal(h.hour)} hour · ${ht.tribe}`, "This is the hour you're in. Each hour is linked to a month and its tribe, with its own quality and pasuk. You can step into any hour like this. The day is home.", 'Tap the middle to come back to today'],
+    world: [`The ${ordinal(mil)} millennium`, "Our sages teach that the world runs for six thousand years, like the six days of creation, and the seventh millennium is a Shabbos (Sanhedrin 97a). We are in the sixth: the world's Friday, getting ready.", 'Tap the gold, where we are, to step in'],
+    shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'The Torah counts years in sevens. Six years the land of Israel is worked, and in the seventh, the shemitah, it rests (Vayikra 25).', 'Tap the gold year to step in'],
+    year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'The Jewish year follows both the moon and the sun. It begins at Rosh Hashanah, and a thirteenth month is added in some years to keep Pesach in spring. Each month is linked to one of the twelve tribes.', 'Tap the gold month to step in'],
+    month: [`${hd.month}`, `A Jewish month begins with the new moon, Rosh Chodesh, and grows and wanes with it. This is ${hd.month}, the month of ${monthTribe(hd)}. Today is its ${ordinal(hd.day)} day.`, 'Tap the gold, this week, to step in'],
+    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `In Hebrew the weekdays have no names of their own, only numbers counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, 'Tap the gold, today, to step in'],
+    day: ['Today', 'A Jewish day begins at sunset: "there was evening and there was morning." It has twelve hours of night and twelve of day. Each is a twelfth of the dark or the light, so they stretch in summer and shrink in winter. The line is now.', "Tap the gold hour you're in"],
+    hour: [`The ${ordinal(h.hour)} hour · ${ht.tribe}`, "This is the hour you're in. Each hour is linked to a month and its tribe, with its own quality and pasuk. Every circle holds the one inside it: tap the gold to step in, tap outside to step back out.", 'Tap outside the circle to step back out to today'],
   }[step];
 }
 
@@ -593,7 +603,7 @@ function endJourney() {
 
 /** One action moves the journey on: 'outer' (the outer ring), 'middle', 'outside', or 'hour' (a block of the day). */
 function journeyDo(action, arg) {
-  if (busy()) return;
+  settle();
   const st = journey.step;
   const move = (step, level, dir, focus) => {
     journey.step = step;
@@ -602,11 +612,10 @@ function journeyDo(action, arg) {
   };
   if (st === 'nest' && action === 'outer') { pendingNest = $('dial').outerHTML.replace(/ id="[^"]*"/g, ''); return move('world', 'world'); }
   if (action === 'middle') {
-    const next = { world: ['shemitah', 'shemitah'], shemitah: ['year', 'year'], year: ['month', 'month'], month: ['week', 'week'], out: ['week2', 'week'], week2: ['day', 'day'] }[st];
+    const next = { world: ['shemitah', 'shemitah'], shemitah: ['year', 'year'], year: ['month', 'month'], month: ['week', 'week'], week: ['day', 'day'] }[st];
     if (next) return move(next[0], next[1], 'in');
-    if (st === 'hour') return endJourney();
   }
-  if (st === 'week' && action === 'outside') return move('out', 'month', 'out');
+  if (st === 'hour' && (action === 'outside' || action === 'middle')) return endJourney();
   if (st === 'day' && action === 'hour') return move('hour', 'hour', 'in', arg);
   // Anything else: a gentle nudge toward the right place.
   $('jTap').classList.remove('nudge'); void $('jTap').offsetWidth; $('jTap').classList.add('nudge');
@@ -778,6 +787,7 @@ function onChild(e) {
       const len = isDay ? x.jd.day.hour : x.jd.night.hour, start = (isDay ? x.jd.day.netz : x.jd.night.start) + n * len;
       return journeyDo('hour', x.now >= start && x.now < start + len ? x.now : start + len / 2);
     }
+    if (e.target.closest('[data-child]')?.matches('.now, .now *')) return journeyDo('middle');
     return journeyDo('nudge');
   }
   const t = e.target.closest('[data-seg],[data-band],[data-child]');

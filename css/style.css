@@ -743,3 +743,19 @@ body.journeying .seg-toggle, body.intro-on .seg-toggle { visibility: hidden; }
 body.arriving .seg-toggle, body.arriving .controls, body.arriving .titlebar { animation: arrive 1.4s ease 1.6s both; }
 body.arriving #panel, body.arriving .foot { animation: arrive 1.6s ease 2.6s both; }
 .titlebar { min-height: 26px; }
+
+/* The travelling "now" letters keep their own colour; the leaving ring's copy of them is hidden */
+.fly-w { fill: var(--accent); font-family: var(--he); font-size: 15px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+.ghost-words text.now { display: none; }
+/* In the journey, the gold block you are in breathes: that's where to tap */
+body[data-jstep="world"] #dial .rs.now, body[data-jstep="shemitah"] #dial .rs.now, body[data-jstep="year"] #dial .rs.now,
+body[data-jstep="month"] #dial .rs.now, body[data-jstep="week"] #dial .rs.now { animation: tapme2 1.8s ease-in-out infinite; }
+
+/* Headings live with their cards now, not above the dial */
+.titlebar { display: none; }
+.panel-title { margin: 6px 4px 2px; font-family: var(--he); font-size: 21px; font-weight: 700; color: var(--sky-ink); line-height: 1.25; }
+.day-head h3 { font-family: var(--he); font-size: 21px; letter-spacing: 0; text-transform: none; color: var(--ink); line-height: 1.25; }
+.day-head h3 .day-sub { display: block; margin-top: 4px; font-family: inherit; font-size: 13.5px; font-weight: 500; color: var(--muted); }
+.day-head h3 .day-sub .he { font-size: 15px; }
+.kv b small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; line-height: 1.4; margin-top: 2px; }
+.camp-card .camp { max-width: 300px; margin: 0 auto; display: block; }
