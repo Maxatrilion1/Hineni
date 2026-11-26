@@ -7,8 +7,8 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const mixA = (h1, h2, t, a) => { const c1 = hex(h1), c2 = hex(h2); return `rgba(${c1.map((v, i) => Math.round(lerp(v, c2[i], t))).join(',')},${Math.max(0, Math.min(1, a)).toFixed(3)})`; };
 
-const TURN = 1 / 14;   // turns per second while you watch: one turn every 14 s
-const ORIENT = 6;      // seconds for the tilt and landing
+const TURN = 1 / 20;   // turns per second while you watch: one turn every 20 s
+const ORIENT = 5.5;    // seconds for the tilt and landing
 const TAU = Math.PI * 2;
 
 export function intro(target, { onLand, dots = [] } = {}) {
