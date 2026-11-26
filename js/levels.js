@@ -228,7 +228,7 @@ export function worldView(x) {
   const marker = a1 + (a2 - a1) * ((x.nowJd.info.hd.year % 1000) / 1000);
   return {
     title: 'Six thousand years', marker, svg: ring(segs, { marker }),
-    center: centerHTML({ big: plain(gematria(c.mil)), line: `The world's ${c.dayName}`, sub: `Year ${x.hd.year.toLocaleString()} of 6,000` }),
+    center: centerHTML({ big: x.hd.year.toLocaleString(), line: 'of 6,000 years', sub: `Millennium <bdi class="he" lang="he">${plain(gematria(c.mil))}</bdi> · the ${ordinal(c.mil)}` }),
     panel: worldPanel(x, c),
     children: { [mil]: { level: 'shemitah', focus: x.focus } },
   };
@@ -333,6 +333,9 @@ function emblemPhrase(e) {
   if (/^(the|a|an) /.test(l) || /s$/.test(l)) return l;
   return (/^[aeiou]/.test(l) ? 'an ' : 'a ') + l;
 }
+/** A source, folded: tap "Source" to open it, tap again to close. */
+export const src = (html) => `<details class="src"><summary>Source</summary><p>${html}</p></details>`;
+const BUILT_REF = ['1:3–5', '1:6–8', '1:9–13', '1:14–19', '1:20–23', '1:24–31', '2:1–3'];
 const card = (title, body, cls = '') => `<section class="pcard ${cls}">${title ? `<h3>${title}</h3>` : ''}${body}</section>`;
 const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
 const swatch = (cols) => `<span class="swatch">${cols.map((c) => `<i style="background:${c}"></i>`).join('')}</span>`;
@@ -343,7 +346,8 @@ function hourPanel(x, sel, ht, a, b, live) {
   const zs = x.jd.list.filter((z) => z.t >= a && z.t < b);
   return `
     ${card(live ? 'This hour' : `${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'}`, `
-      <div class="hold"><div><span>Energy</span><p>${esc(F.energy)}</p></div><div><span>Focus</span><p>${esc(F.focus)}</p></div><div><span>Be aware</span><p>${esc(F.aware)}</p></div></div>`, 'feature')}
+      <div class="hold"><div><span>Energy</span><p>${esc(F.energy)}</p></div><div><span>Focus</span><p>${esc(F.focus)}</p></div><div><span>Be aware</span><p>${esc(F.aware)}</p></div></div>
+      ${src(`Each hour belongs to a month, in order from Nissan, after the Arizal's twelve permutations of the Name for months and hours. The month's sense and letter: Sefer Yetzirah, chapter 5. Its energy draws on the classic teachings on the months, such as Bnei Yissaschar. "Focus" and "Be aware" are Hineni's own reflections.`)}`, 'feature')}
     ${card('', `<div class="blessing"><div class="he" lang="he">${T.blessing.he}</div><div>${esc(T.blessing.en)}</div><small>${T.blessing.ref}</small></div>`)}
     ${card(`Where ${ht.tribe} camped`, campSvg(ht.tribe) + `<p class="fine">On the ${T.camp} side of the Mishkan, under a ${esc(T.flagText)} flag bearing ${esc(emblemPhrase(T.emblem))} (Bamidbar 2; Bamidbar Rabbah 2:7).</p>`)}
     ${card(`The tribe of ${ht.tribe}`, `<div class="tribe-row">${art(T.icon, 64)}<p class="lore-p">${esc(T.about)}</p></div>
@@ -390,12 +394,14 @@ export function dayPanel(x) {
   return `
     ${card(head, `<div class="tribe-row">${art(D.icon, 76)}<div><b class="built">${D.creation}</b><div class="he muted" lang="he">${D.creationHe}</div></div></div>
       <p class="lore-p">${esc(Q.built)}</p>
-      <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>`, 'feature day-head')}
+      <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>
+      ${live && x.now < x.jd.day.shkiah ? `<p class="edge-note">This day ends at sunset, <b>${fmtT(x, x.jd.day.shkiah)}</b>, and ${wd === 5 ? '<b>Shabbos</b> begins' : `<b>the ${ordinal((wd + 1) % 7 + 1)} day</b> begins`}. A Jewish day runs from sunset to sunset.</p>` : ''}
+      ${src(`The work of the day: Bereishis ${BUILT_REF[wd]}. A day begins in the evening: "there was evening and there was morning" (Bereishis 1:5). Nissan is counted as the first month (Shemos 12:2), so ${hd.month} is the ${ordinal(MONTH_NUM[hd.month])}; the count of years begins in Tishrei (Rosh Hashanah 1:1). "Today asks" is Hineni's own reflection on the day's work, not a quotation.`)}`, 'feature day-head')}
     ${card('The day\'s light', `<div class="facets">
       <div><span>Sefirah</span><b>${D.sefirah}</b><small>${esc(Q.quality.split(': ')[1].split(',')[0])}</small></div>
       <div><span>Guest</span><b>${D.ushpiz}</b><small>${esc(Q.guest.replace(/^\w+,? ?/, ''))}</small></div>
       <div><span>Song</span><b>Tehillim ${D.shir}</b><small class="he" lang="he">${D.shirHe}</small></div></div>
-      <p class="fine">Each day of the week draws from one of the seven sefiros and one of the seven "guests" (Zohar). The song is the one the Levi'im sang that day (Tamid 7:4).</p>`)}
+      ${src('The seven days and the seven lower sefiros, from Chesed to Malchus: Kabbalah, following the Zohar. The seven "guests" (ushpizin): Zohar III 103b–104a. The song of the day, sung by the Levi\'im in the Beis Hamikdash: Mishnah Tamid 7:4.')}`)}
     <details class="pcard fold now-card"><summary><span class="fold-title">Right now</span><span class="fold-sum">${esc(P.holiday ? P.holiday : P.names)} · ${hd.day} ${hd.month}</span></summary>${rows.map(([k, v]) => kv(k, v)).join('')}</details>`;
 }
 
@@ -445,14 +451,23 @@ function worldPanel(x, c) {
 }
 
 const DIR_LETTER = { east: ['ד', 'Dalet'], west: ['כ', 'Kaf'], north: ['פ', 'Pei'], south: ['ר', 'Reish'] };
+const DIR_HE = { north: 'צפון', south: 'דרום', east: 'מזרח', west: 'מערב' };
+// The angels around you, as said in the Shema at bedtime (from Bamidbar Rabbah 2:10).
+const ANGEL = { Ahead: ['Uriel', 'אוריאל'], Behind: ['Refael', 'רפאל'], Right: ['Michael', 'מיכאל'], Left: ['Gavriel', 'גבריאל'] };
+// Sefer Yetzirah 1:13: the six directions sealed with the three letters of the Name (Kaplan's text; editions differ).
+const SEALS = [['Above', 'יהו'], ['Below', 'יוה'], ['East · ahead', 'היו'], ['West · behind', 'הוי'], ['South · right', 'ויה'], ['North · left', 'והי']];
 function spacePanel(x, j, mi, hourTr, monthTr, around, rot) {
-  const row = (lbl, side) => `<div class="kv"><span>${lbl}</span><b><span class="dirrow"><span class="he big-l" lang="he">${DIR_LETTER[side][0]}</span> ${side[0].toUpperCase() + side.slice(1)} · ${CAMPS[side].map((t) => TRIBES[t].he).join(' · ')}</span></b></div>`;
+  const row = (lbl, side) => `<div class="kv"><span>${lbl}<small class="angel">${ANGEL[lbl][0]} <bdi class="he" lang="he">${ANGEL[lbl][1]}</bdi></small></span><b><span class="dirrow"><span class="he big-l" lang="he">${DIR_LETTER[side][0]}</span> ${side[0].toUpperCase() + side.slice(1)} · <bdi class="he" lang="he">${DIR_HE[side]}</bdi></span><small><bdi class="he" lang="he">${CAMPS[side].map((t) => TRIBES[t].he).join(' · ')}</bdi></small></b></div>`;
   const phone = typeof DeviceOrientationEvent !== 'undefined' && matchMedia('(pointer: coarse)').matches;
   return `
     ${card('Around you', `${row('Ahead', around.ahead)}${row('Right', around.right)}${row('Behind', around.behind)}${row('Left', around.left)}
-      <div class="kv"><span>Above · below</span><b><span class="dirrow"><span class="he big-l" lang="he">ב</span> above · <span class="he big-l" lang="he">ג</span> below</span></b></div>
+      <div class="kv"><span>Above · below<small class="angel">The Shechinah above</small></span><b><span class="dirrow"><span class="he big-l" lang="he">ב</span> above · <span class="he big-l" lang="he">ג</span> below</span></b></div>
       <div class="space-btns"><button id="faceJ" class="btn" type="button">Face Yerushalayim</button><button id="northUp" class="btn ghost" type="button">North up</button>${phone ? '<button id="compassBtn" class="btn ghost" type="button">Connect to compass</button>' : ''}</div>
-      <p class="fine">Drag the dial to turn it${phone ? ', or connect it to your phone\'s compass' : ''}. The top of the dial is the way you face. The letters of the six directions, and ת for the Holy Palace in the middle, follow Sefer Yetzirah 4:3 (editions differ in the order).</p>`, 'feature')}
+      <p class="fine">Drag the dial to turn it${phone ? ', or connect it to your phone\'s compass' : ''}. The top of the dial is the way you face.</p>
+      ${src('The letters of the six directions, and ת for the Holy Palace in the middle: Sefer Yetzirah 4:3 (editions differ in the order). The angels around you: "On my right Michael, on my left Gavriel, before me Uriel, behind me Refael, and above my head the Shechinah of G-d," from the Shema at bedtime, based on Bamidbar Rabbah 2:10. The camp: Bamidbar 2.')}`, 'feature')}
+    ${card('The six directions, sealed', `<p class="lore-p">Sefer Yetzirah tells how the world's six directions were sealed, each with the three letters of the Name in a different order. Wherever you turn, the Name is there.</p>
+      <div class="seals">${SEALS.map(([d, l]) => `<div><span>${d}</span><b class="he" lang="he">${l}</b></div>`).join('')}</div>
+      ${src('Sefer Yetzirah 1:13, as translated by Rabbi Aryeh Kaplan. Editions of Sefer Yetzirah differ in which order goes with which direction.')}`)}
     ${card(`Where ${hourTr} camped`, campSvg(hourTr, rot) + `<p class="fine">This hour's tribe, in the camp around the Mishkan, turned with the dial to the way you face.</p>`, 'camp-card')}
     ${card('The camp', `<p class="lore-p">The dial is the camp in the desert (Bamidbar 2): Yehudah, Yissachar and Zevulun to the east; Reuven, Shimon and Gad to the south; Ephraim, Menashe and Binyamin to the west; Dan, Asher and Naftali to the north. At the center, where the Mishkan stood and the Beis Hamikdash would stand, is the Holy Palace.</p>
       <p class="lore-p">Lit: <b>${hourTr}</b>, this hour's tribe. Outlined: <b>${monthTr}</b>, this month's. The gold dot points to Yerushalayim, ${mi.toLocaleString()} miles to the ${compassWord(j.bearing)}.</p>`)}`;

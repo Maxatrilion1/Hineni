@@ -65,8 +65,22 @@ export function buildDial(svg, jd, tz) {
   }
   // Horizon: shkiah (right) and netz (left).
   for (const a of [90, 270]) {
-    const [x1, y1] = pt(R_IN - 14, a), [x2, y2] = pt(R_OUT + 6, a);
-    el('line', { x1: f(x1), y1: f(y1), x2: f(x2), y2: f(y2), class: 'horizon' }, svg);
+    const [x1, y1] = pt(R_IN - 14, a), [x2, y2] = pt(R_OUT + (a === 90 ? 22 : 6), a);
+    el('line', { x1: f(x1), y1: f(y1), x2: f(x2), y2: f(y2), class: a === 90 ? 'horizon edge' : 'horizon' }, svg);
+  }
+  // At sunset one Jewish day ends and the next begins: say so, right at the line.
+  const wd = jd.info?.wd;
+  if (wd != null) {
+    const ord = (n) => n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
+    const name = (d) => (d === 6 ? 'Shabbos' : `the ${ord(d + 1)} day`);
+    const arcPath = (a1, a2) => { const [x1, y1] = pt(R_OUT + 13, a1), [x2, y2] = pt(R_OUT + 13, a2); return `M${f(x1)} ${f(y1)}A${R_OUT + 13} ${R_OUT + 13} 0 0 1 ${f(x2)} ${f(y2)}`; };
+    const defs2 = svg.querySelector('defs');
+    el('path', { id: 'edgeEnd', d: arcPath(28, 87) }, defs2);
+    el('path', { id: 'edgeBegan', d: arcPath(93, 152) }, defs2);
+    const t1 = el('text', { class: 'edge-l' }, svg), p1 = el('textPath', { href: '#edgeEnd', startOffset: '100%', 'text-anchor': 'end' }, t1);
+    p1.textContent = `${name((wd + 1) % 7)} begins ▸`;
+    const t2 = el('text', { class: 'edge-l began' }, svg), p2 = el('textPath', { href: '#edgeBegan', startOffset: '0%' }, t2);
+    p2.textContent = `◂ ${name(wd)} began`;
   }
 
   // Civil clock, warped onto the Jewish hours.

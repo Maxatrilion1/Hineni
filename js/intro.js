@@ -9,7 +9,7 @@ const mixA = (h1, h2, t, a) => { const c1 = hex(h1), c2 = hex(h2); return `rgba(
 
 const RISE = 1 / 30;   // coils per second the spiral slides down (the camera rising): one coil every 30 s
 const TURN = 1 / 60;   // turns per second of its own gentle turn: one turn every 60 s
-const ORIENT = 3.8;      // seconds for the tilt and landing
+const ORIENT = 2.6;      // seconds for the tilt and landing
 const TAU = Math.PI * 2;
 
 export function intro(target, { onLand, dots = [] } = {}) {
@@ -81,7 +81,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
-      const step = 1 / 90, pts = [], wMax = phase === 'idle' ? 5.2 : 9;
+      const step = 1 / 72, pts = [], wMax = phase === 'idle' ? 5.2 : 9;
       const sample = (w) => {
         const q = at(w, lerp(R0, ringR(w), eAt(w)));
         q.al = alphaAt(w, q.Y); q.w = w;
@@ -112,22 +112,32 @@ export function intro(target, { onLand, dots = [] } = {}) {
       };
       ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
       // Neighbouring pieces of the same shade go out as one stroke, so the whole ribbon is a few dozen strokes.
+      // Every small step of the ribbon has its own shade (so the light turns into the dark continuously), flat ends,
+      // and is drawn from one step back inside the last: no caps, no seams, nothing to shimmer at the turn.
+      const shadeCache = new Map();
+      const colorAt = (rim, sa) => {
+        const k = (rim ? 10000 : 0) + Math.round((sa + 1) * 400);
+        let c = shadeCache.get(k);
+        if (!c) {
+          const t = awayOf((k % 10000) / 400 - 1) * DARK * (1 - e);
+          let v = FACE.map((q, i) => lerp(q, NIGHT[i], t));
+          if (rim) v = v.map((q, i) => lerp(q, RIMC[i], 0.38));
+          c = `rgb(${v.map(Math.round).join(',')})`; shadeCache.set(k, c);
+        }
+        return c;
+      };
       const ribbon = (far) => {
         for (const rim of [true, false]) {
           const kW = rim ? 1 : 0.72;
-          let path = null, key = '', prevIn = false;
-          const flush = () => { if (path && path.length > 1) { ctx.globalAlpha = path.keep; ctx.strokeStyle = path.c; ctx.lineWidth = band * path.sc * kW; ctx.lineCap = path.first ? 'butt' : 'round'; ctx.beginPath(); path.forEach((q, i) => (i ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y))); ctx.stroke(); } path = null; };
           for (let i = 1; i < pts.length; i++) {
             const a = pts[i - 1], b = pts[i];
-            const inPass = ok(a) && ok(b) && (a.sa + b.sa > 0) === far && (a.keep + b.keep) / 2 > 0.01;
-            if (!inPass) { flush(); prevIn = false; continue; }
-            const c = color(rim, (a.sa + b.sa) / 2), keep = Math.round(((a.keep + b.keep) / 2) * 20) / 20, k2 = c + keep;
-            if (path && k2 === key && Math.abs(b.sc - path.sc) < 0.04) { path.push(b); continue; }
-            const first = !prevIn;
-            flush();
-            path = [a, b]; path.c = c; path.keep = keep; path.sc = b.sc; path.first = first; key = k2; prevIn = true;
+            if (!(ok(a) && ok(b) && (a.sa + b.sa > 0) === far)) continue;
+            const keep = (a.keep + b.keep) / 2;
+            if (keep <= 0.01) continue;
+            const back = pts[i - 2] && ok(pts[i - 2]) ? pts[i - 2] : null;
+            ctx.globalAlpha = keep; ctx.strokeStyle = colorAt(rim, (a.sa + b.sa) / 2); ctx.lineWidth = band * b.sc * kW;
+            ctx.beginPath(); if (back) { ctx.moveTo(back.X, back.Y); ctx.lineTo(a.X, a.Y); } else ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
           }
-          flush();
         }
         ctx.globalAlpha = 1;
       };
@@ -174,10 +184,11 @@ export function intro(target, { onLand, dots = [] } = {}) {
       }
 
       if (phase === 'orient' && p >= 1) {
-        phase = 'gone';
-        el.classList.add('dissolve');
+        // Flat now: hold the spiral a moment while the gold circles come up beneath it, then let it go.
+        phase = 'hold';
         onLand?.();
-        setTimeout(() => { done = true; el.remove(); removeEventListener('resize', size); resolve(); }, 500);
+        setTimeout(() => { phase = 'gone'; el.classList.add('dissolve'); }, 450);
+        setTimeout(() => { done = true; el.remove(); removeEventListener('resize', size); resolve(); }, 950);
       }
       requestAnimationFrame(frame);
     }
