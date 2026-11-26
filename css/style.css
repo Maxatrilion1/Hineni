@@ -700,7 +700,6 @@ body.journeying .seg-toggle, body.intro-on .seg-toggle, body.journeying #nowBtn,
 /* The end of the journey: the clock grows to its full size and the rest of the page comes in */
 #dialWrap { transition: opacity .45s ease; }
 @keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-body.arriving .seg-toggle, body.arriving #nowBtn { animation: arrive 1.2s ease 1.2s both; }
 body.arriving #panel, body.arriving .foot { animation: arrive 1.2s ease 1.8s both; }
 
 /* The travelling "now" letters keep their own colour; the leaving ring's copy of them is hidden */
@@ -778,3 +777,8 @@ body[data-jstep="month"] #dial .rs.now, body[data-jstep="week"] #dial .rs.now { 
 .get .btn { margin-top: 6px; }
 .get a { color: var(--accent); }
 .credit { margin: 14px 0 2px; text-align: center; font-family: var(--he); font-size: 14px; color: var(--muted); }
+
+/* The journey: the top waits until you arrive, and the circle sits centred in the space above the card */
+body.journeying .top, body.intro-on .top { visibility: hidden; }
+body.arriving .top { animation: arrive 1.2s ease 1.2s both; }
+body.journeying .clock { min-height: calc(100svh - 330px - env(safe-area-inset-bottom)); align-content: center; }
