@@ -7,7 +7,7 @@ import { intro } from './intro.js';
 import { art } from './art.js';
 import { DAYS } from './lore.js';
 import { monthLore } from './hebrew.js';
-import { src, RENDER, LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
+import { src, ladder, RENDER, LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
 import { NEW_YORK, CITIES, isIsrael, candleMinutes, geolocate, geoPermission, placeName, searchPlaces, distanceKm } from './places.js';
 
 const store = {
@@ -38,7 +38,7 @@ function jewishTime(t, jd) {
 
 // ---------- Navigation ----------
 // While a step is moving, a new tap does not wait: the step jumps straight to its end, and the new one begins.
-let busyUntil = 0;
+let busyUntil = 0, goldTimer = 0;
 const busy = () => performance.now() < busyUntil;
 const hold = (ms) => { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) busyUntil = performance.now() + ms; };
 function settle() {
@@ -62,8 +62,17 @@ function goNow() {
   Object.assign(view, { mode: 'time', level: 'day', focus: Date.now(), follow: true });
   render('out');
 }
+function hint(key, text) {
+  if (store.get(key)) return;
+  store.set(key, true);
+  $('toast').innerHTML = `<span><b>${text}</b></span>`;
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('toast').classList.remove('show'), 6000);
+}
 function zoomOut() {
   settle();
+  if (!journey) setTimeout(() => hint('hint.in', 'Tap any section to step inside it'), STEP);
   const i = LEVELS.indexOf(view.level);
   if (i < LEVELS.length - 1) { view.level = LEVELS[i + 1]; render('out'); }
 }
@@ -291,7 +300,6 @@ function render(dir) {
   $('modeSpace').setAttribute('aria-selected', view.mode === 'space');
   const atNow = view.follow && view.level === 'day' && view.mode === 'time';
   $('nowBtn').classList.toggle('here', atNow);
-  $('nestBtn').querySelector('.nest-ico').innerHTML = nestIcon();
 
   if (x.jd.polar) {
     $('panel').innerHTML = `<div class="pcard"><p>The sun doesn't rise or set here today, so the hours can't be calculated. Polar zmanim need a rav's guidance.</p></div>`;
@@ -311,7 +319,6 @@ function render(dir) {
     $('centerBtn').innerHTML = '<span class="c-sub">now</span>';
     $('centerBtn').dataset.level = 'nest';
     $('panel').innerHTML = '';
-    $('viewTitle').innerHTML = '';
     lastMarker = null;
     showJourney();
     return;
@@ -322,7 +329,7 @@ function render(dir) {
     v = {
       prev: { level: 'day', focus: x.chatzos(addDays(x.date, -1)) },
       next: { level: 'day', focus: x.chatzos(addDays(x.date, 1)) },
-      panel: dayPanel(x) + zmanimHTML(x) + howHTML(),
+      panel: framed(dayPanel(x), '', 'day') + zmanimHTML(x) + howHTML(),
     };
     $('panel').innerHTML = v.panel;
     updateDay(now);
@@ -331,22 +338,27 @@ function render(dir) {
     v = hourView(x, { isDay: h.isDay, hour: h.hour });
     $('dial').innerHTML = v.svg;
     $('centerBtn').innerHTML = v.center;
-    $('panel').innerHTML = panelTitle(v.title) + v.panel;
+    $('panel').innerHTML = framed(v.panel, v.title, 'hour');
   } else {
     v = { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[view.level](x);
     $('dial').innerHTML = v.svg;
     $('centerBtn').innerHTML = v.center;
-    $('panel').innerHTML = journey ? '' : panelTitle(v.title) + v.panel;
+    $('panel').innerHTML = journey ? '' : framed(v.panel, v.title, view.level);
   }
   if (journey) $('panel').innerHTML = '';
-  if (view.level !== 'day') $('viewTitle').innerHTML = v.title || ''; // the day's title is set live by updateDay
   $('centerBtn').dataset.level = view.level;
   lastMarker = view.level === 'day' ? (x.now >= x.jd.start && x.now < x.jd.end ? angleOf(x.now, x.jd) : null) : v.marker ?? null;
   shownLevel = view.level;
+  $('dialWrap').classList.toggle('not-now', !journey && lastMarker == null);
+  centerLadder();
   setHalos(outerRings());
   if (pendingNest) { pendingGhost = null; pendingBlock = null; pendingLetters = null; nestToFace(); }
   else {
     if (pendingGhost && (dir === 'in' || dir === 'out')) hold(STEP * 0.92);
+    if (dir === 'in' && pendingBlock) {
+      $('dial').classList.add('no-now'); clearTimeout(goldTimer);
+      goldTimer = setTimeout(() => $('dial').classList.remove('no-now'), STEP * 0.72);
+    }
     animateV2(dir);
     morphBlock();
     flyLetters(dir);
@@ -355,8 +367,20 @@ function render(dir) {
   renderVer();
 }
 
-// Every level's heading sits at the top of its own cards, in one style.
-const panelTitle = (t) => (t ? `<h2 class="panel-title">${t}</h2>` : '');
+// Every level's panel: its heading inside the first box, then the ladder of circles it sits inside.
+function framed(panel, title, level) {
+  let out = panel;
+  if (title) out = out.replace(/<section class="pcard([^"]*)">(\s*<h3>[\s\S]*?<\/h3>)?/, (m, cls) => `<section class="pcard${cls}"><h3 class="lvl-title">${title}</h3>`);
+  if (level) out = out.replace('</section>', `</section>${ladder(x, level)}`);
+  return out;
+}
+
+/** Keep the circle you're in visible in the ladder. */
+function centerLadder() {
+  const lad = $('panel').querySelector('.ladder'), h = lad?.querySelector('.here');
+  if (!h) return;
+  lad.scrollLeft += h.getBoundingClientRect().left - lad.getBoundingClientRect().left - (lad.clientWidth - h.offsetWidth) / 2;
+}
 
 function renderSpace() {
   if (rotMode === 'jer') rot = -spaceBearing();
@@ -364,56 +388,22 @@ function renderSpace() {
   v = spaceView(x, rot);
   $('dial').innerHTML = v.svg;
   $('centerBtn').innerHTML = v.center;
-  $('viewTitle').textContent = v.title;
   if (!document.getElementById('faceJ')) {
-    $('panel').innerHTML = panelTitle(`<span id="spaceTitle">${v.title}</span>`) + v.panel;
+    $('panel').innerHTML = framed(v.panel, `<span id="spaceTitle">${v.title}</span>`);
     $('faceJ').addEventListener('click', () => { rotMode = 'jer'; renderSpace(); });
     $('northUp').addEventListener('click', () => { rotMode = 'north'; rot = 0; renderSpace(); });
     $('compassBtn')?.addEventListener('click', startCompass);
   } else {
     const fresh = document.createElement('div');
-    fresh.innerHTML = v.panel;
+    fresh.innerHTML = framed(v.panel, `<span id="spaceTitle">${v.title}</span>`);
     $('panel').querySelector('.pcard').replaceWith(fresh.querySelector('.pcard'));
     $('panel').querySelector('.camp-card')?.replaceWith(fresh.querySelector('.camp-card'));
-    if ($('spaceTitle')) $('spaceTitle').textContent = v.title;
     $('faceJ').addEventListener('click', () => { rotMode = 'jer'; renderSpace(); });
     $('northUp').addEventListener('click', () => { rotMode = 'north'; rot = 0; renderSpace(); });
     $('compassBtn')?.addEventListener('click', startCompass);
   }
 }
 const spaceBearing = () => { const r = Math.PI / 180, T = { lat: 31.7781, lon: 35.2354 }; const y = Math.sin((T.lon - loc.lon) * r) * Math.cos(T.lat * r); const xx = Math.cos(loc.lat * r) * Math.sin(T.lat * r) - Math.sin(loc.lat * r) * Math.cos(T.lat * r) * Math.cos((T.lon - loc.lon) * r); return ((Math.atan2(y, xx) / r) + 360) % 360; };
-
-function nestIcon() {
-  let s = '';
-  for (let i = 0; i < 7; i++) s += `<circle cx="16" cy="16" r="${14.5 - i * 2}" fill="none" stroke-width="1.1"/>`;
-  return `<svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">${s}<circle cx="16" cy="16" r="1.6" class="nest-core"/></svg>`;
-}
-
-function renderNest() {
-  const rows = scales(x);
-  const arc = (r, frac) => {
-    const a = Math.max(0.001, Math.min(0.9999, frac)) * Math.PI * 2;
-    const x2 = 130 + r * Math.sin(a), y2 = 130 - r * Math.cos(a);
-    return `M130 ${130 - r} A${r} ${r} 0 ${a > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
-  };
-  let svg = '';
-  rows.forEach((r, i) => {
-    const R = 118 - i * 16, frac = (r.at + r.frac) / r.parts;
-    const a = frac * Math.PI * 2, dx = 130 + R * Math.sin(a), dy = 130 - R * Math.cos(a);
-    svg += `<g class="nr${r.level === view.level ? ' cur' : ''}" data-level="${r.level}"><circle cx="130" cy="130" r="${R}" class="nr-track"/><path d="${arc(R, frac)}" class="nr-arc"/><circle cx="${dx.toFixed(2)}" cy="${dy.toFixed(2)}" r="4" class="nr-dot"/><circle cx="130" cy="130" r="${R}" class="nr-hit"/></g>`;
-    svg += `<text x="134" y="${(130 - R + 4).toFixed(1)}" class="nr-label">${r.label}</text>`;
-  });
-  $('nestRings').innerHTML = `<svg viewBox="0 0 260 260" role="img" aria-label="The circles of time, one inside the other">${svg}<text x="130" y="134" class="nr-now">now</text></svg>`;
-  renderScale();
-}
-
-function renderScale() {
-  const rows = scales(x);
-  $('scale').innerHTML = rows.map((r) => {
-    const cells = Array.from({ length: r.parts }, (_, i) => `<i class="${i < r.at ? 'done' : ''}${i === r.at ? ' at' : ''}${r.split && i < r.split ? ' night' : ''}${r.split && i >= r.split ? ' day' : ''}"${i === r.at ? ` style="--p:${(r.frac * 100).toFixed(1)}%"` : ''}></i>`).join('');
-    return `<button type="button" class="sc${r.level === view.level ? ' cur' : ''}" data-level="${r.level}"><span class="sc-label">${r.label}</span><span class="sc-value">${r.value}</span><span class="sc-track${r.parts > 14 ? ' fine' : ''}">${cells}</span></button>`;
-  }).join('');
-}
 
 /** Live parts of the day view: hand, highlighted hour and the center. */
 function updateDay(now) {
@@ -424,9 +414,7 @@ function updateDay(now) {
   const next = live ? jd.list.find((z) => z.t > now) : null;
   updateDial($('dial'), now, jd, h, next ? next.key + next.part : '', live);
   const ht = hourTribe(h.hour);
-  const { hd, wd } = x;
-  const date = `${WEEKDAYS[wd].he} · ${gematria(hd.day)} ${hebrewDate(x.date).he.split(' ').slice(1, -1).join(' ')}`;
-  $('viewTitle').innerHTML = live ? `Today · <bdi class="he" lang="he">${date}</bdi>` : `<bdi class="he" lang="he">${date}</bdi>`;
+  const { wd } = x;
   $('centerBtn').innerHTML = live
     ? `<span class="c-art">${art(ht.t.icon, 58)}</span><span class="c-big">${ordinal(h.hour)} hour</span><span class="c-line">of the ${h.isDay ? 'day' : 'night'} · ${ht.tribe}</span><span class="c-sub civil-now">(${fmt(now)})</span>`
     : `<span class="c-art">${art(x.jd.info.wd >= 0 ? ['light','firmament','plants','lights','fishbirds','man','candles'][wd] : 'globe', 58)}</span><span class="c-line">${WEEKDAYS[wd].en}</span><span class="c-sub">Tap an hour to step inside</span>`;
@@ -461,7 +449,7 @@ function howHTML() {
   return `<details class="pcard fold"><summary><span class="fold-title">How to read the clock</span></summary>
     <p class="lore-p">A Jewish day begins at sunset. The night has 12 hours and the day, from sunrise to sunset, has 12 more. Each is a twelfth of the darkness or the daylight, so they stretch in summer and shrink in winter.</p>
     <p class="lore-p">Gold hours run across the top, from sunrise at the left to sunset at the right, like the sun. Blue hours run underneath. The thin inner ring is your ordinary clock, bent to fit.</p>
-    <p class="lore-p">Each hour belongs to a month and its tribe; the colored band is the tribe's flag. Tap an hour to step inside it. Use the button at the top of the dial to zoom out to the week, month, year, shemitah cycle and the 6,000 years. The path above the dial shows where you are; tap any step to go there.</p></details>`;
+    <p class="lore-p">Each hour belongs to a month and its tribe; the colored band is the tribe's flag. Tap the gold, or any section, to step inside it, and tap outside the circle to step back out. Under the first box, the row of circles shows where you are inside the bigger ones; tap any of them to go there.</p></details>`;
 }
 
 const monthTribe = (hd) => monthLore(hd.month)?.tribe ?? '';
@@ -601,6 +589,7 @@ function endJourney() {
   document.body.classList.remove('journeying');
   delete document.body.dataset.jstep;
   setTimeout(() => document.body.classList.remove('arriving'), 4200);
+  setTimeout(() => hint('hint.out', 'Tap outside the circle to explore'), 4600);
   Object.assign(view, { mode: 'time', level: 'day', focus: Date.now(), follow: true });
   render('out');
   const r1 = wrap.getBoundingClientRect(), k = r0.width / r1.width;
@@ -686,7 +675,6 @@ function tick() {
   const minute = Math.floor(now / 60000);
   if (minute !== lastMinute && !busy()) {
     lastMinute = minute;
-    if ($('nestDlg').open) renderNest();
     if (view.mode === 'space') renderSpace();
     setHalos(outerRings());
     if (view.mode === 'time' && view.level !== 'day' && !(journey && journey.step === 'nest')) {
@@ -811,6 +799,14 @@ initSettings();
 initVer();
 $('dial').addEventListener('click', onChild);
 $('panel').addEventListener('click', onChild);
+$('panel').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-lad]');
+  if (!b || b.dataset.lad === view.level) return;
+  const L = b.dataset.lad;
+  if (L === 'hour') return go({ level: 'hour', focus: Date.now() }, 'in');
+  zoomTo(L);
+  scrollTo({ top: 0, behavior: 'smooth' });
+});
 $('centerBtn').addEventListener('click', () => {
   if (journey) return journeyDo(journey.step === 'nest' ? 'outer' : 'middle');
   if (view.mode !== 'time') return;
@@ -821,17 +817,6 @@ $('centerBtn').addEventListener('click', () => {
 });
 $('nowBtn').addEventListener('click', goNow);
 $('replayJourney').addEventListener('click', () => { $('setDlg').close(); startJourney(); });
-function pickLevel(e) {
-  const c = e.target.closest('[data-level]');
-  if (!c) return;
-  $('nestDlg').close();
-  view.mode = 'time'; view.focus = Date.now(); view.follow = c.dataset.level === 'day';
-  zoomTo(c.dataset.level);
-}
-$('scale').addEventListener('click', pickLevel);
-$('nestRings').addEventListener('click', pickLevel);
-$('nestBtn').addEventListener('click', () => { $('setDlg').close(); renderNest(); $('nestDlg').showModal(); });
-$('nestClose').addEventListener('click', () => $('nestDlg').close());
 // Tap inside the circle to step in; tap outside it to step out.
 document.addEventListener('click', (e) => {
   if (view.mode !== 'time' || document.body.classList.contains('intro-on')) return;
@@ -849,9 +834,10 @@ $('dialWrap').addEventListener('pointerdown', (e) => { if (view.mode !== 'space'
 $('dialWrap').addEventListener('pointermove', (e) => { if (!drag) return; rotMode = 'manual'; rot = drag.rot + angleAt(e) - drag.a; renderSpace(); });
 $('dialWrap').addEventListener('pointerup', () => { drag = null; });
 $('dialWrap').addEventListener('pointercancel', () => { drag = null; });
-$('modeTime').addEventListener('click', () => { if (view.mode !== 'time') { view.mode = 'time'; render('in'); } });
+const fadeIn = () => { for (const el of [$('dial'), $('centerBtn'), $('halos')]) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 600, easing: 'ease' }); };
+$('modeTime').addEventListener('click', () => { if (view.mode !== 'time') { settle(); view.mode = 'time'; render(); fadeIn(); } });
 $('dial').style.touchAction = 'manipulation';
-$('modeSpace').addEventListener('click', () => { if (view.mode !== 'space') { view.mode = 'space'; $('panel').innerHTML = ''; render('out'); } });
+$('modeSpace').addEventListener('click', () => { if (view.mode !== 'space') { settle(); view.mode = 'space'; $('panel').innerHTML = ''; render(); fadeIn(); } });
 for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
 
 // Paint the right sky and colors before anything shows, with no fade on first load.

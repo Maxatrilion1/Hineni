@@ -39,9 +39,6 @@
         <div><b>Hineni: where are you?</b><p>Jewish time is set by the sun where you stand. Share your location for exact hours. It stays on your device.</p><p id="geoBannerMsg" class="fine tight"></p></div>
         <div class="banner-actions"><button id="geoYes" class="btn" type="button">Use my location</button><button id="geoNo" class="btn ghost" type="button">Keep New York</button></div>
       </div>
-      <div class="titlebar">
-        <div id="viewTitle" class="view-title"></div>
-      </div>
       <div id="dialWrap" class="dial-wrap">
         <div id="halos" class="halos" aria-hidden="true"></div>
         <svg id="dial" viewBox="-30 -30 460 460" role="img" aria-label="Jewish clock dial. Tap a part to step inside it."></svg>
@@ -78,12 +75,6 @@
     <div id="sheetBody"></div>
   </dialog>
 
-  <dialog id="nestDlg" class="sheet nest-sheet">
-    <div class="sheet-head"><h2>All the circles</h2><button id="nestClose" class="pill" type="button">Done</button></div>
-    <p class="fine tight">Each circle sits inside the one around it. Tap one to go there.</p>
-    <div id="nestRings" class="nest-rings"></div>
-    <div id="scale" class="scale"></div>
-  </dialog>
 
   <dialog id="setDlg" class="sheet">
     <div class="sheet-head"><h2>Settings</h2><button id="setClose" class="pill" type="button">Done</button></div>
@@ -94,7 +85,6 @@
     <div class="set-group">
       <h3>The clock</h3>
       <div class="opt"><span><b>View</b><small>Detailed shows the bigger circles of time around the clock. Clean shows the clock alone.</small></span><nav id="ver" class="ver" aria-label="Clean or detailed"></nav></div>
-      <button id="nestBtn" class="set-row" type="button"><span class="nest-ico" aria-hidden="true"></span><span><b>All the circles of time</b><small>From the six thousand years to this hour. Tap one to go there.</small></span></button>
       <button id="replayJourney" class="set-row" type="button"><span class="nest-ico journey-ico" aria-hidden="true">✦</span><span><b>The journey</b><small>Walk through the circles again, from the outside in.</small></span></button>
     </div>
     <div class="set-group">

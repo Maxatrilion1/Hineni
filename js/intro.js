@@ -81,7 +81,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
-      const step = 1 / 72, pts = [], wMax = phase === 'idle' ? 5.2 : 9;
+      const step = 1 / 56, pts = [], wMax = phase === 'idle' ? 5.2 : 9;
       const sample = (w) => {
         const q = at(w, lerp(R0, ringR(w), eAt(w)));
         q.al = alphaAt(w, q.Y); q.w = w;
@@ -112,14 +112,14 @@ export function intro(target, { onLand, dots = [] } = {}) {
       };
       ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
       // Neighbouring pieces of the same shade go out as one stroke, so the whole ribbon is a few dozen strokes.
-      // Every small step of the ribbon has its own shade (so the light turns into the dark continuously), flat ends,
-      // and is drawn from one step back inside the last: no caps, no seams, nothing to shimmer at the turn.
+      // Every small step of the ribbon is a short straight stroke, shaded exactly from its start to its end, with flat
+      // ends, drawn from one step back inside the last: no caps, no seams, no squares, nothing to shimmer at the turn.
       const shadeCache = new Map();
       const colorAt = (rim, sa) => {
-        const k = (rim ? 10000 : 0) + Math.round((sa + 1) * 400);
+        const k = (rim ? 10000 : 0) + Math.round((sa + 1) * 160);
         let c = shadeCache.get(k);
         if (!c) {
-          const t = awayOf((k % 10000) / 400 - 1) * DARK * (1 - e);
+          const t = awayOf((k % 10000) / 160 - 1) * DARK * (1 - e);
           let v = FACE.map((q, i) => lerp(q, NIGHT[i], t));
           if (rim) v = v.map((q, i) => lerp(q, RIMC[i], 0.38));
           c = `rgb(${v.map(Math.round).join(',')})`; shadeCache.set(k, c);
@@ -135,7 +135,14 @@ export function intro(target, { onLand, dots = [] } = {}) {
             const keep = (a.keep + b.keep) / 2;
             if (keep <= 0.01) continue;
             const back = pts[i - 2] && ok(pts[i - 2]) ? pts[i - 2] : null;
-            ctx.globalAlpha = keep; ctx.strokeStyle = colorAt(rim, (a.sa + b.sa) / 2); ctx.lineWidth = band * b.sc * kW;
+            const s0 = back || a, c0 = colorAt(rim, s0.sa), ca = colorAt(rim, a.sa), cb = colorAt(rim, b.sa);
+            let st = cb;
+            if (!rim && Math.abs(b.sa) < 0.62 && c0 !== cb) { // only where the shade really changes: the turns
+              st = ctx.createLinearGradient(s0.X, s0.Y, b.X, b.Y);
+              const dx = b.X - s0.X, dy = b.Y - s0.Y, ta = back ? Math.max(0, Math.min(1, ((a.X - s0.X) * dx + (a.Y - s0.Y) * dy) / (dx * dx + dy * dy || 1))) : 0;
+              st.addColorStop(0, c0); if (back) st.addColorStop(ta, ca); st.addColorStop(1, cb);
+            }
+            ctx.globalAlpha = keep; ctx.strokeStyle = st; ctx.lineWidth = band * b.sc * kW;
             ctx.beginPath(); if (back) { ctx.moveTo(back.X, back.Y); ctx.lineTo(a.X, a.Y); } else ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
           }
         }

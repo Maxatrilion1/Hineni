@@ -263,6 +263,24 @@ export function hourView(x, sel) {
   };
 }
 
+// ---------- The ladder: the circle you're in, inside the circles around it ----------
+export function ladder(x, level) {
+  const { hd, wd } = x.jd.info, pos = hd.year % 7 || 7, mil = Math.floor(hd.year / 1000) + 1;
+  const live = x.now >= x.jd.start && x.now < x.jd.end;
+  const P = parshahFor(addDays(x.date, -wd), x.opts.israel);
+  const h = hourOf(level === 'hour' ? x.focus : x.now, x.jd);
+  const rungs = [
+    ['world', hd.year.toLocaleString(), `of 6,000 · millennium ${mil}`],
+    ['shemitah', `${pos} of 7`, 'shemitah cycle'],
+    ['year', `<bdi class="he" lang="he">${gematria(hd.year % 1000)}</bdi>`, isLeap(hd.year) ? 'a leap year' : 'the year'],
+    ['month', `${ordinal(MONTH_NUM[hd.month])} month`, hd.month],
+    ['week', P.holiday ? 'This week' : P.names, P.holiday ? P.holiday : 'the parshah'],
+    ['day', `${ordinal(wd + 1)} day`, `${ordinal(hd.day)} of ${hd.month}`],
+    ...(level === 'hour' || (level === 'day' && live) ? [['hour', `${ordinal(h.hour)} hour`, `of the ${h.isDay ? 'day' : 'night'}`]] : []),
+  ];
+  return `<nav class="ladder" dir="rtl" aria-label="Where you are, inside the circles around it">${rungs.map(([l, big, small]) => `<button type="button" class="lad${l === level ? ' here' : ''}" data-lad="${l}" dir="ltr"><b>${big}</b><small>${small}</small></button>`).join('<i aria-hidden="true" dir="ltr">‹</i>')}</nav>`;
+}
+
 // ---------- The scale: every level at once ----------
 export function scales(x) {
   const n = x.nowJd, hd = n.info.hd, wd = n.info.wd, df = dayFrac(x);
@@ -373,26 +391,14 @@ function partOf(sel) {
 export function dayPanel(x) {
   const { wd, hols, hd } = x.jd.info, D = DAYS[wd], W = WEEKDAYS[wd], Q = DAY_DEPTH[wd];
   const L = monthLore(hd.month), T = TRIBES[L.tribe];
-  const P = parshahFor(addDays(x.date, -wd), x.opts.israel);
   const om = omerDay(hd);
-  const len = monthLength(x.date, hd), ph = moonPhase(hd.day);
-  const moon = hd.day === 1 || hd.day === 30 ? 'Rosh Chodesh' : ph < 0.47 ? 'waxing' : ph < 0.53 ? 'full' : 'waning';
   const live = x.now >= x.jd.start && x.now < x.jd.end;
-  const next = live ? x.jd.list.find((z) => z.t > x.now) : null;
-  const rows = [
-    ['Date', `${hd.day} ${hd.month} ${hd.year} · <bdi lang="he">${hebrewDate(x.date).he}</bdi>`],
-    ['Parshah', P.holiday ? esc(P.holiday) : `${esc(P.names)} · <bdi lang="he">${P.he}</bdi>`],
-    ['Month', `${hd.month}, the month of ${L.tribe} · letter <bdi lang="he">${L.letter}</bdi> · sense of ${L.sense.toLowerCase()}`],
-    ['Moon', `Day ${hd.day} of ${len} · ${moon}`],
-    ...(om ? [['Omer', `Tonight: day ${om} · ${omerSefirah(om).tr}`]] : []),
-    ...(hols.length ? [['Today', hols.map((h) => esc(h.name)).join(' · ')]] : []),
-    ...(next ? [['Next', `${esc(next.tr)} · ${fmtT(x, next.t)}`]] : []),
-    ['Shabbos', wd === 6 ? 'Today' : wd === 5 ? 'Tonight' : `In ${6 - wd} days`],
-  ];
+  const marks = [...hols.map((h) => esc(h.name)), ...(om ? [`Omer tonight: day ${om}, ${omerSefirah(om).tr}`] : [])];
   const today = live ? 'Today · ' : '';
   const head = `${today}The ${ordinal(wd + 1)} day<small class="day-sub">The ${ordinal(hd.day)} of the ${ordinal(MONTH_NUM[hd.month])} month · <bdi class="he" lang="he">${W.he} · ${hebrewDate(x.date).he.split(' ').slice(0, -1).join(' ')}</bdi></small>`;
   return `
-    ${card(head, `<div class="tribe-row">${art(D.icon, 76)}<div><b class="built">${D.creation}</b><div class="he muted" lang="he">${D.creationHe}</div></div></div>
+    ${card(head, `<div class="tribe-row">${art(D.icon, 76)}<div><small class="made">Made on the ${ordinal(wd + 1)} day</small><b class="built">${D.creation}</b><div class="he muted" lang="he">${D.creationHe}</div></div></div>
+      ${marks.length ? `<p class="day-marks">${marks.join(' · ')}</p>` : ''}
       <p class="lore-p">${esc(Q.built)}</p>
       <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>
       ${live && x.now < x.jd.day.shkiah ? `<p class="edge-note">This day ends at sunset, <b>${fmtT(x, x.jd.day.shkiah)}</b>, and ${wd === 5 ? '<b>Shabbos</b> begins' : `<b>the ${ordinal((wd + 1) % 7 + 1)} day</b> begins`}. A Jewish day runs from sunset to sunset.</p>` : ''}
@@ -402,7 +408,7 @@ export function dayPanel(x) {
       <div><span>Guest</span><b>${D.ushpiz}</b><small>${esc(Q.guest.replace(/^\w+,? ?/, ''))}</small></div>
       <div><span>Song</span><b>Tehillim ${D.shir}</b><small class="he" lang="he">${D.shirHe}</small></div></div>
       ${src('The seven days and the seven lower sefiros, from Chesed to Malchus: Kabbalah, following the Zohar. The seven "guests" (ushpizin): Zohar III 103b–104a. The song of the day, sung by the Levi\'im in the Beis Hamikdash: Mishnah Tamid 7:4.')}`)}
-    <details class="pcard fold now-card"><summary><span class="fold-title">Right now</span><span class="fold-sum">${esc(P.holiday ? P.holiday : P.names)} · ${hd.day} ${hd.month}</span></summary>${rows.map(([k, v]) => kv(k, v)).join('')}</details>`;
+`;
 }
 
 function weekPanel(x, start) {
