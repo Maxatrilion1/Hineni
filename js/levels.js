@@ -72,8 +72,8 @@ export function context(focus, now, loc, opts) {
 const dayFrac = (x) => (x.now - x.nowJd.start) / (x.nowJd.end - x.nowJd.start);
 
 // ---------- Ring drawing ----------
-function hand(angle, kind = 'dot') {
-  const [x1, y1] = pt(100, angle), [x2, y2] = pt(R_OUT + 2, angle), [mx, my] = pt(R_OUT + 3, angle);
+function hand(angle, kind = 'dot', from = 100) {
+  const [x1, y1] = pt(from, angle), [x2, y2] = pt(R_OUT + 2, angle), [mx, my] = pt(R_OUT + 3, angle);
   const tip = kind === 'sun' ? `<circle cx="${f(mx)}" cy="${f(my)}" r="11" fill="url(#sunGlow2)"/><circle cx="${f(mx)}" cy="${f(my)}" r="6" class="sun-core"/>`
     : kind === 'moon' ? `<circle cx="${f(mx)}" cy="${f(my)}" r="7" class="moon-lit"/><circle cx="${f(mx + 3.5)}" cy="${f(my - 2.5)}" r="6" class="moon-dark2"/>`
     : `<circle cx="${f(mx)}" cy="${f(my)}" r="5.5" class="marker"/>`;
@@ -130,9 +130,9 @@ export function weekView(x) {
   const P = parshahFor(start, x.opts.israel);
   const pName = P.holiday ? P.holiday : `Parshas ${P.names}`;
   return {
-    title: P.holiday ? 'The week' : `The week of ${P.names}`, svg: ring(segs, { marker }),
+    title: P.holiday ? 'The week' : `The week of ${P.names}`, marker, svg: ring(segs, { marker }),
     center: centerHTML({ big: W.he, line: P.holiday ? P.holiday : `פרשת ${P.he}`, sub: x.wd === 6 ? 'Shabbos Kodesh' : `Shabbos in ${6 - x.wd} day${6 - x.wd === 1 ? '' : 's'}` }),
-    panel: (P.holiday ? '' : `<section class="pcard feature"><h3>This week's parshah</h3><div class="parshah"><span class="he" lang="he">פרשת ${P.he}</span><b>Parshas ${esc(P.names)}</b><small>Read on Shabbos, ${civ(P.date)}</small></div></section>`) + weekPanel(x, start),
+    panel: legend([['hand', 'Now'], ['gold', 'A festival or special day'], ['sab', 'Shabbos']]) + (P.holiday ? '' : `<section class="pcard feature"><h3>This week's parshah</h3><div class="parshah"><span class="he" lang="he">פרשת ${P.he}</span><b>Parshas ${esc(P.names)}</b><small>Read on Shabbos, ${civ(P.date)}</small></div></section>`) + weekPanel(x, start),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'day', focus: x.chatzos(s.date) }])),
     prev: { level: 'week', focus: x.chatzos(addDays(start, -4)) }, next: { level: 'week', focus: x.chatzos(addDays(start, 10)) },
   };
@@ -149,9 +149,9 @@ export function monthView(x) {
   });
   const marker = nowIn >= 0 && nowIn < len ? (nowIn + dayFrac(x)) * step : null;
   return {
-    title: `${x.hd.month} ${x.hd.year}`, svg: ring(segs, { marker }),
+    title: `${x.hd.month} ${x.hd.year}`, marker, svg: ring(segs, { marker }),
     center: centerHTML({ badge: T.icon, badgeSize: 58, big: `${plain(gematria(x.hd.day))} ${monthHe(x.date)}`, line: `Month of ${lore.tribe}`, sub: `Day ${x.hd.day} of ${len}` }),
-    panel: monthPanel(x, lore, T, start, len),
+    panel: legend([['hand', 'Now'], ['moon', "The moon's face that day"], ['gold', 'A festival or special day'], ['sab', 'Shabbos']]) + monthPanel(x, lore, T, start, len),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'day', focus: x.chatzos(s.date) }])),
     prev: { level: 'month', focus: x.chatzos(addDays(start, -10)) }, next: { level: 'month', focus: x.chatzos(addDays(start, len + 10)) },
   };
@@ -169,9 +169,9 @@ export function yearView(x) {
   const ni = Y.months.findIndex((m) => m.name === nowHd.month);
   if (nowHd.year === x.hd.year && ni >= 0) marker = (ni + (nowHd.day - 1 + dayFrac(x)) / Y.months[ni].len) * step;
   return {
-    title: `Year ${x.hd.year}`, svg: ring(segs, { marker }),
+    title: `Year ${x.hd.year}`, marker, svg: ring(segs, { marker }),
     center: centerHTML({ big: gematria(x.hd.year % 1000), line: `${x.hd.year} · ${isLeap(x.hd.year) ? 'a leap year' : 'twelve months'}`, sub: `Day ${dayIndex(Y.rh, x.date) + 1} of ${Y.len}` }),
-    panel: yearPanel(x, Y),
+    panel: legend([['hand', 'Now'], ['band', "Each month's tribe and its flag colors"]]) + yearPanel(x, Y),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'month', focus: x.chatzos(s.isNow ? x.nowJd.day.date : addDays(s.m.start, 14)) }])),
     prev: { level: 'year', focus: x.chatzos(dateForYear(x.hd.year - 1)) }, next: { level: 'year', focus: x.chatzos(dateForYear(x.hd.year + 1)) },
   };
@@ -191,7 +191,7 @@ export function shemitahView(x) {
     marker = a1 + (a2 - a1) * (dayIndex(Y.rh, x.nowJd.day.date) / Y.len);
   }
   return {
-    title: `Shemitah cycle ${first}–${first + 6}`, svg: ring(segs, { marker }),
+    title: `Shemitah cycle ${first}–${first + 6}`, marker, svg: ring(segs, { marker }),
     center: centerHTML({ big: pos === 7 ? 'שמיטה' : `${pos}<small> / 7</small>`, line: pos === 7 ? 'The land rests' : `Year ${pos} of the cycle`, sub: pos === 7 ? '' : `Ma'aser ${MAASER(pos)}` }),
     panel: shemitahPanel(x, first, pos),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'year', focus: x.chatzos(dateForYear(s.year)) }])),
@@ -207,8 +207,9 @@ export function worldView(x) {
     return { a1, a2, id: i, label: i === 6 ? 'ש' : plain(gematria(i + 1)), sub: ['תהו', 'תהו', 'תורה', 'תורה', 'ימות המשיח', 'ימות המשיח', 'שבת'][i], art: DAYS[i].icon, artSize: 34, band: [ERA_COLOR[i]], isNow: i === mil, isFocus: i === mil, cls: i === 6 ? 'sab' : '' };
   });
   const [a1, a2] = seven(mil), c = cosmic(x.hd.year);
+  const marker = a1 + (a2 - a1) * ((x.nowJd.info.hd.year % 1000) / 1000);
   return {
-    title: 'Six thousand years', svg: ring(segs, { marker: a1 + (a2 - a1) * ((x.nowJd.info.hd.year % 1000) / 1000) }),
+    title: 'Six thousand years', marker, svg: ring(segs, { marker }),
     center: centerHTML({ badge: 'globe', badgeSize: 52, big: x.hd.year.toLocaleString(), line: `The world's ${c.dayName}`, sub: `${ordinal(c.mil)} millennium` }),
     panel: worldPanel(x, c),
     children: { [mil]: { level: 'shemitah', focus: x.focus } },
@@ -234,11 +235,11 @@ export function hourView(x, sel) {
   const L = ht.lore;
   const facet = (ang, label, value, he) => { const [fx, fy] = pt(ang % 180 ? 124 : 132, ang); return `<text x="${f(fx)}" y="${f(fy - 7)}" class="facet-l">${label}</text><text x="${f(fx)}" y="${f(fy + 8)}" class="facet-v${he ? ' he' : ''}">${value}</text>`; };
   s += facet(0, 'MONTH', ht.monthHe, true) + facet(90, 'LETTER', L.letter, true) + facet(180, 'MAZAL', L.mazal) + facet(270, 'SENSE', L.sense);
-  if (frac != null) s += hand(frac * 360, sel.isDay ? 'sun' : 'moon');
+  if (frac != null) s += hand(frac * 360, sel.isDay ? 'sun' : 'moon', 146); // a short hand, outside the facets
   const step = (d) => ({ level: 'hour', focus: d > 0 ? b + 60000 : a - 60000 });
   return {
-    title: `${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'}`, live, svg: s,
-    center: centerHTML({ badge: T.icon, badgeSize: 70, big: T.he, line: `${ht.tribe}`, sub: live ? `${60 - Math.floor(frac * 60)} min left` : `${fmtT(x, a)} – ${fmtT(x, b)}` }),
+    title: `${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'}`, live, marker: frac != null ? frac * 360 : null, svg: s,
+    center: centerHTML({ badge: T.icon, badgeSize: 72, big: T.he, line: `${ht.tribe} · ${T.emblem}`, sub: live ? `${60 - Math.floor(frac * 60)} min left in this hour` : `${fmtT(x, a)} – ${fmtT(x, b)}` }),
     panel: hourPanel(x, sel, ht, a, b, live),
     children: {}, prev: step(-1), next: step(1),
   };
@@ -338,6 +339,7 @@ export function dayPanel(x) {
   const { wd, hols } = x.jd.info, D = DAYS[wd], W = WEEKDAYS[wd], Q = DAY_DEPTH[wd];
   return `
     ${hols.length ? `<div class="chips">${hols.map((h) => `<span class="chip k-${h.kind}">${esc(h.name)}</span>`).join('')}</div>` : ''}
+    ${legend([['hand', 'Now'], ['band', "The hour's tribe and its flag colors"], ['dot', 'A zman (tap Zmanim below for the list)'], ['next', 'The next zman'], ['tick', 'Your ordinary clock, bent to fit']])}
     ${card(`${W.tr} · <span class="he" lang="he">${W.he}</span>`, `<div class="tribe-row">${art(D.icon, 76)}<div><b class="built">${D.creation}</b><div class="he muted" lang="he">${D.creationHe}</div></div></div>
       <p class="lore-p">${esc(Q.built)}</p>
       <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>`, 'feature')}
@@ -346,6 +348,21 @@ export function dayPanel(x) {
       <div><span>Guest</span><b>${D.ushpiz}</b><small>${esc(Q.guest.replace(/^\w+,? ?/, ''))}</small></div>
       <div><span>Song</span><b>Tehillim ${D.shir}</b><small class="he" lang="he">${D.shirHe}</small></div></div>
       <p class="fine">Each day of the week draws from one of the seven sefiros and one of the seven "guests" (Zohar). The song is the one the Levi'im sang that day (Tamid 7:4).</p>`)}`;
+}
+
+/** A small key to what the marks on the dial mean. */
+function legend(items) {
+  const sw = {
+    hand: '<svg width="22" height="14"><line x1="2" y1="7" x2="16" y2="7" class="ray"/><circle cx="17" cy="7" r="4" class="marker"/></svg>',
+    band: '<svg width="22" height="14"><rect x="1" y="4" width="7" height="6" fill="#a33a32"/><rect x="8" y="4" width="7" height="6" fill="#3d7a4c"/><rect x="15" y="4" width="6" height="6" fill="#7fa7d9"/></svg>',
+    dot: '<svg width="22" height="14"><circle cx="11" cy="7" r="3.2" class="zdot"/></svg>',
+    next: '<svg width="22" height="14"><circle cx="11" cy="7" r="5" class="zdot next"/></svg>',
+    tick: '<svg width="22" height="14"><line x1="4" y1="7" x2="18" y2="7" class="tick major"/></svg>',
+    moon: '<svg width="22" height="14"><circle cx="11" cy="7" r="5" class="mp-dark"/><path d="M11 2a5 5 0 0 1 0 10z" class="mp-lit"/></svg>',
+    gold: '<svg width="22" height="14"><rect x="1" y="4" width="20" height="6" fill="#c9973a"/></svg>',
+    sab: '<svg width="22" height="14"><rect x="1" y="2" width="20" height="10" rx="2" class="rs sab"/></svg>',
+  };
+  return `<div class="legend">${items.map(([k, t]) => `<span>${sw[k]}${esc(t)}</span>`).join('')}</div>`;
 }
 
 function weekPanel(x, start) {

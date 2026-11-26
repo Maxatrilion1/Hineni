@@ -1,4 +1,4 @@
-import { hourOf, civilDate, addDays, SHITAH } from './zmanim.js';
+import { hourOf, civilDate, addDays, angleOf, SHITAH } from './zmanim.js';
 import { gematria, WEEKDAYS, hebrewDate } from './hebrew.js';
 import { buildDial, updateDial } from './dial.js';
 import { paintSky } from './sky.js';
@@ -59,25 +59,39 @@ function zoomTo(level) {
 }
 
 // ---------- Render ----------
-function animate(dir) {
-  if (!dir) return;
+// The next circle grows out of the segment you step into; stepping out, the old circle sinks back into its place.
+let lastMarker = null, pendingGhost = null;
+const DUR = 1500;
+function originOf(angle) {
+  if (angle == null) return '50% 50%';
+  const r = 173 / 460 * 100, a = angle * Math.PI / 180;
+  return `${(50 + r * Math.sin(a)).toFixed(2)}% ${(50 - r * Math.cos(a)).toFixed(2)}%`;
+}
+function animate(dir, newMarker) {
+  if (!dir || !pendingGhost || matchMedia('(prefers-reduced-motion: reduce)').matches) { pendingGhost = null; return; }
   const w = $('dialWrap');
-  if (dir === 'in' || dir === 'out') {
-    // The ring you leave drifts past you: outward when you step in, inward when you step out.
-    let g = $('ghost');
-    if (!g) { g = document.createElement('div'); g.id = 'ghost'; g.className = 'ghost'; w.prepend(g); }
-    g.innerHTML = $('dial').outerHTML.replace(/ id="[^"]*"/g, '');
-    g.className = 'ghost';
-    void g.offsetWidth;
-    g.classList.add(dir);
+  const origin = originOf(dir === 'in' ? pendingGhost.marker : newMarker);
+  const g = document.createElement('div');
+  g.className = 'ring-ghost';
+  g.innerHTML = pendingGhost.html;
+  g.style.transformOrigin = origin;
+  w.appendChild(g);
+  pendingGhost = null;
+  const grow = [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(3.2)', opacity: 0 }];
+  const sink = [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.08)', opacity: 0 }];
+  const opts = { duration: DUR, easing: 'cubic-bezier(.35, .1, .2, 1)' };
+  g.animate(dir === 'in' ? grow : sink, opts).finished.then(() => g.remove(), () => g.remove());
+  for (const el of [$('dial'), $('centerBtn')]) {
+    el.style.transformOrigin = origin;
+    el.animate(dir === 'in'
+      ? [{ transform: 'scale(.08)', opacity: 0 }, { transform: 'scale(.5)', opacity: .6, offset: .55 }, { transform: 'scale(1)', opacity: 1 }]
+      : [{ transform: 'scale(3.2)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], opts);
   }
-  w.classList.remove('in', 'out', 'side');
-  void w.offsetWidth;
-  w.classList.add(dir);
 }
 
 function render(dir) {
   const now = Date.now();
+  if ((dir === 'in' || dir === 'out') && $('dial').firstChild) pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), marker: lastMarker };
   if (view.follow) view.focus = now;
   x = context(view.focus, now, loc, opts());
   renderedKey = key();
@@ -87,7 +101,6 @@ function render(dir) {
   const atNow = view.follow && view.level === 'day' && view.mode === 'time';
   $('nowBtn').classList.toggle('here', atNow);
   $('nestBtn').innerHTML = nestIcon();
-  animate(dir);
 
   if (x.jd.polar) {
     $('panel').innerHTML = `<div class="pcard"><p>The sun doesn't rise or set here today, so the hours can't be calculated. Polar zmanim need a rav's guidance.</p></div>`;
@@ -96,7 +109,7 @@ function render(dir) {
 
   if (view.mode === 'space') {
     renderSpace();
-    $('prevBtn').hidden = $('nextBtn').hidden = true;
+    pendingGhost = null;
     return;
   }
 
@@ -122,9 +135,10 @@ function render(dir) {
     $('panel').innerHTML = journey ? '' : v.panel;
   }
   if (journey) $('panel').innerHTML = '';
-  $('prevBtn').hidden = !v.prev;
-  $('nextBtn').hidden = !v.next;
   $('viewTitle').innerHTML = v.title || '';
+  $('centerBtn').dataset.level = view.level;
+  lastMarker = view.level === 'day' ? (x.now >= x.jd.start && x.now < x.jd.end ? angleOf(x.now, x.jd) : null) : v.marker ?? null;
+  animate(dir, lastMarker);
   if (journey) showJourney();
 }
 
@@ -259,11 +273,11 @@ function showJourney() {
   $('jText').textContent = copy[1];
   $('jDots').innerHTML = JOURNEY.map((l, k) => `<i class="${k < i ? 'done' : ''}${k === i ? ' at' : ''}"></i>`).join('');
   $('jNext').textContent = view.level === 'day' ? 'Enter this hour' : 'Step in';
+  if ($('journey').hidden) { $('journey').classList.remove('pop'); void $('journey').offsetWidth; $('journey').classList.add('pop'); }
   $('journey').hidden = false;
   document.body.classList.add('journeying');
-  // One faint halo for every circle you've already passed through.
-  const halos = Array.from({ length: i }, (_, k) => `0 0 0 ${(k + 1) * 6}px color-mix(in srgb, var(--gold) ${Math.max(8, 34 - k * 6)}%, transparent)`).join(', ');
-  $('dialWrap').style.setProperty('--halo', halos || 'none');
+  // One faint ring for every circle you've already passed through, evenly spaced.
+  $('halos').innerHTML = Array.from({ length: i }, (_, k) => `<i style="--k:${k + 1}"></i>`).join('');
 }
 function startJourney() {
   journey = { level: 'world' };
@@ -276,7 +290,7 @@ function endJourney(intoHour) {
   store.set('journeyDone', true);
   $('journey').hidden = true;
   document.body.classList.remove('journeying');
-  $('dialWrap').style.setProperty('--halo', 'none');
+  $('halos').innerHTML = '';
   if (intoHour) go({ level: 'hour', focus: Date.now() }, 'in');
   else goNow();
 }
@@ -460,8 +474,6 @@ $('nowBtn').addEventListener('click', () => { if (journey) endJourney(false); el
 $('jNext').addEventListener('click', journeyNext);
 $('jSkip').addEventListener('click', () => endJourney(false));
 $('replayJourney').addEventListener('click', () => { $('setDlg').close(); startJourney(); });
-$('prevBtn').addEventListener('click', () => go(v?.prev, 'side'));
-$('nextBtn').addEventListener('click', () => go(v?.next, 'side'));
 function pickLevel(e) {
   const c = e.target.closest('[data-level]');
   if (!c) return;

@@ -509,7 +509,7 @@ body.night .sc-track i { background: color-mix(in srgb, var(--night-ink) 16%, tr
 .j-big { font-family: var(--he); font-size: clamp(24px, 7vw, 30px); font-weight: 700; color: var(--accent); line-height: 1.2; }
 .j-text { margin: 0 auto; font-size: 15px; line-height: 1.55; max-width: 32em; }
 .j-actions { display: flex; justify-content: center; gap: 10px; margin-top: 4px; }
-body.journeying .seg-toggle, body.journeying .titlebar .arrow, body.journeying #panel, body.journeying .foot, body.journeying .nest-btn { visibility: hidden; }
+body.journeying .controls, body.journeying .titlebar, body.journeying .foot { visibility: hidden; }
 body.journeying #panel { display: none; }
 
 .nest-sheet { width: min(94vw, 460px); }
@@ -524,23 +524,17 @@ body.journeying #panel { display: none; }
 .nr-label { fill: var(--muted); font-size: 7.5px; letter-spacing: .1em; text-transform: uppercase; dominant-baseline: central; pointer-events: none; }
 .nr-now { fill: var(--accent); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: .1em; text-transform: uppercase; }
 .nest-sheet .scale { background: none; border: 0; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
-body.journeying .dial-wrap { width: min(100%, 340px); }
-body.journeying .controls { display: none; }
-body.journeying .clock { gap: 10px; }
+
 
 /* Shabbos is the dark day */
 .rs.sab { fill: var(--night-a); }
 .rs.sab.alt { fill: var(--night-b); }
 .rnum.on-dark { fill: var(--night-ink); }
-body.journeying .titlebar { display: none; }
+
 
 /* Passing through the rings */
-.dial-wrap { --halo: none; }
-.dial-wrap::before { content: ''; position: absolute; inset: 3%; border-radius: 50%; box-shadow: var(--halo); transition: box-shadow .8s ease; pointer-events: none; }
-.ghost { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 2; }
-.ghost svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.ghost.in { animation: ghostIn .75s cubic-bezier(.25, .7, .2, 1); }
-.ghost.out { animation: ghostOut .75s cubic-bezier(.25, .7, .2, 1); }
+.ring-ghost { position: absolute; inset: 0; pointer-events: none; z-index: 2; will-change: transform, opacity; }
+.ring-ghost svg { width: 100%; height: 100%; display: block; overflow: visible; }
 @keyframes ghostIn { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(1.45); } }
 @keyframes ghostOut { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(.6); } }
 .dial-wrap.in, .dial-wrap.out { animation: none; }
@@ -548,7 +542,7 @@ body.journeying .titlebar { display: none; }
 .dial-wrap.out > #dial, .dial-wrap.out > .center { animation: ringOut .75s cubic-bezier(.25, .7, .2, 1); }
 @keyframes ringIn { from { transform: scale(.82); opacity: .1; } to { transform: none; opacity: 1; } }
 @keyframes ringOut { from { transform: scale(1.18); opacity: .1; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .ghost, .dial-wrap.in > *, .dial-wrap.out > * { animation: none !important; } }
+
 
 /* Names under the numerals */
 .rsub, .tname { font-family: var(--he); font-size: 8.6px; text-anchor: middle; dominant-baseline: central; pointer-events: none; fill: var(--day-ink); opacity: .8; }
@@ -558,8 +552,8 @@ body.journeying .titlebar { display: none; }
 .num { font-size: 13.5px; }
 
 /* A new hour begins */
-.toast { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translate(-50%, 140%); z-index: 20; display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 10px; border-radius: 999px; background: var(--solid); border: 1px solid color-mix(in srgb, var(--gold) 50%, var(--line)); box-shadow: 0 10px 30px rgba(0,0,0,.2); transition: transform .6s cubic-bezier(.2,.8,.2,1); max-width: calc(100% - 32px); }
-.toast.show { transform: translate(-50%, 0); }
+.toast { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translate(-50%, calc(100% + 60px)); visibility: hidden; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 10px; border-radius: 999px; background: var(--solid); border: 1px solid color-mix(in srgb, var(--gold) 50%, var(--line)); box-shadow: 0 10px 30px rgba(0,0,0,.2); transition: transform .6s cubic-bezier(.2,.8,.2,1); max-width: calc(100% - 32px); }
+.toast.show { transform: translate(-50%, 0); visibility: visible; }
 .toast b { display: block; font-size: 14.5px; }
 .toast small { color: var(--muted); font-size: 12.5px; }
 .center .art { transition: opacity .8s ease, transform .8s ease; }
@@ -569,3 +563,40 @@ body.journeying .titlebar { display: none; }
 .parshah b { font-size: 16px; }
 .parshah small { color: var(--muted); }
 .preload *, .preload *::before, .preload *::after { transition: none !important; }
+
+/* ===== Steady screen: scroll up and down only ===== */
+html, body { overflow-x: hidden; overscroll-behavior-x: none; }
+body { touch-action: pan-y; }
+.clock { overflow-x: clip; overflow-y: visible; }
+#dial, .center { will-change: transform; }
+
+/* No side arrows: the title stands alone */
+.titlebar { grid-template-columns: 1fr; }
+
+/* Journey: a card that floats over the bottom; the clock stays exactly where it lives */
+.journey { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 15; width: min(calc(100% - 32px), 440px); box-shadow: 0 18px 40px rgba(0,0,0,.22); background: var(--solid); animation: none; }
+.journey.pop { animation: pop .5s cubic-bezier(.2,.8,.2,1); }
+@keyframes pop { from { transform: translate(-50%, 12px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+
+/* Halos: one thin ring per circle passed, with equal gaps */
+.halos { position: absolute; inset: 0; pointer-events: none; }
+.halos i { position: absolute; inset: calc(4.6% - var(--k) * 9px); border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--gold) calc(70% - var(--k) * 9%), transparent); animation: haloIn 1.2s ease both; }
+@keyframes haloIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+
+/* Hour: one calm type scale */
+.center[data-level="hour"] .c-big { font-size: clamp(26px, 7.6vw, 34px); margin-top: 4px; }
+.center[data-level="hour"] .c-line, .center[data-level="hour"] .c-sub { font-size: 12.5px; }
+.center[data-level="hour"] .c-line { font-weight: 600; margin-top: 2px; }
+.facet-l { font-size: 7px; letter-spacing: .14em; }
+.facet-v { font-size: 12.5px; font-weight: 600; }
+.facet-v.he { font-size: 15px; font-weight: 700; }
+
+/* Key to the marks on the dial */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px 14px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--line); font-size: 12.5px; color: var(--muted); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { flex: none; }
+
+.journey { padding: 14px 18px; gap: 6px; }
+.journey .j-big { font-size: clamp(20px, 6vw, 25px); }
+.journey .j-text { font-size: 14px; line-height: 1.5; }
+.journey .btn { padding: 9px 18px; }
