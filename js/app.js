@@ -1,6 +1,7 @@
 import { hourOf, civilDate, addDays, angleOf, SHITAH } from './zmanim.js';
 import { gematria, WEEKDAYS, hebrewDate } from './hebrew.js';
 import { buildDial, updateDial } from './dial.js';
+const SVGNS = 'http://www.w3.org/2000/svg';
 import { paintSky } from './sky.js';
 import { intro } from './intro.js';
 import { art } from './art.js';
@@ -17,7 +18,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 let loc = store.get('loc') || NEW_YORK;
-let prefs = { ma: false, candles: 'auto', ...(store.get('prefs') || {}) };
+let prefs = { ma: false, candles: 'auto', rings: 'v2', ...(store.get('prefs') || {}) };
 const view = { mode: 'time', level: 'day', focus: Date.now(), follow: true };
 let x = null, v = null, renderedKey = '', heading = null, rot = 0, rotMode = 'north';
 
@@ -61,7 +62,7 @@ function zoomTo(level) {
 
 // ---------- Render ----------
 // The next circle grows out of the segment you step into; stepping out, the old circle sinks back into its place.
-let lastMarker = null, pendingGhost = null;
+let lastMarker = null, pendingGhost = null, shownLevel = null, ringT = {};
 const DUR = 1500;
 function originOf(angle) {
   if (angle == null) return '50% 50%';
@@ -90,10 +91,48 @@ function animate(dir, newMarker) {
   }
 }
 
+/** V2 motion: every face moves from where it was to where it now belongs; the old dial expands into the first outer ring. */
+function animateV2(dir) {
+  const g = pendingGhost; pendingGhost = null;
+  if (!g || !(dir === 'in' || dir === 'out') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const opts = { duration: 1500, easing: 'cubic-bezier(.35, .1, .2, 1)' };
+  const T = (t) => `rotate(${t.rot.toFixed(2)}deg) scale(${t.s.toFixed(4)})`;
+  const was = g.T, w = $('dialWrap');
+  // The rings: each from its old place.
+  document.querySelectorAll('#halos .or2').forEach((el) => {
+    const L = el.dataset.level, to = ringT[L], from = was[L];
+    if (from) el.animate([{ transform: T(from) }, { transform: T(to) }], opts);
+    else el.animate([{ transform: T({ rot: to.rot, s: to.s * 1.15 }), opacity: 0 }, { transform: T(to), opacity: 1 }], opts);
+  });
+  document.querySelectorAll('#halos .or-hand').forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }], opts));
+  // The main dial: from where its circle sat, or out of the middle.
+  const from = was[view.level];
+  for (const el of [$('dial'), $('centerBtn')]) {
+    el.style.transformOrigin = '50% 50%';
+    el.animate(from ? [{ transform: T(from), opacity: el.id === 'centerBtn' ? 0 : 1 }, { transform: 'none', opacity: 1 }]
+      : [{ transform: 'scale(.2)', opacity: 0 }, { transform: 'none', opacity: 1 }], opts);
+  }
+  // The dial you left: its middle fades as it expands into its ring (in), or it sinks into the middle (out).
+  if (!ringT[g.level] || dir === 'in') {
+    const ghost = document.createElement('div');
+    ghost.className = 'ring-ghost';
+    ghost.innerHTML = g.html;
+    w.appendChild(ghost);
+    const to = ringT[g.level];
+    const frames = to ? [{ transform: 'none', opacity: 1 }, { transform: T(to), opacity: 0, offset: 0.55 }, { transform: T(to), opacity: 0 }]
+      : [{ transform: 'none', opacity: 1 }, { transform: 'scale(.15)', opacity: 0 }];
+    ghost.animate(frames, opts).finished.then(() => ghost.remove(), () => ghost.remove());
+  }
+}
+
+function renderVer() {
+  $('ver').innerHTML = ['v1', 'v2'].map((k) => `<button type="button" data-ver="${k}" class="${prefs.rings === k ? 'on' : ''}">${k.toUpperCase()}</button>`).join('');
+}
+
 function render(dir) {
   const now = Date.now();
   if ((dir === 'in' || dir === 'out') && $('dial').firstChild) {
-    pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), marker: lastMarker };
+    pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), center: $('centerBtn').innerHTML, marker: lastMarker, level: shownLevel, T: { ...ringT, [shownLevel]: { rot: 0, s: 1 } } };
   }
   if (view.follow) view.focus = now;
   x = context(view.focus, now, loc, opts());
@@ -152,10 +191,12 @@ function render(dir) {
   if (journey) $('panel').innerHTML = '';
   $('viewTitle').innerHTML = v.title || '';
   $('centerBtn').dataset.level = view.level;
-  if (!journey) setHalos(outerRings());
   lastMarker = view.level === 'day' ? (x.now >= x.jd.start && x.now < x.jd.end ? angleOf(x.now, x.jd) : null) : v.marker ?? null;
-  animate(dir, lastMarker);
+  shownLevel = view.level;
+  setHalos(outerRings());
+  if (prefs.rings === 'v2') animateV2(dir); else animate(dir, lastMarker);
   if (journey) showJourney();
+  renderVer();
 }
 
 function renderSpace() {
@@ -312,8 +353,48 @@ function setHalos(html) {
   h.innerHTML = html;
 }
 
-/** Around the dial during the journey: one thin gold ring for each circle you have come through. */
-function outerRings() {
+function outerRings() { return prefs.rings === 'v2' ? outerRingsV2() : outerRingsV1(); }
+
+/** The clock face of a circle, as SVG markup, and where its "now" is. */
+function levelFace(level) {
+  if (level === 'day') {
+    const tmp = document.createElementNS(SVGNS, 'svg');
+    const live = x.now >= x.jd.start && x.now < x.jd.end;
+    buildDial(tmp, x.jd, loc.tz);
+    updateDial(tmp, x.now, x.jd, hourOf(live ? x.now : x.focus, x.jd), '', live);
+    return { html: tmp.innerHTML, marker: live ? angleOf(x.now, x.jd) : null };
+  }
+  const f = { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[level](x);
+  return { html: f.svg, marker: f.marker ?? null };
+}
+
+/** V2: the outer circles as real clock faces, turned so every "now" lies on the hand's line. */
+function outerRingsV2() {
+  ringT = {};
+  if (view.mode !== 'time' || (journey && journey.step === 'nest')) return '';
+  const lvl = journey ? STEP_LEVEL[journey.step] : view.level;
+  const idx = lvl === 'hour' ? OUTER.length : OUTER.indexOf(lvl);
+  if (idx <= 0) return '';
+  const hand = lastMarker ?? 0;
+  let outer = 188, html = '';
+  OUTER.slice(0, idx).reverse().forEach((L, k) => {
+    const s = (outer + (k ? 6 : 10)) / 158;
+    outer = 188 * s;
+    const face = levelFace(L);
+    const rot = face.marker == null ? 0 : hand - face.marker;
+    ringT[L] = { rot, s };
+    html += `<div class="or2" data-level="${L}" style="--o:${[0.95, 0.7, 0.5, 0.36, 0.26][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
+  });
+  if (lastMarker != null) {
+    const a = (hand * Math.PI) / 180, p = (r) => `${(200 + r * Math.sin(a)).toFixed(1)} ${(200 - r * Math.cos(a)).toFixed(1)}`;
+    html += `<svg class="or-hand" viewBox="-30 -30 460 460"><path d="M${p(191)} L${p(1400)}"/></svg>`;
+  }
+  return html;
+}
+
+/** V1: one thin gold ring for each circle you have come through. */
+function outerRingsV1() {
+  ringT = {};
   if (view.mode !== 'time' || (journey && journey.step === 'nest')) return '';
   const lvl = journey ? STEP_LEVEL[journey.step] : view.level;
   const n = Math.max(0, OUTER.indexOf(lvl === 'hour' ? 'day' : lvl) + (lvl === 'hour' ? 1 : 0));
@@ -352,7 +433,7 @@ function startJourney() {
   render();
   $('journey').hidden = true;
   document.body.classList.add('intro-on');
-  intro($('dialWrap')).then(() => { document.body.classList.remove('intro-on'); showJourney(); });
+  intro($('dialWrap'), { onLand: () => document.body.classList.remove('intro-on') }).then(() => showJourney());
 }
 
 function endJourney() {
@@ -520,6 +601,16 @@ async function locationOnLoad() {
   }
 }
 
+function initVer() {
+  $('ver').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-ver]');
+    if (!b || b.dataset.ver === prefs.rings) return;
+    prefs.rings = b.dataset.ver; store.set('prefs', prefs);
+    $('halos').dataset.h = '';
+    render();
+  });
+}
+
 function initSettings() {
   $('setBtn').addEventListener('click', () => { $('optMA').checked = prefs.ma; $('optCandles').value = prefs.candles; $('setDlg').showModal(); });
   $('setClose').addEventListener('click', () => $('setDlg').close());
@@ -531,8 +622,7 @@ function initSettings() {
 function onChild(e) {
   if (journey) {
     if (e.currentTarget.id !== 'dial') return;
-    const ring = e.target.closest('[data-ring]');
-    if (ring) return journeyDo(ring.dataset.ring === 'world' ? 'outer' : 'nudge');
+    if (journey.step === 'nest') return journeyDo('outer'); // any tap on the circles begins at the outer ring
     const seg = e.target.closest('[data-seg],[data-band]');
     if (seg && view.level === 'day') {
       const id = seg.dataset.seg || seg.dataset.band, isDay = id[0] === 'd', n = +id.slice(1);
@@ -555,10 +645,11 @@ function onChild(e) {
 
 initLocation();
 initSettings();
+initVer();
 $('dial').addEventListener('click', onChild);
 $('panel').addEventListener('click', onChild);
 $('centerBtn').addEventListener('click', () => {
-  if (journey) return journeyDo('middle');
+  if (journey) return journeyDo(journey.step === 'nest' ? 'outer' : 'middle');
   if (view.mode !== 'time') return;
   if (view.level === 'day') { const live = x.now >= x.jd.start && x.now < x.jd.end; return go({ level: 'hour', focus: live ? x.now : view.focus }, 'in'); }
   if (view.level === 'hour') return zoomTo('day');
