@@ -83,14 +83,16 @@ function hand(angle, kind = 'dot', from = 100) {
 const DEFS = `<defs><radialGradient id="sunGlow2"><stop offset="0%" stop-color="#fff6c9"/><stop offset="55%" stop-color="#f5c443"/><stop offset="100%" stop-color="#f5c443" stop-opacity="0"/></radialGradient></defs>`;
 
 /** Text set along an arc, letter by letter, reading right to left; on the lower half it is turned to stay readable. */
-function arcText(str, r, mid, cls, fs) {
-  const chars = [...str], step = ((fs * 0.6) / r) * (180 / Math.PI), span = step * (chars.length - 1);
+function arcText(str, r, mid, cls, fs, width = 360) {
+  const chars = [...str], fit = Math.min(1, (width * 0.8) / Math.max(1e-6, ((fs * 0.6) / r) * (180 / Math.PI) * chars.length));
+  fs *= fit;
+  const step = ((fs * 0.6) / r) * (180 / Math.PI), span = step * (chars.length - 1);
   // RENDER.rot: how far this face will be turned on screen, so the words read upright where they end up.
   const m = (((mid + RENDER.rot) % 360) + 360) % 360, bottom = m > 90 && m < 270;
   return chars.map((c, k) => {
     if (c === ' ') return '';
     const a = bottom ? mid - span / 2 + k * step : mid + span / 2 - k * step, [x, y] = pt(r, a);
-    return `<text x="${f(x)}" y="${f(y)}" class="${cls}" data-w="${str}" transform="rotate(${f(bottom ? a + 180 : a)} ${f(x)} ${f(y)})">${c}</text>`;
+    return `<text x="${f(x)}" y="${f(y)}" class="${cls}"${fit < 1 ? ` style="font-size:${fs.toFixed(1)}px"` : ''} transform="rotate(${f(bottom ? a + 180 : a)} ${f(x)} ${f(y)})">${c}</text>`;
   }).join('');
 }
 
@@ -104,10 +106,10 @@ function ring(segs, { marker = null, extra = '' } = {}) {
     }
     const mid = (g.a1 + g.a2) / 2;
     const dark = /sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : '', nowC = g.isNow ? ' now' : '';
-    if (g.sub) s += arcText(g.sub, R_IN + 7, mid, `rsub${nowC}${dark}`, 8.6);
+    if (g.sub) s += arcText(g.sub, R_IN + 7, mid, `rsub${nowC}${dark}`, 8.6, g.a2 - g.a1);
     if (g.label) {
       const fs = /small/.test(g.labelCls || '') ? 11.5 : 15, rr = g.sub ? R_OUT - 9 : R_NUM;
-      if ([...g.label].length > 2) s += arcText(g.label, rr, mid, `rnum${nowC}${dark} ${g.labelCls || ''}`, fs);
+      if ([...g.label].length > 2) s += arcText(g.label, rr, mid, `rnum${nowC}${dark} ${g.labelCls || ''}`, fs, g.a2 - g.a1);
       else { const [x, y] = pt(rr, mid); s += `<text x="${f(x)}" y="${f(y)}" class="rnum${nowC}${dark} ${g.labelCls || ''}">${g.label}</text>`; }
     }
     if (g.art && !RENDER.lite) { const [x, y] = pt(R_ICON, mid); s += artAt(g.art, x, y, g.artSize || 30, g.isNow ? 'now' : 'dim'); }
@@ -284,13 +286,22 @@ export function bowl(x, level) {
   const name = { day: places(x).day, week: places(x).week, month: x.jd.info.hd.month, year: `the year ${x.jd.info.hd.year}`, shemitah: 'the shemitah cycle', world: 'the six thousand years' }[up];
   return `<button type="button" class="bowl" data-lad="${up}">Held within ${name} <span aria-hidden="true">›</span></button>`;
 }
-/** The whole stack in one sentence, from the hour outward; each part takes you there. */
-export function grounding(x, level) {
-  const live = x.now >= x.jd.start && x.now < x.jd.end, pl = places(x);
+/** Here I am: the ladder of circles, from the six thousand years in to where you are; each one takes you there. */
+export function ladder(x, level) {
+  const { hd, wd } = x.jd.info, pos = hd.year % 7 || 7, mil = Math.floor(hd.year / 1000) + 1;
+  const live = x.now >= x.jd.start && x.now < x.jd.end;
+  const P = parshahFor(addDays(x.date, -wd), x.opts.israel);
   const h = hourOf(level === 'hour' ? x.focus : x.now, x.jd);
-  const part = (l, t) => `<button type="button" class="g-part${l === level ? ' here' : ''}" data-lad="${l}">${t}</button>`;
-  const hour = level === 'hour' || (level === 'day' && live) ? `${part('hour', `the ${ordinal(h.hour)} hour`)} of ` : '';
-  return `<p class="grounding"><b>Here I am:</b> in ${hour}${part('day', pl.day)}, in ${part('week', pl.week)}, on ${part('month', pl.month)}, in ${part('year', pl.year)}, ${part('shemitah', pl.shemitah)}, in ${part('world', pl.world)}.</p>`;
+  const rungs = [
+    ['world', hd.year.toLocaleString(), `of 6,000 · millennium ${mil}`],
+    ['shemitah', `${pos} of 7`, 'shemitah cycle'],
+    ['year', `<bdi class="he" lang="he">${gematria(hd.year % 1000)}</bdi>`, isLeap(hd.year) ? 'a leap year' : 'the year'],
+    ['month', `${ordinal(MONTH_NUM[hd.month])} month`, hd.month],
+    ['week', P.holiday ? 'This week' : P.names, P.holiday ? P.holiday : 'the parshah'],
+    ['day', `${ordinal(wd + 1)} day`, `${ordinal(hd.day)} of ${hd.month}`],
+    ...(level === 'hour' || (level === 'day' && live) ? [['hour', `${ordinal(h.hour)} hour`, `of the ${h.isDay ? 'day' : 'night'}`]] : []),
+  ];
+  return `<nav class="ladder" aria-label="Where you are, inside the circles around it">${rungs.map(([l, big, small]) => `<button type="button" class="lad${l === level ? ' here' : ''}" data-lad="${l}"><b>${big}</b><small>${small}</small></button>`).join('<i aria-hidden="true">›</i>')}</nav>`;
 }
 
 // ---------- The scale: every level at once ----------
