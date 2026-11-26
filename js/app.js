@@ -873,6 +873,12 @@ $('centerBtn').addEventListener('click', () => {
   if (i > 0) zoomTo(LEVELS[i - 1]);
 });
 $('nowBtn').addEventListener('click', goNow);
+$('donateBtn').addEventListener('click', async () => {
+  track('donate');
+  // Zelle lives inside each bank's app, so no link can open it: copy the number and say where to send it.
+  try { await navigator.clipboard.writeText('4348823721'); $('donateMsg').innerHTML = 'Copied <b>434-882-3721</b>. Open your bank app, choose <b>Zelle</b>, and paste it. Thank you!'; }
+  catch { $('donateMsg').innerHTML = 'Open your bank app, choose <b>Zelle</b>, and send to <b>434-882-3721</b>. Thank you!'; }
+});
 $('replayJourney').addEventListener('click', () => { track('journey-replay'); $('setDlg').close(); startJourney(); });
 // Tap inside the circle to step in; tap outside it to step out.
 document.addEventListener('click', (e) => {

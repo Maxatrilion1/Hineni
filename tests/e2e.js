@@ -64,6 +64,10 @@ const fails = [];
   if (clip < 5000) fails.push('copy widget: clipboard empty');
   await p.screenshot({ path: `${OUT}/${String(++n).padStart(2, '0')}-settings.png` });
   console.log('settings'.padEnd(22), ver === 2 && clip > 5000 ? 'ok' : 'FAIL', `(widget copied: ${clip} characters)`);
+  await tap('#donateBtn'); await p.waitForTimeout(600);
+  const zelle = await p.evaluate(() => navigator.clipboard.readText());
+  if (zelle !== '4348823721') fails.push('donate: number not copied');
+  console.log('donate'.padEnd(22), zelle === '4348823721' ? 'ok' : 'FAIL', `(copied ${zelle})`);
   await tap('#locBtn'); await p.waitForTimeout(500);
   const loc = await p.evaluate(() => document.getElementById('locDlg').open);
   if (!loc) fails.push('location dialog did not open');
@@ -72,6 +76,11 @@ const fails = [];
   await check('clean view', { level: 'day' }, 800);
   // Sit across a minute change: nothing should be redrawn or break
   await p.waitForTimeout(61000); await check('a minute later', { level: 'day' }, 400);
+  // Start the journey again, from Settings
+  await tap('#setBtn'); await p.waitForTimeout(400); await tap('#replayJourney'); await p.waitForTimeout(1500);
+  const again = await p.evaluate(() => document.body.classList.contains('intro-on') && !!document.querySelector('.intro'));
+  if (!again) fails.push('journey did not start again');
+  console.log('journey again'.padEnd(22), again ? 'ok' : 'FAIL');
   console.log('PEAK graphics memory ~' + peak + ' MB');
   console.log('page errors:', errs.length ? errs : 'none');
   console.log(fails.length ? 'FAILED:\n  ' + fails.join('\n  ') : 'ALL PASSED');

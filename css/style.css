@@ -781,3 +781,9 @@ body[data-jstep="month"] #dial .rs.now, body[data-jstep="week"] #dial .rs.now { 
 body.journeying .top, body.intro-on .top { visibility: hidden; }
 body.arriving .top { animation: arrive 1.2s ease 1.2s both; }
 body.journeying .clock { min-height: calc(100svh - 330px - env(safe-area-inset-bottom)); align-content: center; }
+
+/* Settings: the journey first, support last */
+.journey-btn { margin: 4px 0 6px; }
+.center-t { text-align: center; }
+.donate { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+.donate .btn { margin-top: 4px; }

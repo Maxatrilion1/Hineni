@@ -78,6 +78,8 @@
 
   <dialog id="setDlg" class="sheet">
     <div class="sheet-head"><h2>Settings</h2><button id="setClose" class="pill" type="button">Done</button></div>
+    <button id="replayJourney" class="btn wide journey-btn" type="button">✦ Start the journey again</button>
+    <p class="fine tight center-t">Walk through the circles of time from the outside in, as on your first visit.</p>
     <div class="set-group">
       <h3>Where you are</h3>
       <button id="locBtn" class="set-row" type="button"><span class="nest-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg></span><span><b id="locName">…</b><small>Jewish time follows the sun where you stand. Tap to change.</small></span></button>
@@ -85,7 +87,6 @@
     <div class="set-group">
       <h3>The clock</h3>
       <div class="opt"><span><b>View</b><small>Detailed shows the bigger circles of time around the clock. Clean shows the clock alone.</small></span><nav id="ver" class="ver" aria-label="Clean or detailed"></nav></div>
-      <button id="replayJourney" class="set-row" type="button"><span class="nest-ico journey-ico" aria-hidden="true">✦</span><span><b>The journey</b><small>Walk through the circles again, from the outside in.</small></span></button>
     </div>
     <div class="set-group">
       <h3>Zmanim</h3>
@@ -93,13 +94,19 @@
       <label class="opt"><span><b>Candle lighting</b><small>Minutes before sunset. Auto: 40 in Jerusalem, 30 in Haifa, 18 elsewhere.</small></span>
         <select id="optCandles"><option value="auto">Auto</option><option value="18">18</option><option value="20">20</option><option value="22">22</option><option value="30">30</option><option value="40">40</option></select>
       </label>
+      <p class="fine">Shitah: Alter Rebbe (Chabad). Hours run from sunrise to sunset; dawn 16.1°, nightfall 6°. Israel locations keep one day of Yom Tov.</p>
     </div>
     <div class="set-group">
       <h3>Get Hineni</h3>
       <details class="get"><summary><b>On your home screen</b><small>Hineni as an app, one tap away.</small></summary><div id="getApp"></div></details>
       <details class="get"><summary><b>As a widget</b><small>The hour you're in, on your home screen or lock screen.</small></summary><div id="getWidget"></div></details>
     </div>
-    <p class="fine">Shitah: Alter Rebbe (Chabad). Hours run from sunrise to sunset; dawn 16.1°, nightfall 6°. Israel locations keep one day of Yom Tov.</p>
+    <div class="set-group donate">
+      <h3>Support Hineni</h3>
+      <p class="lore-p">Hineni is free. If it helps you, you can support it with Zelle.</p>
+      <button id="donateBtn" class="btn wide" type="button">Donate with Zelle</button>
+      <p id="donateMsg" class="fine tight center-t">Zelle: 434-882-3721</p>
+    </div>
     <p class="credit">A project of Moshe Fehler</p>
   </dialog>
 
