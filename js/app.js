@@ -3,6 +3,8 @@ import { gematria, WEEKDAYS, hebrewDate } from './hebrew.js';
 import { buildDial, updateDial } from './dial.js';
 import { paintSky } from './sky.js';
 import { art } from './art.js';
+import { DAYS } from './lore.js';
+import { monthLore } from './hebrew.js';
 import { LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
 import { NEW_YORK, CITIES, isIsrael, candleMinutes, geolocate, geoPermission, placeName, searchPlaces, distanceKm } from './places.js';
 
@@ -74,8 +76,8 @@ function render(dir) {
   $('modeTime').setAttribute('aria-selected', view.mode === 'time');
   $('modeSpace').setAttribute('aria-selected', view.mode === 'space');
   const atNow = view.follow && view.level === 'day' && view.mode === 'time';
-  $('nowBtn').hidden = atNow;
-  $('nowBtn').textContent = view.mode === 'space' ? 'Back to time' : 'Back to now';
+  $('nowBtn').classList.toggle('here', atNow);
+  $('nestBtn').innerHTML = nestIcon();
   animate(dir);
 
   if (x.jd.polar) {
@@ -86,10 +88,8 @@ function render(dir) {
   if (view.mode === 'space') {
     renderSpace();
     $('prevBtn').hidden = $('nextBtn').hidden = true;
-    $('scale').hidden = true;
     return;
   }
-  $('scale').hidden = false;
 
   if (view.level === 'day') {
     buildDial($('dial'), x.jd, loc.tz);
@@ -110,12 +110,13 @@ function render(dir) {
     v = { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[view.level](x);
     $('dial').innerHTML = v.svg;
     $('centerBtn').innerHTML = v.center;
-    $('panel').innerHTML = v.panel;
+    $('panel').innerHTML = journey ? '' : v.panel;
   }
+  if (journey) $('panel').innerHTML = '';
   $('prevBtn').hidden = !v.prev;
   $('nextBtn').hidden = !v.next;
   $('viewTitle').innerHTML = v.title || '';
-  renderScale();
+  if (journey) showJourney();
 }
 
 function renderSpace() {
@@ -141,6 +142,30 @@ function renderSpace() {
 }
 const spaceBearing = () => { const r = Math.PI / 180, T = { lat: 31.7781, lon: 35.2354 }; const y = Math.sin((T.lon - loc.lon) * r) * Math.cos(T.lat * r); const xx = Math.cos(loc.lat * r) * Math.sin(T.lat * r) - Math.sin(loc.lat * r) * Math.cos(T.lat * r) * Math.cos((T.lon - loc.lon) * r); return ((Math.atan2(y, xx) / r) + 360) % 360; };
 
+function nestIcon() {
+  let s = '';
+  for (let i = 0; i < 7; i++) s += `<circle cx="16" cy="16" r="${14.5 - i * 2}" fill="none" stroke-width="1.1"/>`;
+  return `<svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">${s}<circle cx="16" cy="16" r="1.6" class="nest-core"/></svg>`;
+}
+
+function renderNest() {
+  const rows = scales(x);
+  const arc = (r, frac) => {
+    const a = Math.max(0.001, Math.min(0.9999, frac)) * Math.PI * 2;
+    const x2 = 130 + r * Math.sin(a), y2 = 130 - r * Math.cos(a);
+    return `M130 ${130 - r} A${r} ${r} 0 ${a > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+  };
+  let svg = '';
+  rows.forEach((r, i) => {
+    const R = 118 - i * 16, frac = (r.at + r.frac) / r.parts;
+    const a = frac * Math.PI * 2, dx = 130 + R * Math.sin(a), dy = 130 - R * Math.cos(a);
+    svg += `<g class="nr${r.level === view.level ? ' cur' : ''}" data-level="${r.level}"><circle cx="130" cy="130" r="${R}" class="nr-track"/><path d="${arc(R, frac)}" class="nr-arc"/><circle cx="${dx.toFixed(2)}" cy="${dy.toFixed(2)}" r="4" class="nr-dot"/><circle cx="130" cy="130" r="${R}" class="nr-hit"/></g>`;
+    svg += `<text x="134" y="${(130 - R + 4).toFixed(1)}" class="nr-label">${r.label}</text>`;
+  });
+  $('nestRings').innerHTML = `<svg viewBox="0 0 260 260" role="img" aria-label="The circles of time, one inside the other">${svg}<text x="130" y="134" class="nr-now">now</text></svg>`;
+  renderScale();
+}
+
 function renderScale() {
   const rows = scales(x);
   $('scale').innerHTML = rows.map((r) => {
@@ -160,7 +185,7 @@ function updateDay(now) {
   const ht = hourTribe(h.hour);
   const { hd, wd } = x;
   const date = `${WEEKDAYS[wd].he} · ${gematria(hd.day)} ${hebrewDate(x.date).he.split(' ').slice(1, -1).join(' ')}`;
-  $('viewTitle').innerHTML = `<bdi class="he" lang="he">${date}</bdi>`;
+  $('viewTitle').innerHTML = live ? `Today · <bdi class="he" lang="he">${date}</bdi>` : `<bdi class="he" lang="he">${date}</bdi>`;
   $('centerBtn').innerHTML = live
     ? `<span class="c-art">${art(ht.t.icon, 58)}</span><span class="c-big">${ordinal(h.hour)} hour</span><span class="c-line">of the ${h.isDay ? 'day' : 'night'} · ${ht.tribe}</span><span class="c-sub">${fmt(now)}</span>`
     : `<span class="c-art">${art(x.jd.info.wd >= 0 ? ['light','firmament','plants','lights','fishbirds','man','candles'][wd] : 'globe', 58)}</span><span class="c-line">${WEEKDAYS[wd].en}</span><span class="c-sub">Tap an hour to step inside</span>`;
@@ -198,6 +223,58 @@ function howHTML() {
     <p class="lore-p">Each hour belongs to a month and its tribe; the colored band is the tribe's flag. Tap an hour to step inside it. Use the button at the top of the dial to zoom out to the week, month, year, shemitah cycle and the 6,000 years. The path above the dial shows where you are; tap any step to go there.</p></details>`;
 }
 
+const monthTribe = (hd) => monthLore(hd.month)?.tribe ?? '';
+const dayMade = (wd) => ({ 0: 'light', 1: 'the firmament', 2: 'the land and its plants', 3: 'the sun, moon and stars', 4: 'the fish and the birds', 5: 'the animals and man', 6: 'rest' })[wd];
+// ---------- The journey: from the outside in ----------
+const JOURNEY = ['world', 'shemitah', 'year', 'month', 'week', 'day'];
+let journey = null;
+function journeyCopy() {
+  const { hd, wd } = x, pos = hd.year % 7 || 7, mil = Math.floor(hd.year / 1000) + 1;
+  const lore = { world: [`The ${ordinal(mil)} millennium`, 'This is where you are in the six thousand years of the world: its sixth day, its Friday, getting ready for Shabbos (Sanhedrin 97a).'],
+    shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'Inside the millennium, the land keeps a seven-year rhythm. The seventh year, it rests.'],
+    year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'Inside the cycle, this year and its months. Each month belongs to one of the twelve tribes.'],
+    month: [`${hd.month}`, ''],
+    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, ''],
+    day: ['Today', 'And inside it all: today, live. Twelve hours of night and twelve of day, each held by a tribe. The line is now.'],
+  };
+  return lore[journey.level];
+}
+function showJourney() {
+  const i = JOURNEY.indexOf(view.level);
+  journey.level = view.level;
+  const { hd, wd } = x;
+  const copy = journeyCopy();
+  if (view.level === 'month') copy[1] = `Inside the year, the moon's month: the month of ${monthTribe(hd)}. Today is the ${ordinal(hd.day)}.`;
+  if (view.level === 'week') copy[1] = `Inside the month, the week, counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`;
+  $('jBig').innerHTML = copy[0];
+  $('jText').textContent = copy[1];
+  $('jDots').innerHTML = JOURNEY.map((l, k) => `<i class="${k < i ? 'done' : ''}${k === i ? ' at' : ''}"></i>`).join('');
+  $('jNext').textContent = view.level === 'day' ? 'Enter this hour' : 'Step in';
+  $('journey').hidden = false;
+  document.body.classList.add('journeying');
+}
+function startJourney() {
+  journey = { level: 'world' };
+  Object.assign(view, { mode: 'time', level: 'world', focus: Date.now(), follow: false });
+  $('panel').innerHTML = '';
+  render('out');
+}
+function endJourney(intoHour) {
+  journey = null;
+  store.set('journeyDone', true);
+  $('journey').hidden = true;
+  document.body.classList.remove('journeying');
+  if (intoHour) go({ level: 'hour', focus: Date.now() }, 'in');
+  else goNow();
+}
+function journeyNext() {
+  const i = JOURNEY.indexOf(view.level);
+  if (i >= JOURNEY.length - 1) return endJourney(true);
+  const next = JOURNEY[i + 1];
+  view.focus = Date.now(); view.follow = next === 'day';
+  zoomTo(next);
+}
+
 // ---------- Compass ----------
 async function startCompass() {
   try {
@@ -233,7 +310,7 @@ function tick() {
   const minute = Math.floor(now / 60000);
   if (minute !== lastMinute) {
     lastMinute = minute;
-    if (view.mode === 'time') renderScale();
+    if ($('nestDlg').open) renderNest();
     if (view.mode === 'space') renderSpace();
     if (view.mode === 'time' && view.level !== 'day') {
       // Move markers without disturbing the panel.
@@ -321,6 +398,7 @@ function initSettings() {
 
 // ---------- Events ----------
 function onChild(e) {
+  if (journey) { if (e.currentTarget.id === 'dial') journeyNext(); return; }
   const t = e.target.closest('[data-seg],[data-band],[data-child]');
   if (!t || view.mode !== 'time') return;
   if (view.level === 'day' && (t.dataset.seg || t.dataset.band)) {
@@ -338,21 +416,30 @@ initSettings();
 $('dial').addEventListener('click', onChild);
 $('panel').addEventListener('click', onChild);
 $('centerBtn').addEventListener('click', () => {
+  if (journey) return journeyNext();
   if (view.mode !== 'time') return;
   if (view.level === 'day') { const live = x.now >= x.jd.start && x.now < x.jd.end; return go({ level: 'hour', focus: live ? x.now : view.focus }, 'in'); }
   if (view.level === 'hour') return zoomTo('day');
   const i = LEVELS.indexOf(view.level);
   if (i > 0) zoomTo(LEVELS[i - 1]);
 });
-$('nowBtn').addEventListener('click', goNow);
+$('nowBtn').addEventListener('click', () => { if (journey) endJourney(false); else goNow(); });
+$('jNext').addEventListener('click', journeyNext);
+$('jSkip').addEventListener('click', () => endJourney(false));
+$('replayJourney').addEventListener('click', () => { $('setDlg').close(); startJourney(); });
 $('prevBtn').addEventListener('click', () => go(v?.prev, 'side'));
 $('nextBtn').addEventListener('click', () => go(v?.next, 'side'));
-$('scale').addEventListener('click', (e) => {
+function pickLevel(e) {
   const c = e.target.closest('[data-level]');
-  if (!c || c.dataset.level === view.level) return;
-  view.focus = Date.now(); view.follow = c.dataset.level === 'day';
+  if (!c) return;
+  $('nestDlg').close();
+  view.mode = 'time'; view.focus = Date.now(); view.follow = c.dataset.level === 'day';
   zoomTo(c.dataset.level);
-});
+}
+$('scale').addEventListener('click', pickLevel);
+$('nestRings').addEventListener('click', pickLevel);
+$('nestBtn').addEventListener('click', () => { renderNest(); $('nestDlg').showModal(); });
+$('nestClose').addEventListener('click', () => $('nestDlg').close());
 // Space: drag to turn.
 let drag = null;
 const angleAt = (e) => { const r = $('dial').getBoundingClientRect(); return Math.atan2(e.clientX - (r.left + r.width / 2), -(e.clientY - (r.top + r.height / 2))) * 180 / Math.PI; };
@@ -365,7 +452,7 @@ $('dial').style.touchAction = 'manipulation';
 $('modeSpace').addEventListener('click', () => { if (view.mode !== 'space') { view.mode = 'space'; $('panel').innerHTML = ''; render('out'); } });
 for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
 
-render();
+if (!store.get('journeyDone')) startJourney(); else render();
 setInterval(tick, 1000);
 document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && tick());
 locationOnLoad();

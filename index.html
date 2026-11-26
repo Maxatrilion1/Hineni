@@ -42,7 +42,10 @@
           <button id="modeTime" type="button" role="tab" aria-selected="true">Time</button>
           <button id="modeSpace" type="button" role="tab" aria-selected="false">Space</button>
         </div>
-        <button id="nowBtn" class="pill" type="button" hidden>Now</button>
+        <div class="ctrl-right">
+          <button id="nestBtn" class="nest-btn" type="button" aria-label="All the circles of time"></button>
+          <button id="nowBtn" class="pill today" type="button">Today</button>
+        </div>
       </div>
       <div class="titlebar">
         <button id="prevBtn" class="arrow" type="button" aria-label="Previous">‹</button>
@@ -53,7 +56,12 @@
         <svg id="dial" viewBox="-30 -30 460 460" role="img" aria-label="Jewish clock dial. Tap a part to step inside it."></svg>
         <button id="centerBtn" class="center" type="button" aria-label="Step in or out"></button>
       </div>
-      <div id="scale" class="scale" aria-label="Where you are in time"></div>
+      <div id="journey" class="journey" hidden>
+        <div class="j-dots" id="jDots"></div>
+        <div class="j-big" id="jBig"></div>
+        <p class="j-text" id="jText"></p>
+        <div class="j-actions"><button id="jSkip" class="btn ghost small" type="button">Skip</button><button id="jNext" class="btn" type="button">Step in</button></div>
+      </div>
     </section>
 
     <section id="panel" class="info"></section>
@@ -76,12 +84,20 @@
     <div id="sheetBody"></div>
   </dialog>
 
+  <dialog id="nestDlg" class="sheet nest-sheet">
+    <div class="sheet-head"><h2>All the circles</h2><button id="nestClose" class="pill" type="button">Done</button></div>
+    <p class="fine tight">Each circle sits inside the one around it. Tap one to go there.</p>
+    <div id="nestRings" class="nest-rings"></div>
+    <div id="scale" class="scale"></div>
+  </dialog>
+
   <dialog id="setDlg" class="sheet">
     <div class="sheet-head"><h2>Settings</h2><button id="setClose" class="pill" type="button">Done</button></div>
     <label class="opt"><span><b>Magen Avraham times</b><small>Also show latest Shema and Shacharis counted from dawn to nightfall.</small></span><input id="optMA" type="checkbox"></label>
     <label class="opt"><span><b>Candle lighting</b><small>Minutes before sunset. Auto: 40 in Jerusalem, 30 in Haifa, 18 elsewhere.</small></span>
       <select id="optCandles"><option value="auto">Auto</option><option value="18">18</option><option value="20">20</option><option value="22">22</option><option value="30">30</option><option value="40">40</option></select>
     </label>
+    <button id="replayJourney" class="btn ghost wide" type="button">Take the journey from the outside in</button>
     <p class="fine">Shitah: Alter Rebbe (Chabad). Hours run from sunrise to sunset; dawn 16.1°, nightfall 6°. Israel locations keep one day of Yom Tov.</p>
   </dialog>
 
