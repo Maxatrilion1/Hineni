@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hineni</title>
+  <meta name="description" content="A Jewish clock: sha'os zmaniyos, zmanim and the Hebrew date, with civil time alongside.">
+  <meta name="theme-color" content="#11153a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="night">
+  <main class="app">
+    <header class="top">
+      <div class="brand"><span class="he" lang="he">הִנֵּנִי</span><span class="brand-en">Hineni</span></div>
+      <button id="locBtn" class="pill" type="button" aria-label="Change location">
+        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+        <span id="locName">…</span>
+      </button>
+    </header>
+
+    <section class="clock">
+      <div class="dial-wrap">
+        <svg id="dial" viewBox="-12 -12 424 424" role="img" aria-label="Jewish clock dial"></svg>
+        <div class="center" aria-live="off">
+          <div id="cPeriod" class="c-period"></div>
+          <div id="cHour" class="c-hour he" lang="he"></div>
+          <div id="cHourLabel" class="c-label"></div>
+          <div id="cCivil" class="c-civil"></div>
+        </div>
+      </div>
+      <div id="next" class="next-card" aria-live="polite"></div>
+    </section>
+
+    <section class="info">
+      <div id="date" class="card date"></div>
+      <div class="card">
+        <h2>Zmanim</h2>
+        <ol id="zmanim" class="zmanim"></ol>
+        <p class="fine" id="hourLen"></p>
+      </div>
+      <div id="month" class="card month"></div>
+      <details class="card how">
+        <summary>How to read the clock</summary>
+        <p>The day is divided into 12 hours from sunrise to sunset, and the night into 12 from sunset to sunrise. These are <em>sha'os zmaniyos</em>: they stretch in summer and shrink in winter.</p>
+        <p>The outer ring holds the 24 hours. The day (gold) runs across the top from sunrise on the left to sunset on the right, like the sun across the sky. The night (blue) runs underneath. The Jewish day begins at the right, at sunset.</p>
+        <p>The inner ring is the ordinary clock, bent to fit. Where its hours bunch up, Jewish hours are short; where they spread, Jewish hours are long. The dots are the zmanim.</p>
+      </details>
+    </section>
+
+    <footer class="fine foot">
+      Times are calculated for sea level and may differ from your shul's luach by a minute or two. Don't rely on them to the last minute.
+    </footer>
+  </main>
+
+  <dialog id="locDlg" class="sheet">
+    <div class="sheet-head">
+      <h2>Location</h2>
+      <button id="locClose" class="pill" type="button">Done</button>
+    </div>
+    <button id="useGeo" class="geo" type="button">Use my location</button>
+    <p id="geoMsg" class="fine"></p>
+    <div id="cityList" class="cities"></div>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

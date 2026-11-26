@@ -1,0 +1,9 @@
+{
+  "name": "Hineni — Jewish Clock",
+  "short_name": "Hineni",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0e1230",
+  "theme_color": "#11153a",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
