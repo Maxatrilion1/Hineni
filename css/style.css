@@ -680,7 +680,7 @@ body.intro-on #dialWrap { opacity: 0; }
 .morph path { fill: var(--gold); }
 .ring-ghost { z-index: 2; }
 /* Outer rings stay quiet */
-.outer-rings { opacity: .7; }
+.outer-rings { opacity: .45; }
 .now-card .kv b .he { font-size: 15px; }
 
 /* Clip the outer circles at the app's own edge, so the page itself never grows sideways */

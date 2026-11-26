@@ -4,7 +4,7 @@
 
 ## What it shows
 
-- **First visit: the journey.** It opens on a spiral of time rising slowly through the screen. Begin tilts it until you look down its axis; it lands as all the circles of time nested in gold. Tap the outer ring to begin at the 6th millennium; tap the middle to step in through the shemitah cycle, the year and the month to the week; swipe in from the edge to step back out once; step in again to the week and Today, live; tap the hour you're in; then tap the middle to come home to the day. The circles you have come through stay around the dial as thin gold rings. Replay it from Settings → The journey.
+- **First visit: the journey.** It opens on a spiral of time rising slowly through the screen. Begin tilts it until you look down its axis; it lands as all the circles of time nested in gold. Tap the outer ring to begin at the 6th millennium; tap the middle to step in through the shemitah cycle, the year and the month to the week; swipe in from the edge to step back out once; step in again to the week and Today, live; tap the hour you're in; then tap the middle to come home to the day. The circles you have come through stay faintly around the dial during the journey; the everyday clock is just the dial. Replay it from Settings → The journey.
 - **The parshah of the week** on the week circle, for Israel and the diaspora. Worked out from the calendar itself and checked Shabbos by Shabbos against Hebcal for 2000–2080 (8,348 readings, no differences).
 - **A new hour** is marked gently: the center medallion turns to the next tribe and a small note slides up.
 - **Gestures**: swipe left from the middle of the dial to step in one circle; swipe in from the edge of the screen to step out one.

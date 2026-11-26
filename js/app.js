@@ -416,7 +416,8 @@ function setHalos(html) {
   h.innerHTML = html;
 }
 
-function outerRings() { return prefs.rings === 'v2' ? outerRingsV2() : outerRingsV1(); }
+// The outer circles belong to the journey; the everyday clock is just the dial.
+function outerRings() { if (!journey) { ringT = {}; return ''; } return prefs.rings === 'v2' ? outerRingsV2() : outerRingsV1(); }
 
 /** The clock face of a circle, as SVG markup, and where its "now" is. */
 function levelFace(level) {
@@ -446,7 +447,7 @@ function outerRingsV2() {
     const face = levelFace(L);
     const rot = face.marker == null ? 0 : hand - face.marker;
     ringT[L] = { rot, s };
-    html += `<div class="or2" data-level="${L}" style="--o:${[0.72, 0.52, 0.38, 0.28, 0.2][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
+    html += `<div class="or2" data-level="${L}" style="--o:${[0.45, 0.32, 0.24, 0.18, 0.13][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
   });
   if (lastMarker != null) {
     const a = (hand * Math.PI) / 180, p = (r) => `${(200 + r * Math.sin(a)).toFixed(1)} ${(200 - r * Math.cos(a)).toFixed(1)}`;

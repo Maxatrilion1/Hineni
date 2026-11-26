@@ -46,8 +46,8 @@ export function intro(target, { onLand } = {}) {
       const phi = lerp(0.3, Math.PI / 2, e);                 // tilt: from nearly side-on to straight down the axis
       const pitch = lerp(R0 * 0.82, 0, e);
       const f = R0 * 4.2;
-      if (phase === 'idle') { spinAt = time * 0.12; riseAt = (time * 0.07) % 1; }
-      else spinAt = spinFrom + ((now - start) / 1000) * 0.12 * (1 - e) * 0.6;
+      if (phase === 'idle') { spinAt = -time * 0.05; riseAt = (time * 0.025) % 1; } // slow, and the turn and the rise both climb
+      else spinAt = spinFrom - ((now - start) / 1000) * 0.05 * (1 - e);
       const spin = spinAt, rise = riseAt;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
