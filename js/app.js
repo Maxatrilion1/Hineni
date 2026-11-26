@@ -462,14 +462,10 @@ function nestDial() {
   rows.forEach((r, i) => {
     const R = 178 - i * 22, frac = (r.at + r.frac) / r.parts, a = frac * Math.PI * 2;
     svg += `<g class="nr nr-big${i === 0 ? ' tap-me' : ''}" data-ring="${r.level}"><circle cx="${C}" cy="${C}" r="${R}" class="nr-track"/><path d="${arc(R, frac)}" class="nr-arc"/><circle cx="${(C + R * Math.sin(a)).toFixed(2)}" cy="${(C - R * Math.cos(a)).toFixed(2)}" r="5" class="nr-dot"/><circle cx="${C}" cy="${C}" r="${R}" class="nr-hit"/></g>`;
-    // Its name rides the ring itself, just past its "now" dot, upright and reading along it.
-    const word = r.label.toUpperCase(), fs = 8.5, stp = ((fs * 0.78) / R) * (180 / Math.PI), span = stp * (word.length - 1);
-    const dotDeg = frac * 360, mid = dotDeg + (13 / R) * (180 / Math.PI) + span / 2, m = ((mid % 360) + 360) % 360, flip = m > 90 && m < 270;
-    [...word].forEach((ch, k) => {
-      const d = flip ? mid + span / 2 - k * stp : mid - span / 2 + k * stp, rr = (d * Math.PI) / 180;
-      const lx = C + R * Math.sin(rr), ly = C - R * Math.cos(rr);
-      svg += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" class="nr-label big" transform="rotate(${(flip ? d + 180 : d).toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)})">${ch}</text>`;
-    });
+    // Its name sits inside its own gold band, at the top where every band begins: stacked, one per ring.
+    const a0 = 9 / R, a1 = Math.PI * 0.9;
+    svg += `<path id="nrp${i}" d="M${(C + R * Math.sin(a0)).toFixed(2)} ${(C - R * Math.cos(a0)).toFixed(2)} A${R} ${R} 0 0 1 ${(C + R * Math.sin(a1)).toFixed(2)} ${(C - R * Math.cos(a1)).toFixed(2)}" fill="none"/>`;
+    svg += `<text class="nr-label big" style="text-anchor:start;letter-spacing:.06em"><textPath href="#nrp${i}">${r.label.toUpperCase()}</textPath></text>`;
   });
   return svg;
 }
