@@ -702,3 +702,16 @@ body.journeying #geoBanner, body.intro-on #geoBanner { display: none; }
 .ghost-band { -webkit-mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%); mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%); transform-origin: 50% 50%; }
 .ghost-band text { opacity: 1 !important; }
 .ghost-mid { -webkit-mask-image: radial-gradient(circle closest-side, #000 68.4%, transparent 68.8%); mask-image: radial-gradient(circle closest-side, #000 68.4%, transparent 68.8%); }
+
+/* Tidy: nothing spills out of its box */
+.facets > div, .facets b, .facets small { overflow-wrap: anywhere; hyphens: auto; }
+.facets small { line-height: 1.35; }
+.zmanim .z.next { margin: 0; padding: 0 8px; }
+.zmanim { overflow: hidden; }
+.kv b, .kv span { min-width: 0; overflow-wrap: anywhere; }
+
+/* Inside the hour: a compact centre that stays clear of the facets around it */
+.center[data-level="hour"] { inset: 29%; gap: 0; }
+.center[data-level="hour"] .c-big { font-size: clamp(22px, 6.4vw, 28px); margin-top: 2px; }
+.center[data-level="hour"] .c-line { font-size: 12.5px; margin-top: 1px; }
+.center[data-level="hour"] .c-sub { font-size: 11.5px; margin-top: 1px; }

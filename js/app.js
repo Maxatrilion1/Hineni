@@ -110,13 +110,13 @@ function animateV2(dir) {
   const mk = (cls) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = g.html; w.appendChild(d); return d; };
   if (dir === 'in' && to) {
     const ring = mk('ring-ghost ghost-band'), mid = mk('ring-ghost ghost-mid');
-    ring.animate([{ transform: 'none', opacity: 1 }, { transform: `rotate(${to.rot.toFixed(2)}deg) scale(${to.s.toFixed(4)})`, opacity: 0.45 }], opts)
+    ring.animate([{ transform: 'none', opacity: 1 }, { transform: `rotate(${(to.rot * 0.15).toFixed(2)}deg) scale(${(1 + (to.s - 1) * 0.6).toFixed(4)})`, opacity: 0.95, offset: 0.4 }, { transform: `rotate(${to.rot.toFixed(2)}deg) scale(${to.s.toFixed(4)})`, opacity: 0.36 }], { ...opts, easing: 'cubic-bezier(.45, .05, .3, 1)' })
       .finished.then(() => ring.remove(), () => ring.remove());
     mid.animate([{ opacity: 1 }, { opacity: 0, offset: 0.45 }, { opacity: 0 }], opts).finished.then(() => mid.remove(), () => mid.remove());
     // The real ring takes over only once the old one has arrived.
     document.querySelectorAll(`#halos .or2[data-level="${g.level}"]`).forEach((el) => {
       el.getAnimations().forEach((a) => a.cancel());
-      el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.97 }, { opacity: 1 }], opts);
+      el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.92 }, { opacity: 1 }], opts);
     });
   } else {
     const ghost = mk('ring-ghost');
@@ -166,13 +166,14 @@ function morphBlock() {
   ov.setAttribute('class', 'morph');
   const path = document.createElementNS(SVGNS, 'path');
   ov.appendChild(path);
-  $('dialWrap').appendChild(ov);
-  const mid = (a[0] + a[1]) / 2, w0 = a[1] - a[0], t0 = performance.now(), D = STAGE + 500;
+  // The gold ring travels with the old circle as it moves out to its place.
+  ($('dialWrap').querySelector('.ghost-band') || $('dialWrap')).appendChild(ov);
+  const mid = (a[0] + a[1]) / 2, w0 = a[1] - a[0], t0 = performance.now(), D = STAGE + SETTLE;
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   (function step(now) {
     const p = Math.min(1, (now - t0) / D), e = ease(Math.min(1, (now - t0) / STAGE)), w = w0 + (359.9 - w0) * e;
     path.setAttribute('d', sector(R1, R2, mid - w / 2, mid + w / 2));
-    ov.style.opacity = now - t0 < STAGE ? 0.95 : 0.95 * Math.max(0, 1 - (now - t0 - STAGE) / 500);
+    ov.style.opacity = now - t0 < STAGE ? 0.95 : 0.95 * Math.max(0, 1 - (now - t0 - STAGE) / SETTLE);
     if (p < 1) requestAnimationFrame(step); else ov.remove();
   })(t0);
 }
@@ -207,6 +208,28 @@ function nestToFace() {
   inner.forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: 'ease' }));
   $('centerBtn').animate([{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: 'ease' });
   $('journey').animate([{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: 'ease' });
+  // The outer ring's gold arc travels and narrows into the gold "now" segment of the first circle.
+  const seg = dial.querySelector('.rs.now[data-a]');
+  const nowFrac = scales(x)[0], frac = (nowFrac.at + nowFrac.frac) / nowFrac.parts;
+  if (seg) {
+    const [b1, b2] = seg.dataset.a.split(',').map(Number);
+    const ov = document.createElementNS(SVGNS, 'svg');
+    ov.setAttribute('viewBox', '-30 -30 460 460'); ov.setAttribute('class', 'morph');
+    const path = document.createElementNS(SVGNS, 'path'); ov.appendChild(path);
+    $('dialWrap').appendChild(ov);
+    const P = (r, d) => [200 + r * Math.sin(d * Math.PI / 180), 200 - r * Math.cos(d * Math.PI / 180)];
+    const sec = (r1, r2, a1, a2) => { const L = a2 - a1 > 180 ? 1 : 0, q = (n) => n.toFixed(2); const [x1, y1] = P(r2, a1), [x2, y2] = P(r2, a2), [x3, y3] = P(r1, a2), [x4, y4] = P(r1, a1); return `M${q(x1)} ${q(y1)}A${r2} ${r2} 0 ${L} 1 ${q(x2)} ${q(y2)}L${q(x3)} ${q(y3)}A${r1} ${r1} 0 ${L} 0 ${q(x4)} ${q(y4)}Z`; };
+    const e3 = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const a0 = 0, aE = Math.max(1, frac * 360), t0 = performance.now();
+    (function step(now) {
+      const t = (now - t0) / T, k = e3(Math.min(1, Math.max(0, (t - 0.3) / 0.42)));
+      const r1 = 170.5 + (158 - 170.5) * k, r2 = 185.5 + (188 - 185.5) * k;
+      path.setAttribute('d', sec(r1, r2, a0 + (b1 - a0) * k, aE + (b2 - aE) * k));
+      ov.style.opacity = t < 0.3 ? 0 : t < 0.78 ? 1 : Math.max(0, 1 - (t - 0.78) / 0.2);
+      if (t < 1) requestAnimationFrame(step); else ov.remove();
+    })(t0);
+    g.querySelector('.nr .nr-arc')?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.29 }, { opacity: 0, offset: 0.31 }, { opacity: 0 }], { duration: T, fill: 'forwards' });
+  }
   setTimeout(() => g.remove(), T + 50);
 }
 
@@ -287,6 +310,7 @@ function render(dir) {
   }
 
   if (journey && journey.step === 'nest') {
+    setHalos('');
     $('dial').innerHTML = nestDial();
     $('centerBtn').innerHTML = '<span class="c-sub">now</span>';
     $('centerBtn').dataset.level = 'nest';
@@ -524,7 +548,7 @@ function outerRingsV2() {
     ringT[L] = { rot, s };
     const upright = face.html.replace(/<text([^>]*?) x="(-?[\d.]+)" y="(-?[\d.]+)"([^>]*?)>/g, (m, a1, tx, ty, a2) => /transform=/.test(a1 + a2) ? m : `<text${a1} x="${tx}" y="${ty}"${a2} transform="rotate(${(-rot).toFixed(2)} ${tx} ${ty})">`);
     face.html = upright;
-    html += `<div class="or2" data-level="${L}" style="--o:${[0.45, 0.32, 0.24, 0.18, 0.13][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
+    html += `<div class="or2" data-level="${L}" style="--o:${[0.36, 0.26, 0.2, 0.15, 0.11][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
   });
   if (lastMarker != null) {
     const a = (hand * Math.PI) / 180, p = (r) => `${(200 + r * Math.sin(a)).toFixed(1)} ${(200 - r * Math.cos(a)).toFixed(1)}`;

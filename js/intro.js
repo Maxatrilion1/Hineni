@@ -8,7 +8,7 @@ const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const mixA = (h1, h2, t, a) => { const c1 = hex(h1), c2 = hex(h2); return `rgba(${c1.map((v, i) => Math.round(lerp(v, c2[i], t))).join(',')},${Math.max(0, Math.min(1, a)).toFixed(3)})`; };
 
 const TURN = 1 / 30;   // turns per second while you watch: one turn every 30 s
-const ORIENT = 4.2;    // seconds for the tilt
+const ORIENT = 6;      // seconds for the tilt and landing
 const TAU = Math.PI * 2;
 
 export function intro(target, { onLand, dots = [] } = {}) {
@@ -57,20 +57,24 @@ export function intro(target, { onLand, dots = [] } = {}) {
       const cx = lerp(W / 2, G.cx, e), cy = lerp(H * 0.6, G.cy, e);
       const band = lerp(R0 * 0.15, 15 * G.k, e);
       const phi = lerp(0.3, Math.PI / 2, e);
-      const pitch = lerp(R0 * 0.82, 0, e);
+      const pitch0 = R0 * 0.82;
+      // Each coil lands in its own time: the outer circles first, the inner ones after, more slowly.
+      const eAt = (w) => { const o = Math.max(0, Math.min(1, (w + 3.4) / 6.8)); return ease(Math.max(0, Math.min(1, (p - 0.08 - 0.3 * o) / (0.55 + 0.07 * o)))); };
       const f = R0 * 4.2;
       const ringR = (w) => Math.max(0, 178 - 22 * (w + 3)) * G.k;
 
       // w is the position on the visible spiral (in turns); as the screw turns, the ribbon slides along w.
       const at = (w, R) => {
-        const a = TAU * w, x = -R * Math.cos(a), z = R * Math.sin(a), y = w * pitch;
+        const a = TAU * w, x = -R * Math.cos(a), z = R * Math.sin(a), y = w * pitch0 * (1 - eAt(w));
         const yv = y * Math.cos(phi) - z * Math.sin(phi), d = y * Math.sin(phi) + z * Math.cos(phi), sc = f / (f + d);
         return { X: cx + x * sc, Y: cy - yv * sc, sc, far: Math.sin(a) > 0 };
       };
       const alphaAt = (w, Y) => {
-        let al = (1 - e) * Math.max(0, Math.min(1, Math.min(Y - H * 0.24, H - Y) / (H * 0.16))) + e;
-        const out = w < -3.4 ? -3.4 - w : w > 3.4 ? w - 3.4 : 0;   // as it lands, keep only the seven coils
-        return al * (1 - e * Math.min(1, out * 2));
+        const edge = Math.max(0, Math.min(1, Math.min(Y - H * 0.24, H - Y) / (H * 0.16)));
+        const out = w < -3.4 ? -3.4 - w : w > 3.4 ? w - 3.4 : 0;
+        // Coils that will not become circles fade away early; the seven that will stay become solid.
+        const keep = 1 - Math.min(1, out * 2) * Math.min(1, p * 3);
+        return lerp(edge, 1, e) * keep;
       };
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -78,7 +82,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
 
       const step = 1 / 160, pts = [];
       for (let w = -9; w <= 9; w += step) {
-        const q = at(w, lerp(R0, ringR(w), e));
+        const q = at(w, lerp(R0, ringR(w), eAt(w)));
         q.al = alphaAt(w, q.Y); q.w = w;
         pts.push(q);
       }
@@ -109,7 +113,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
         // Marks ride the ribbon: 24 to a turn, every sixth larger.
         const m0 = Math.ceil((-9 + s) * 24), m1 = Math.floor((9 + s) * 24);
         for (let m = m0; m <= m1; m++) {
-          const w = m / 24 - s, q = at(w, lerp(R0, ringR(w), e));
+          const w = m / 24 - s, q = at(w, lerp(R0, ringR(w), eAt(w)));
           if (q.far !== far || q.sc <= 0) continue;
           const al = alphaAt(w, q.Y) * (far ? farK * 0.5 : 0.85);
           if (al <= 0.01) continue;
@@ -125,9 +129,9 @@ export function intro(target, { onLand, dots = [] } = {}) {
       dots.forEach((_, i) => {
         const cyc = (s + i * 0.37) % 1;                 // where it is in its slow pass down one coil
         const wIdle = land[i] + 0.5 - cyc, fIdle = Math.sin(Math.PI * cyc);
-        const w = phase === 'idle' ? wIdle : lerp(dotFrom[i][0], land[i], e);
+        const ed = eAt(i - 3), w = phase === 'idle' ? wIdle : lerp(dotFrom[i][0], land[i], ed);
         const fade = phase === 'idle' ? fIdle : lerp(dotFrom[i][1], 1, e);
-        const q = at(w, lerp(R0, (178 - 22 * i) * G.k, e));
+        const q = at(w, lerp(R0, (178 - 22 * i) * G.k, ed));
         let al = alphaAt(Math.max(-3.4, Math.min(3.4, w)), q.Y) * fade * (q.far ? farK : 1);
         if (al <= 0.02) return;
         const r = lerp(band * q.sc * 0.22, 6 * G.k, e);

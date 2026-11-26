@@ -239,7 +239,7 @@ export function hourView(x, sel) {
   const step = (d) => ({ level: 'hour', focus: d > 0 ? b + 60000 : a - 60000 });
   return {
     title: `${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'}`, live, marker: frac != null ? frac * 360 : null, svg: s,
-    center: centerHTML({ badge: T.icon, badgeSize: 72, big: T.he, line: `${ht.tribe} · ${T.emblem}`, sub: live ? `${60 - Math.floor(frac * 60)} min left in this hour` : `${fmtT(x, a)} – ${fmtT(x, b)}` }),
+    center: centerHTML({ badge: T.icon, badgeSize: 54, big: T.he, line: ht.tribe, sub: live ? `${60 - Math.floor(frac * 60)} min left` : `${fmtT(x, a)}–${fmtT(x, b)}` }),
     panel: hourPanel(x, sel, ht, a, b, live),
     children: {}, prev: step(-1), next: step(1),
   };
@@ -362,7 +362,7 @@ export function dayPanel(x) {
       <p class="lore-p">${esc(Q.built)}</p>
       <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>`, 'feature')}
     ${card('The day\'s light', `<div class="facets">
-      <div><span>Sefirah</span><b>${D.sefirah}</b><small>${esc(Q.quality.split(': ')[1])}</small></div>
+      <div><span>Sefirah</span><b>${D.sefirah}</b><small>${esc(Q.quality.split(': ')[1].split(',')[0])}</small></div>
       <div><span>Guest</span><b>${D.ushpiz}</b><small>${esc(Q.guest.replace(/^\w+,? ?/, ''))}</small></div>
       <div><span>Song</span><b>Tehillim ${D.shir}</b><small class="he" lang="he">${D.shirHe}</small></div></div>
       <p class="fine">Each day of the week draws from one of the seven sefiros and one of the seven "guests" (Zohar). The song is the one the Levi'im sang that day (Tamid 7:4).</p>`)}`;
