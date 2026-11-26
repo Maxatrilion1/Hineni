@@ -37,46 +37,26 @@
         <div><b>Hineni: where are you?</b><p>Jewish time is set by the sun where you stand. Share your location for exact hours. It stays on your device.</p><p id="geoBannerMsg" class="fine tight"></p></div>
         <div class="banner-actions"><button id="geoYes" class="btn" type="button">Use my location</button><button id="geoNo" class="btn ghost" type="button">Keep New York</button></div>
       </div>
-      <div class="dial-wrap">
-        <svg id="dial" viewBox="-12 -12 424 424" role="img" aria-label="Jewish clock dial. Tap an hour for details."></svg>
-        <button id="centerBtn" class="center" type="button" aria-label="Details for the current hour">
-          <span id="cEyebrow" class="c-eyebrow he" lang="he"></span>
-          <span id="cBadge" class="c-badge" aria-hidden="true"></span>
-          <span id="cHour" class="c-hour"></span>
-          <span id="cPart" class="c-part"></span>
-          <span id="cTribe" class="c-tribe"></span>
-          <span id="cCivil" class="c-civil"></span>
-        </button>
+      <div class="controls">
+        <div class="seg-toggle" role="tablist" aria-label="View">
+          <button id="modeTime" type="button" role="tab" aria-selected="true">Time</button>
+          <button id="modeSpace" type="button" role="tab" aria-selected="false">Space</button>
+        </div>
+        <button id="nowBtn" class="pill" type="button" hidden>Now</button>
       </div>
-      <div id="chips" class="chips center-chips"></div>
+      <nav class="path" aria-label="Where you are">
+        <button id="prevBtn" class="arrow" type="button" aria-label="Previous">‹</button>
+        <div id="crumbs" class="crumbs"></div>
+        <button id="nextBtn" class="arrow" type="button" aria-label="Next">›</button>
+      </nav>
+      <div id="dialWrap" class="dial-wrap">
+        <svg id="dial" viewBox="-14 -14 428 428" role="img" aria-label="Jewish clock dial. Tap a part to step inside it."></svg>
+        <button id="centerBtn" class="center" type="button" aria-label="About this"></button>
+        <button id="outBtn" class="out-btn" type="button" aria-label="Zoom out"></button>
+      </div>
     </section>
 
-    <section class="info">
-      <div class="card">
-        <h2>Where you are in time</h2>
-        <div id="stack" class="stack"></div>
-      </div>
-      <div class="card">
-        <h2>Where you are in space</h2>
-        <div id="space"></div>
-      </div>
-      <details class="card fold" id="zFold">
-        <summary><span class="fold-title">Zmanim</span><span id="zSum" class="fold-sum"></span></summary>
-        <ol id="zmanim" class="zmanim"></ol>
-        <p class="fine" id="hourLen"></p>
-      </details>
-      <details class="card fold">
-        <summary><span class="fold-title">Coming up</span><span id="upSum" class="fold-sum"></span></summary>
-        <div id="upcoming"></div>
-      </details>
-      <details class="card fold how">
-        <summary><span class="fold-title">How to read the clock</span></summary>
-        <p>A Jewish day begins at sunset. The night is divided into 12 hours, and the day, from sunrise to sunset, into another 12. These are <em>sha'os zmaniyos</em>: each is one twelfth of the darkness or the daylight, so they stretch in summer and shrink in winter.</p>
-        <p>On the dial the day's hours (gold) run across the top, from sunrise on the left to sunset on the right, the way the sun crosses the sky. The night's hours (blue) run underneath. The marker on the rim is where you are now.</p>
-        <p>Each hour belongs to one of the twelve months and its tribe: the first hour to Nisan and Yehudah, the second to Iyar and Yissachar, and so on. The thin colored band shows each tribe's flag. Tap any hour to meet it.</p>
-        <p>The thin inner ring is the ordinary clock, bent to fit. Jewish times like "3:00 of the day" count hours and minutes from sunrise (or from sunset at night) in these stretched hours.</p>
-      </details>
-    </section>
+    <section id="panel" class="info"></section>
 
     <footer class="fine foot">
       Times are calculated for sea level and may differ from your shul's luach by a minute or two. Don't rely on them to the last minute.

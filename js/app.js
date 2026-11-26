@@ -1,43 +1,30 @@
-import { jewishDay, hourOf, civilDate, weekday, addDays, dayInfo, SHITAH } from './zmanim.js';
-import { hebrewDate, gematria, WEEKDAYS, monthLore, moonPhase } from './hebrew.js';
-import { MONTH_NUM, isLeap, molad, moladText, nextMonth, kiddushLevanah, omerDay, omerSefirah, planetOf } from './calendar.js';
-import { TRIBES, CAMPS, DAYS, hourMonth, towardJerusalem, compassWord } from './lore.js';
+import { hourOf, civilDate, addDays, SHITAH } from './zmanim.js';
+import { gematria, WEEKDAYS, hebrewDate } from './hebrew.js';
 import { buildDial, updateDial } from './dial.js';
 import { paintSky } from './sky.js';
+import { icon } from './emblems.js';
+import { LEVELS, context, hourTribe, ordinal, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
 import { NEW_YORK, CITIES, isIsrael, candleMinutes, geolocate, geoPermission, placeName, searchPlaces, distanceKm } from './places.js';
 
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem('hineni.' + k)); } catch { return null; } },
   set(k, v) { try { localStorage.setItem('hineni.' + k, JSON.stringify(v)); } catch {} },
 };
-
-let loc = store.get('loc') || NEW_YORK;
-let prefs = { ma: false, candles: 'auto', ...(store.get('prefs') || {}) };
-let jd = null, builtFor = '', yr = null, sheetFn = null;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
+let loc = store.get('loc') || NEW_YORK;
+let prefs = { ma: false, candles: 'auto', ...(store.get('prefs') || {}) };
+const view = { mode: 'time', level: 'day', focus: Date.now(), follow: true };
+let x = null, v = null, renderedKey = '', heading = null;
+
 const opts = () => ({ israel: isIsrael(loc), ma: prefs.ma, candleMin: prefs.candles === 'auto' ? candleMinutes(loc) : +prefs.candles });
-const locKey = () => [loc.lat, loc.lon, prefs.ma, prefs.candles].join('|');
 const fmt = (t) => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZone: loc.tz }).format(new Date(t));
-const fmtDay = (t) => new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: loc.tz }).format(new Date(t));
-const ordinal = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
-const pct = (x) => `${(Math.max(0, Math.min(1, x)) * 100).toFixed(2)}%`;
 
-function until(ms) {
-  const m = Math.max(0, Math.round(ms / 60000));
-  if (m < 1) return 'now';
-  if (m < 60) return `in ${m} min`;
-  const h = Math.floor(m / 60), r = m % 60;
-  return `in ${h}h${r ? ' ' + r + 'm' : ''}`;
-}
-const moonGlyph = (day) => ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'][Math.round(moonPhase(day) * 8) % 8];
-
-/** A moment as Jewish time: hours and zmani minutes since sunrise (day) or sunset (night). */
-function jewishTime(t) {
+function jewishTime(t, jd) {
   let base, len, part;
   if (t < jd.day.netz) [base, len, part] = [jd.night.start, jd.night.hour, 'night'];
-  else if (t <= jd.day.shkiah) [base, len, part] = [jd.day.netz, jd.day.hour, "day"];
+  else if (t <= jd.day.shkiah) [base, len, part] = [jd.day.netz, jd.day.hour, 'day'];
   else [base, len, part] = [jd.day.shkiah, jd.night.hour, 'night'];
   const h = (t - base) / len;
   let H = Math.floor(h), M = Math.round((h - H) * 60);
@@ -45,361 +32,202 @@ function jewishTime(t) {
   return { text: `${H}:${String(M).padStart(2, '0')}`, part };
 }
 
-function hourTribe(h) {
-  const m = hourMonth(h);
-  const lore = monthLore(m.month);
-  return { ...m, lore, tribe: lore.tribe, t: TRIBES[lore.tribe] };
+// ---------- Navigation ----------
+function go(next, dir) {
+  if (!next) return;
+  view.level = next.level;
+  view.focus = next.focus;
+  view.follow = false;
+  render(dir);
+}
+function goNow() {
+  Object.assign(view, { mode: 'time', level: 'day', focus: Date.now(), follow: true });
+  render('out');
+}
+function zoomOut() {
+  const i = LEVELS.indexOf(view.level);
+  if (i < LEVELS.length - 1) { view.level = LEVELS[i + 1]; render('out'); }
+}
+function zoomTo(level) {
+  const dir = LEVELS.indexOf(level) > LEVELS.indexOf(view.level) ? 'out' : 'in';
+  view.level = level;
+  render(dir);
 }
 
-// ---------- Year (cached per Hebrew year) ----------
-function yearInfo(date, hd) {
-  if (yr && yr.year === hd.year) return yr;
-  let rh = date;
-  for (let k = 0; k < 400; k++) {
-    const d = addDays(date, -k), h = hebrewDate(d);
-    if (h.month === 'Tishrei' && h.day === 1) { rh = d; break; }
-  }
-  let len = 354;
-  for (const L of [353, 354, 355, 383, 384, 385]) {
-    const h = hebrewDate(addDays(rh, L));
-    if (h.month === 'Tishrei' && h.day === 1) { len = L; break; }
-  }
-  yr = { year: hd.year, rh, len };
-  return yr;
-}
-const dayIndex = (a, b) => Math.round((Date.UTC(b.y, b.m - 1, b.d) - Date.UTC(a.y, a.m - 1, a.d)) / 86400000);
-function monthLength(date, hd) {
-  const h = hebrewDate(addDays(date, 30 - hd.day));
-  return h.day === 30 ? 30 : 29;
+// ---------- Render ----------
+function animate(dir) {
+  if (!dir) return;
+  const w = $('dialWrap');
+  w.classList.remove('in', 'out');
+  void w.offsetWidth;
+  w.classList.add(dir);
 }
 
-// ---------- Build (once per Jewish day / location change) ----------
-function rebuild(now) {
-  jd = jewishDay(now, loc, opts());
-  builtFor = locKey();
+function render(dir) {
+  const now = Date.now();
+  if (view.follow) view.focus = now;
+  x = context(view.focus, now, loc, opts());
+  renderedKey = key();
   $('locName').textContent = loc.name;
-  if (jd.polar) {
-    $('stack').innerHTML = `<p>The sun doesn't rise or set here today, so the hours can't be calculated. Polar zmanim need a rav's guidance.</p>`;
+  $('modeTime').setAttribute('aria-selected', view.mode === 'time');
+  $('modeSpace').setAttribute('aria-selected', view.mode === 'space');
+  const atNow = view.follow && view.level === 'day' && view.mode === 'time';
+  $('nowBtn').hidden = atNow;
+  animate(dir);
+
+  if (x.jd.polar) {
+    $('panel').innerHTML = `<div class="pcard"><p>The sun doesn't rise or set here today, so the hours can't be calculated. Polar zmanim need a rav's guidance.</p></div>`;
     return;
   }
-  buildDial($('dial'), jd, loc.tz);
-  renderChips();
-  renderZmanimList();
-  renderUpcoming();
-  const o = opts();
-  $('hourLen').textContent =
-    `Today a daytime hour is ${Math.round(jd.day.hour / 60000)} min and a night hour ${Math.round(jd.night.hour / 60000)} min. ` +
-    `Shitah: ${SHITAH.name}${o.ma ? ', with Magen Avraham times' : ''}. Candles ${o.candleMin} min before sunset${o.israel ? '; Israel: one day of Yom Tov' : ''}.`;
-}
 
-function renderChips() {
-  const { hd, hols } = jd.info;
-  const omer = omerDay(hd);
-  const chips = hols.map((h) => `<span class="chip k-${h.kind}">${esc(h.name)}</span>`);
-  if (omer) chips.push(`<span class="chip">Omer: day ${omer} · ${omerSefirah(omer).tr}</span>`);
-  $('chips').innerHTML = chips.join('');
-  $('chips').hidden = !chips.length;
-}
-
-// ---------- The time stack: hour → day → week → month → year → shemitah → world ----------
-function renderStack(now, h) {
-  const { hd, wd } = jd.info;
-  const ht = hourTribe(h.hour);
-  const dayFrac = (now - jd.start) / (jd.end - jd.start);
-  const mLen = monthLength(jd.day.date, hd);
-  const y = yearInfo(jd.day.date, hd);
-  const dayOfYear = dayIndex(y.rh, jd.day.date) + 1;
-  const shem = hd.year % 7 || 7;
-  const cyc = ((hd.year - 1) % 19) + 1;
-  const toShabbos = 6 - wd;
-  const week = DAYS.map((d, i) => `<span class="wk${i < wd ? ' done' : ''}${i === wd ? ' now' : ''}">${i === 6 ? 'ש' : gematria(i + 1).replace(/[׳״]/g, '')}</span>`).join('');
-  const shemDots = Array.from({ length: 7 }, (_, i) => `<span class="wk${i + 1 < shem ? ' done' : ''}${i + 1 === shem ? ' now' : ''}">${i === 6 ? 'ש' : i + 1}</span>`).join('');
-
-  const rows = [
-    { key: 'hour', label: 'Hour', main: `${ordinal(h.hour)} hour of the ${h.isDay ? 'day' : 'night'}`, sub: `${ht.t.emoji} ${ht.tribe} · ${ht.month}`, bar: (h.fraction * 12) % 1 },
-    { key: 'day', label: 'Day', main: `${WEEKDAYS[wd].tr}`, sub: `${WEEKDAYS[wd].he} · ${DAYS[wd].creation}`, bar: dayFrac },
-    { key: 'week', label: 'Week', main: wd === 6 ? 'Shabbos Kodesh' : `${ordinal(wd + 1)} day of the week`, sub: wd === 6 ? 'The seventh day' : toShabbos === 1 ? 'Shabbos tomorrow' : `Shabbos in ${toShabbos} days`, dots: week },
-    { key: 'month', label: 'Month', main: `${hd.day} ${hd.month}`, sub: `${moonGlyph(hd.day)} Day ${hd.day} of ${mLen} · month of ${monthLore(hd.month)?.tribe ?? ''}`, bar: (hd.day - 1 + dayFrac) / mLen },
-    { key: 'year', label: 'Year', main: `${hd.year} · ${gematria(hd.year % 1000)}`, sub: `Day ${dayOfYear} of ${y.len}${isLeap(hd.year) ? ' · leap year' : ''}`, bar: (dayOfYear - 1 + dayFrac) / y.len },
-    { key: 'shemitah', label: 'Shemitah', main: shem === 7 ? 'Shemitah year' : `Year ${shem} of 7`, sub: `Year ${cyc} of the 19-year cycle`, dots: shemDots },
-    { key: 'world', label: 'World', main: `Year ${hd.year.toLocaleString()} of 6,000`, sub: cosmic(hd.year).short, bar: hd.year / 6000 },
-  ];
-  $('stack').innerHTML = rows
-    .map((r) => `<button type="button" class="row" data-row="${r.key}">
-      <span class="row-label">${r.label}</span>
-      <span class="row-text"><b>${esc(r.main)}</b><small>${esc(r.sub)}</small></span>
-      ${r.dots ? `<span class="dots-row he" lang="he">${r.dots}</span>` : `<span class="bar"><i style="width:${pct(r.bar)}"></i></span>`}
-    </button>`)
-    .join('');
-}
-
-/** Sanhedrin 97a: six thousand years, as six days of a cosmic week. */
-function cosmic(year) {
-  const mil = Math.floor(year / 1000); // 0-based
-  const frac = (year % 1000) / 1000;
-  const dayName = WEEKDAYS[mil].en;
-  const sha = frac * 24;
-  const isDay = sha >= 12;
-  const hour = Math.floor(isDay ? sha - 12 : sha) + 1;
-  return { mil: mil + 1, dayName, hour, isDay, short: `${dayName === 'Friday' ? 'Erev Shabbos' : dayName}, the ${ordinal(hour)} hour of the ${isDay ? 'day' : 'night'}` };
-}
-
-// ---------- Space ----------
-let heading = null;
-function renderSpace() {
-  const j = towardJerusalem(loc);
-  const mi = Math.round(j.km * 0.621371);
-  const h = hourOf(Date.now(), jd);
-  const hourTr = hourTribe(h.hour).tribe;
-  const monthTr = monthLore(jd.info.hd.month)?.tribe;
-  const arrowRot = heading == null ? j.bearing : j.bearing - heading;
-  $('space').innerHTML = `
-    <div class="space-row">
-      <svg class="compass" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="46" class="c-ring"/>
-        ${heading == null ? '<text x="50" y="13" class="c-n">N</text>' : ''}
-        <g transform="rotate(${arrowRot.toFixed(1)} 50 50)"><path d="M50 14 L58 50 L50 44 L42 50 Z" class="c-arrow"/><circle cx="50" cy="50" r="3" class="c-arrow"/></g>
-      </svg>
-      <div>
-        <div class="space-place">${esc(loc.name)}</div>
-        <div class="space-line">Yerushalayim is <b>${mi.toLocaleString()} mi</b> away, to the ${compassWord(j.bearing)} (${Math.round(j.bearing)}°). Face this way to daven.</div>
-        <button id="compassBtn" class="btn ghost small" type="button">${heading == null ? 'Point with my phone' : 'Pointing live'}</button>
-      </div>
-    </div>
-    ${campSvg(hourTr, monthTr)}
-    <p class="fine">The camp in the desert (Bamidbar 2): three tribes on each side of the Mishkan. Gold is the tribe of this hour (${hourTr}); outlined is the tribe of this month (${monthTr}).</p>`;
-  $('compassBtn').addEventListener('click', startCompass);
-}
-
-function campSvg(hourTr, monthTr) {
-  // North up, east right. The Mishkan's entrance faced east, where Yehudah camped.
-  const slots = {
-    north: (i) => [22 + i * 28, 10, 26], south: (i) => [22 + i * 28, 90, 26],
-    east: (i) => [112, 28 + i * 22, 30], west: (i) => [-12, 28 + i * 22, 30],
-  };
-  let out = '';
-  for (const [side, tribes] of Object.entries(CAMPS)) {
-    tribes.forEach((t, i) => {
-      const [x, y, w] = slots[side](i);
-      const cls = t === hourTr ? 'camp-t hour' : t === monthTr ? 'camp-t month' : 'camp-t';
-      out += `<g class="${cls}"><rect x="${x - w / 2}" y="${y - 6.5}" width="${w}" height="13" rx="3"/><text x="${x}" y="${y + 0.5}">${TRIBES[t].he}</text></g>`;
-    });
+  if (view.mode === 'space') {
+    v = spaceView(x, heading);
+    $('dial').innerHTML = v.svg;
+    $('centerBtn').innerHTML = v.center;
+    $('panel').innerHTML = v.panel;
+    $('crumbs').innerHTML = `<span class="crumb cur">${esc(loc.name)}</span><span class="crumb">→ ירושלים</span>`;
+    $('prevBtn').hidden = $('nextBtn').hidden = $('outBtn').hidden = true;
+    $('compassBtn')?.addEventListener('click', startCompass);
+    return;
   }
-  return `<svg class="camp" viewBox="-52 -12 204 124" role="img" aria-label="The tribes camped around the Mishkan">
-    <text x="50" y="-6" class="camp-dir">North</text><text x="50" y="106" class="camp-dir">South</text>
-    <text x="140" y="50" class="camp-dir">East</text><text x="-40" y="50" class="camp-dir">West</text>
-    <rect x="30" y="28" width="40" height="44" rx="2" class="mishkan"/><text x="50" y="47" class="camp-m">משכן</text><text x="50" y="58" class="camp-l">לוי</text>
-    ${out}</svg>`;
+
+  if (view.level === 'day') {
+    buildDial($('dial'), x.jd, loc.tz);
+    v = {
+      prev: { level: 'day', focus: x.chatzos(addDays(x.date, -1)) },
+      next: { level: 'day', focus: x.chatzos(addDays(x.date, 1)) },
+      panel: dayPanel(x) + zmanimHTML(x) + howHTML(),
+    };
+    $('panel').innerHTML = v.panel;
+    updateDay(now);
+  } else if (view.level === 'hour') {
+    const h = hourOf(view.focus, x.jd);
+    v = hourView(x, { isDay: h.isDay, hour: h.hour });
+    $('dial').innerHTML = v.svg;
+    $('centerBtn').innerHTML = v.center;
+    $('panel').innerHTML = v.panel;
+  } else {
+    v = { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[view.level](x);
+    $('dial').innerHTML = v.svg;
+    $('centerBtn').innerHTML = v.center;
+    $('panel').innerHTML = v.panel;
+  }
+  $('prevBtn').hidden = !v.prev;
+  $('nextBtn').hidden = !v.next;
+  const up = LEVELS[LEVELS.indexOf(view.level) + 1];
+  $('outBtn').hidden = !up;
+  if (up) $('outBtn').innerHTML = `<span aria-hidden="true">⤢</span> ${cap(up)}`;
+  renderCrumbs();
+}
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+
+function renderCrumbs() {
+  const { hd, wd } = x;
+  const pos = hd.year % 7 || 7;
+  const h = hourOf(view.focus, x.jd);
+  const label = {
+    world: `${Math.floor(hd.year / 1000) + 1}th millennium`,
+    shemitah: pos === 7 ? 'Shemitah' : `Shemitah ${pos}/7`,
+    year: `<span class="he" lang="he">${gematria(hd.year % 1000)}</span>`,
+    month: esc(hd.month),
+    week: 'Week',
+    day: `<bdi class="he" lang="he">${WEEKDAYS[wd].he}</bdi> · ${hd.day} ${esc(hd.month.split(' ').pop())}`,
+    hour: `${ordinal(h.hour)} hour`,
+  };
+  const i = LEVELS.indexOf(view.level);
+  $('crumbs').innerHTML = LEVELS.slice(i).reverse().map((l) => `<button type="button" class="crumb${l === view.level ? ' cur' : ''}" data-level="${l}">${label[l]}</button>`).join('<span class="sep">›</span>');
+  const c = $('crumbs');
+  c.scrollLeft = c.scrollWidth;
 }
 
+/** Live parts of the day view: hand, highlighted hour and the center. */
+function updateDay(now) {
+  const jd = x.jd;
+  const live = now >= jd.start && now < jd.end;
+  const ref = live ? now : view.focus;
+  const h = hourOf(ref, jd);
+  const next = live ? jd.list.find((z) => z.t > now) : null;
+  updateDial($('dial'), now, jd, h, next ? next.key + next.part : '', live);
+  const ht = hourTribe(h.hour);
+  const { hd, wd } = x;
+  const date = `${WEEKDAYS[wd].he} · ${gematria(hd.day)} ${hebrewDate(x.date).he.split(' ').slice(1, -1).join(' ')}`;
+  $('centerBtn').innerHTML = live
+    ? `<span class="c-eyebrow he" lang="he">${date}</span><span class="c-ico">${icon(ht.t.icon, 34)}</span><span class="c-big">${ordinal(h.hour)} hour</span><span class="c-line">of the ${h.isDay ? 'day' : 'night'} · ${ht.tribe}</span><span class="c-sub">${fmt(now)}</span>`
+    : `<span class="c-eyebrow">${WEEKDAYS[wd].en}</span><span class="c-big he" lang="he">${date}</span><span class="c-line">Tap an hour to step inside</span>`;
+  if (live) {
+    document.querySelectorAll('#zmanim .z').forEach((li) => {
+      const z = jd.list.find((q) => q.key + q.part === li.dataset.z);
+      if (!z) return;
+      li.classList.toggle('past', z.t <= now);
+      li.classList.toggle('next', !!next && li.dataset.z === next.key + next.part);
+    });
+    const s = $('zSum'); if (s) s.textContent = next ? `Next: ${next.tr} ${fmt(next.t)}` : '';
+  }
+}
+
+function zmanimHTML(x) {
+  const jd = x.jd, label = { eve: 'Night', day: 'Day', after: 'After sunset' };
+  let last = '', rows = '';
+  for (const z of jd.list) {
+    if (z.part !== last) { rows += `<li class="part">${label[z.part]}</li>`; last = z.part; }
+    const jt = jewishTime(z.t, jd);
+    rows += `<li class="z${['candles', 'candlesNight', 'holyEnd', 'fastStart', 'fastStartEve', 'fastEnd'].includes(z.key) ? ' special' : ''}" data-z="${z.key + z.part}">
+      <div class="zrow"><span class="z-name">${esc(z.tr)}<small><span class="he" lang="he">${z.he}</span> · ${esc(z.en)}</small></span>
+      <span class="z-jt">${jt.text}<small>${jt.part}</small></span><span class="z-time">${fmt(z.t)}</span></div></li>`;
+  }
+  const o = opts();
+  return `<details class="pcard fold" id="zFold"><summary><span class="fold-title">Zmanim</span><span id="zSum" class="fold-sum"></span></summary>
+    <ol id="zmanim" class="zmanim">${rows}</ol>
+    <p class="fine">Jewish time counts hours from sunrise (day) or sunset (night). Today a day hour is ${Math.round(jd.day.hour / 60000)} min, a night hour ${Math.round(jd.night.hour / 60000)} min. Shitah: ${SHITAH.name}. Candles ${o.candleMin} min before sunset.</p></details>`;
+}
+
+function howHTML() {
+  return `<details class="pcard fold"><summary><span class="fold-title">How to read the clock</span></summary>
+    <p class="lore-p">A Jewish day begins at sunset. The night has 12 hours and the day, from sunrise to sunset, has 12 more. Each is a twelfth of the darkness or the daylight, so they stretch in summer and shrink in winter.</p>
+    <p class="lore-p">Gold hours run across the top, from sunrise at the left to sunset at the right, like the sun. Blue hours run underneath. The thin inner ring is your ordinary clock, bent to fit.</p>
+    <p class="lore-p">Each hour belongs to a month and its tribe; the colored band is the tribe's flag. Tap an hour to step inside it. Use the button at the top of the dial to zoom out to the week, month, year, shemitah cycle and the 6,000 years. The path above the dial shows where you are; tap any step to go there.</p></details>`;
+}
+
+// ---------- Compass ----------
 async function startCompass() {
   try {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
       if ((await DeviceOrientationEvent.requestPermission()) !== 'granted') throw new Error('denied');
     }
+    let last = 0;
     const on = (e) => {
       const hd = e.webkitCompassHeading ?? (e.absolute && e.alpha != null ? 360 - e.alpha : null);
-      if (hd == null) return;
+      if (hd == null || view.mode !== 'space') return;
       heading = hd;
-      const svg = document.querySelector('.compass g');
-      if (svg) svg.setAttribute('transform', `rotate(${(towardJerusalem(loc).bearing - heading).toFixed(1)} 50 50)`);
+      if (Date.now() - last > 120) { last = Date.now(); const s = spaceView(x, heading); $('dial').innerHTML = s.svg; $('centerBtn').innerHTML = s.center; }
     };
     window.addEventListener('deviceorientationabsolute', on);
     window.addEventListener('deviceorientation', on);
-    setTimeout(() => { if (heading == null) $('compassBtn').textContent = 'No compass on this device'; }, 2500);
+    setTimeout(() => { if (heading == null && $('compassBtn')) $('compassBtn').textContent = 'No compass on this device'; }, 2500);
   } catch {
-    $('compassBtn').textContent = 'Compass not available';
+    if ($('compassBtn')) $('compassBtn').textContent = 'Compass not available';
   }
 }
 
-// ---------- Sheets ----------
-function openSheet(title, fn) {
-  sheetFn = fn;
-  $('sheetTitle').textContent = title;
-  $('sheetBody').innerHTML = fn(Date.now());
-  if (!$('sheet').open) $('sheet').showModal();
-  $('sheetBody').scrollTop = 0;
-}
-const sec = (label, body) => `<div class="hour-sec"><div class="lbl">${label}</div>${body}</div>`;
-
-function hourSheet(sel) {
-  return (now) => {
-    const len = sel.isDay ? jd.day.hour : jd.night.hour;
-    const a = (sel.isDay ? jd.day.netz : jd.night.start) + (sel.hour - 1) * len, b = a + len;
-    const ht = hourTribe(sel.hour), T = ht.t, L = ht.lore;
-    const p = planetOf(jd.info.wd, sel.isDay, sel.hour);
-    const zs = jd.list.filter((z) => z.t >= a && z.t < b);
-    const isNow = now >= a && now < b;
-    const swatch = `<span class="swatch">${T.flag.map((c) => `<i style="background:${c}"></i>`).join('')}</span>`;
-    return `
-      <div class="hour-head">
-        <div class="badge-lg" aria-hidden="true">${T.emoji}</div>
-        <div><div class="hour-title">${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'} <span class="he" lang="he">· ${gematria(sel.hour)}</span></div>
-        <div class="muted">${sel.hour - 1}:00–${sel.hour}:00 of the ${sel.isDay ? 'day' : 'night'} · ${fmt(a)}–${fmt(b)}</div>
-        ${isNow ? `<div class="now-pill">Now · ${Math.round((b - now) / 60000)} min left</div>` : ''}</div>
-      </div>
-      ${sec('The tribe of this hour', `
-        <div class="tribe-name"><b>${ht.tribe}</b> <span class="he" lang="he">${T.he}</span></div>
-        <p class="lore-p">${esc(T.about)}</p>
-        <div class="kv"><span>Emblem</span><b>${T.emoji} ${esc(T.emblem)}</b></div>
-        <div class="kv"><span>Flag</span><b>${swatch} ${esc(T.flagText)}</b></div>
-        <div class="kv"><span>Blessing</span><b><span class="he" lang="he">${T.blessing.he}</span><small>${esc(T.blessing.en)} · ${T.blessing.ref}</small></b></div>
-        <div class="kv"><span>Name</span><b>${esc(T.name)}</b></div>
-        <div class="kv"><span>Mother</span><b>${T.mother}</b></div>
-        <div class="kv"><span>Camp</span><b>${T.camp[0].toUpperCase() + T.camp.slice(1)} of the Mishkan</b></div>
-        <div class="kv"><span>Stone</span><b>${L.stone}, on the choshen</b></div>`)}
-      ${sec('The month of this hour', `
-        <div class="kv"><span>Month</span><b>${ht.month} <span class="he" lang="he">${ht.monthHe}</span></b></div>
-        <div class="kv"><span>Letter</span><b class="he big" lang="he">${L.letter}</b></div>
-        <div class="kv"><span>Sense</span><b>${L.sense}</b></div>
-        <div class="kv"><span>Mazal</span><b>${L.mazal} · ${L.mazalEn}</b></div>`)}
-      ${sec('Ruling planet', `<div><b>${p.tr}</b> <span class="he" lang="he">${p.he}</span> <span class="muted">· ${p.en}</span></div>
-        <p class="fine tight">Shabbos 156a: one born under ${p.tr}: ${p.trait} The Gemara concludes that Israel is not bound by the mazalos (<bdi lang="he">אין מזל לישראל</bdi>).</p>`)}
-      ${zs.length ? sec('Zmanim in this hour', zs.map((z) => `<div class="hz"><span>${esc(z.tr)}</span><b>${jewishTime(z.t).text} · ${fmt(z.t)}</b></div>`).join('')) : ''}
-      <p class="fine">The twelve hours follow the twelve months: the first hour is Nisan's, the second Iyar's, and so on, as the Arizal ties both to the same twelve permutations of Hashem's Name. Hineni repeats the cycle at night. Tribes and months: Arizal; emblems and colors: Bamidbar Rabbah 2:7.</p>`;
-  };
-}
-
-function daySheet() {
-  const { wd } = jd.info, D = DAYS[wd], W = WEEKDAYS[wd];
-  const p = planetOf(wd, true, 1);
-  const week = DAYS.map((d, i) => `<div class="wkrow${i === wd ? ' now' : ''}"><span class="he" lang="he">${WEEKDAYS[i].he}</span><span>${d.creation}</span><span class="muted">${d.sefirah}</span></div>`).join('');
-  return `
-    <div class="hour-head"><div class="badge-lg he" lang="he">${wd === 6 ? 'ש' : gematria(wd + 1).replace(/[׳״]/g, '')}</div>
-      <div><div class="hour-title">${W.tr}</div><div class="muted">${wd === 6 ? 'The seventh day' : `The ${ordinal(wd + 1)} day`} · ${W.en} · began at sunset</div></div></div>
-    ${sec('Created on this day', `<div><b>${D.creation}</b> <span class="he" lang="he">· ${D.creationHe}</span></div><p class="fine tight">Bereishis 1–2. The days have no names in Hebrew: each is counted toward Shabbos.</p>`)}
-    ${sec('Song of the day', `<div><b>Tehillim ${D.shir}</b> <span class="he" lang="he">· ${D.shirHe}</span></div><p class="fine tight">Sung by the Levi\'im in the Beis Hamikdash (Tamid 7:4), and said after Shacharis.</p>`)}
-    ${sec('Sefirah and guest', `<div class="kv"><span>Sefirah</span><b>${D.sefirah} <span class="he" lang="he">${D.sefirahHe}</span></b></div><div class="kv"><span>Ushpiz</span><b>${D.ushpiz}</b></div><div class="kv"><span>Day's planet</span><b>${p.tr} · ${p.en}</b></div>`)}
-    ${sec('The week', week)}`;
-}
-
-function monthSheet(now) {
-  const hd = jd.info.hd, L = monthLore(hd.month), T = TRIBES[L.tribe];
-  const m = MONTH_NUM[hd.month];
-  const cur = molad(m, hd.year);
-  const [nm, ny] = nextMonth(m, hd.year);
-  const nxt = molad(nm, ny);
-  const kl = kiddushLevanah(m, hd.year);
-  let kls;
-  if (now < kl.start) kls = `From ${fmtDay(kl.start)}, ${fmt(kl.start)} until ${fmtDay(kl.end)}`;
-  else if (now < kl.end) kls = `<b>Can be said now</b>, until ${fmtDay(kl.end)}, ${fmt(kl.end)}`;
-  else kls = `Has passed for ${hd.month}`;
-  return `
-    <div class="hour-head"><div class="badge-lg" aria-hidden="true">${moonGlyph(hd.day)}</div>
-      <div><div class="hour-title">${hd.month} <span class="he" lang="he">${hebrewDate(jd.day.date).he.split(' ').slice(1, -1).join(' ')}</span></div><div class="muted">Day ${hd.day} of ${monthLength(jd.day.date, hd)}</div></div></div>
-    ${sec('The tribe of this month', `<div class="tribe-name"><b>${T.emoji} ${L.tribe}</b> <span class="he" lang="he">${T.he}</span></div><p class="lore-p">${esc(T.about)}</p>`)}
-    ${sec('Sefer Yetzirah', `<div class="kv"><span>Letter</span><b class="he big" lang="he">${L.letter}</b></div><div class="kv"><span>Sense</span><b>${L.sense}</b></div><div class="kv"><span>Mazal</span><b>${L.mazal} · ${L.mazalEn}</b></div><div class="kv"><span>Stone</span><b>${L.stone}</b></div>`)}
-    ${sec('The moon', `<div class="kv"><span>Molad ${esc(cur.month)}</span><b>${moladText(cur)}<small>Jerusalem time · ${fmtDay(cur.utc)}, ${fmt(cur.utc)} your time</small></b></div>
-      <div class="kv"><span>Molad ${esc(nxt.month)}</span><b>${moladText(nxt)}<small>${fmtDay(nxt.utc)}, ${fmt(nxt.utc)} your time</small></b></div>
-      <div class="kv"><span>Kiddush Levanah</span><b>${kls}<small>From 7 days after the molad (Chabad custom) to mid-month</small></b></div>`)}`;
-}
-
-function yearSheet() {
-  const hd = jd.info.hd, y = yearInfo(jd.day.date, hd);
-  const shem = hd.year % 7 || 7, cyc = ((hd.year - 1) % 19) + 1;
-  const maaser = shem === 7 ? 'None: the land rests' : [3, 6].includes(shem) ? "Ma'aser ani (for the poor)" : "Ma'aser sheni (eaten in Yerushalayim)";
-  const leaps = [3, 6, 8, 11, 14, 17, 19];
-  const c = cosmic(hd.year);
-  return `
-    <div class="hour-head"><div class="badge-lg he long" lang="he">${gematria(hd.year % 1000)}</div>
-      <div><div class="hour-title">${hd.year} since Creation</div><div class="muted">${y.len} days · ${isLeap(hd.year) ? 'a leap year with two Adars' : 'twelve months'}</div></div></div>
-    ${sec('The 19-year cycle', `<div class="dots-row big">${Array.from({ length: 19 }, (_, i) => `<span class="wk${i + 1 < cyc ? ' done' : ''}${i + 1 === cyc ? ' now' : ''}${leaps.includes(i + 1) ? ' leap' : ''}">${i + 1}</span>`).join('')}</div>
-      <p class="fine tight">Seven of every nineteen years add a second Adar, keeping Pesach in the spring. Outlined years are leap years. This is year ${cyc}.</p>`)}
-    ${sec('Shemitah', `<div class="kv"><span>Cycle</span><b>${shem === 7 ? 'Shemitah: the seventh year' : `Year ${shem} of 7`}</b></div><div class="kv"><span>Next shemitah</span><b>${hd.year + (7 - shem || 7)}</b></div><div class="kv"><span>Tithe this year</span><b>${maaser}</b></div>`)}
-    ${sec('The cosmic week', `<p class="lore-p">"The world exists for six thousand years" (Sanhedrin 97a): six millennia like six days, then a Shabbos. We are in the ${ordinal(c.mil)} millennium, the world's ${c.dayName}. Year ${hd.year % 1000} of it falls like the ${ordinal(c.hour)} hour of ${c.isDay ? 'that day' : 'that night'}: ${c.dayName === 'Friday' ? 'Erev Shabbos, preparing for the seventh millennium.' : ''}</p>`)}`;
-}
-
-// ---------- Zmanim ----------
-function renderZmanimList() {
-  const ol = $('zmanim');
-  ol.replaceChildren();
-  let lastPart = '';
-  const label = { eve: 'Night', day: 'Day', after: 'After sunset' };
-  for (const z of jd.list) {
-    if (z.part !== lastPart) {
-      const h = document.createElement('li');
-      h.className = 'part';
-      h.textContent = label[z.part];
-      ol.appendChild(h);
-      lastPart = z.part;
-    }
-    const jt = jewishTime(z.t);
-    const li = document.createElement('li');
-    li.className = 'z' + (['candles', 'candlesNight', 'holyEnd', 'fastStart', 'fastStartEve', 'fastEnd'].includes(z.key) ? ' special' : '');
-    li.dataset.z = z.key + z.part;
-    li.innerHTML = `
-      <button type="button" aria-expanded="false">
-        <span class="z-name">${esc(z.tr)}<small><span class="he" lang="he">${z.he}</span> · ${esc(z.en)}</small></span>
-        <span class="z-jt">${jt.text}<small>${jt.part}</small></span>
-        <span class="z-time">${fmt(z.t)}</span>
-      </button>
-      <p class="z-why">${esc(z.why)}</p>`;
-    li.querySelector('button').addEventListener('click', (e) => {
-      const open = li.classList.toggle('open');
-      e.currentTarget.setAttribute('aria-expanded', open);
-    });
-    ol.appendChild(li);
-  }
-}
-
-function renderUpcoming() {
-  const israel = isIsrael(loc);
-  const seen = new Set();
-  const items = [];
-  for (let i = 1; i <= 60 && items.length < 5; i++) {
-    const inf = dayInfo(addDays(jd.day.date, i), israel);
-    for (const h of inf.hols) {
-      const k = h.key === 'chm' ? h.name : h.key;
-      if (seen.has(k) || h.kind === 'erev') continue;
-      seen.add(k);
-      items.push({ i, h, inf });
-    }
-  }
-  const name = (h) => h.name.replace(/ · \d+\w+ light/, '');
-  const first = items[0];
-  $('upSum').textContent = first ? `${name(first.h)} ${first.i === 1 ? 'tomorrow' : `in ${first.i} days`}` : '';
-  $('upcoming').innerHTML = `<ul class="upcoming">${items
-    .map(({ i, h, inf }) => {
-      const civ = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(inf.date.y, inf.date.m - 1, inf.date.d, 12)));
-      return `<li><span class="dot k-${h.kind}"></span><span class="u-name">${esc(name(h))}<small>${inf.hd.day} ${inf.hd.month} · ${civ}</small></span><span class="u-when">${i === 1 ? 'tomorrow' : `in ${i} days`}</span></li>`;
-    })
-    .join('')}</ul><p class="fine">Days start the evening before.</p>`;
-}
-
-// ---------- Tick (every second) ----------
+// ---------- Tick ----------
+const key = () => [view.mode, view.level, view.follow ? x?.jd?.start : view.focus, loc.lat, loc.lon, prefs.ma, prefs.candles].join('|');
 let lastMinute = -1;
 function tick() {
   const now = Date.now();
-  if (!jd || builtFor !== locKey() || now >= jd.end || now < jd.start) { rebuild(now); lastMinute = -1; }
   paintSky(now, loc);
-  if (jd.polar) return;
-
-  const h = hourOf(now, jd);
-  const next = jd.list.find((z) => z.t > now);
-  updateDial($('dial'), now, jd, h, next ? next.key + next.part : '');
-
-  const ht = hourTribe(h.hour);
-  const { hd, wd } = jd.info;
-  $('cEyebrow').textContent = `${WEEKDAYS[wd].he} · ${gematria(hd.day)} ${hebrewDate(jd.day.date).he.split(' ').slice(1, -1).join(' ')}`;
-  $('cBadge').textContent = ht.t.emoji;
-  $('cHour').textContent = `${ordinal(h.hour)} hour`;
-  $('cPart').textContent = `of the ${h.isDay ? 'day' : 'night'}`;
-  $('cTribe').textContent = `${ht.tribe} · ${ht.month}`;
-  $('cCivil').textContent = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZone: loc.tz }).format(now);
-  $('zSum').textContent = next ? `Next: ${next.tr} ${fmt(next.t)}` : '';
-
+  if (!x || (view.follow && (now >= x.jd.end || now < x.jd.start)) || key() !== renderedKey) { render(); lastMinute = Math.floor(now / 60000); return; }
+  if (x.jd.polar) return;
+  x.now = now;
+  if (view.mode === 'time' && view.level === 'day') updateDay(now);
   const minute = Math.floor(now / 60000);
   if (minute !== lastMinute) {
     lastMinute = minute;
-    renderStack(now, h);
-    renderSpace();
-    document.querySelectorAll('#zmanim .z').forEach((li) => {
-      const z = jd.list.find((x) => x.key + x.part === li.dataset.z);
-      if (!z) return;
-      li.classList.toggle('past', z.t <= now);
-      li.classList.toggle('next', next && li.dataset.z === next.key + next.part);
-    });
-    if ($('sheet').open && sheetFn) $('sheetBody').innerHTML = sheetFn(now);
+    if (view.mode === 'time' && view.level !== 'day') {
+      // Move markers without disturbing the panel.
+      const fresh = view.level === 'hour' ? hourView(context(view.focus, now, loc, opts()), hourOf(view.focus, x.jd)) : { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[view.level](context(view.focus, now, loc, opts()));
+      $('dial').innerHTML = fresh.svg;
+      $('centerBtn').innerHTML = fresh.center;
+    }
   }
 }
 
@@ -410,7 +238,7 @@ async function setLoc(l, { silent = false } = {}) {
   if (!silent) $('locDlg').close();
   $('geoBanner').hidden = true;
   heading = null;
-  tick();
+  render();
 }
 
 async function useMyLocation(msgEl) {
@@ -472,40 +300,46 @@ async function locationOnLoad() {
 }
 
 function initSettings() {
-  $('setBtn').addEventListener('click', () => {
-    $('optMA').checked = prefs.ma;
-    $('optCandles').value = prefs.candles;
-    $('setDlg').showModal();
-  });
+  $('setBtn').addEventListener('click', () => { $('optMA').checked = prefs.ma; $('optCandles').value = prefs.candles; $('setDlg').showModal(); });
   $('setClose').addEventListener('click', () => $('setDlg').close());
-  $('optMA').addEventListener('change', (e) => { prefs.ma = e.target.checked; store.set('prefs', prefs); tick(); });
-  $('optCandles').addEventListener('change', (e) => { prefs.candles = e.target.value; store.set('prefs', prefs); tick(); });
+  $('optMA').addEventListener('change', (e) => { prefs.ma = e.target.checked; store.set('prefs', prefs); render(); });
+  $('optCandles').addEventListener('change', (e) => { prefs.candles = e.target.value; store.set('prefs', prefs); render(); });
 }
 
-// ---------- Start ----------
+// ---------- Events ----------
+function onChild(e) {
+  const t = e.target.closest('[data-seg],[data-band],[data-child]');
+  if (!t || view.mode !== 'time') return;
+  if (view.level === 'day' && (t.dataset.seg || t.dataset.band)) {
+    const id = t.dataset.seg || t.dataset.band, isDay = id[0] === 'd', n = +id.slice(1);
+    const len = isDay ? x.jd.day.hour : x.jd.night.hour;
+    const start = (isDay ? x.jd.day.netz : x.jd.night.start) + n * len;
+    const nowIn = x.now >= start && x.now < start + len;
+    return go({ level: 'hour', focus: nowIn ? x.now : start + len / 2 }, 'in');
+  }
+  if (t.dataset.child != null && v?.children?.[t.dataset.child]) go(v.children[t.dataset.child], 'in');
+}
+
 initLocation();
 initSettings();
-const showHour = (sel) => openSheet('The hour', hourSheet(sel));
-$('dial').addEventListener('click', (e) => {
-  const t = e.target.closest('[data-seg],[data-band]');
-  if (!t) return;
-  const id = t.dataset.seg || t.dataset.band;
-  showHour({ isDay: id[0] === 'd', hour: +id.slice(1) + 1 });
+$('dial').addEventListener('click', onChild);
+$('panel').addEventListener('click', onChild);
+$('centerBtn').addEventListener('click', () => {
+  if (view.mode !== 'time') return;
+  if (view.level === 'day') { const live = x.now >= x.jd.start && x.now < x.jd.end; return go({ level: 'hour', focus: live ? x.now : view.focus }, 'in'); }
+  const i = LEVELS.indexOf(view.level);
+  if (i > 0) zoomTo(LEVELS[i - 1]);
 });
-$('centerBtn').addEventListener('click', () => { if (jd && !jd.polar) showHour(hourOf(Date.now(), jd)); });
-$('stack').addEventListener('click', (e) => {
-  const r = e.target.closest('[data-row]');
-  if (!r || !jd) return;
-  const k = r.dataset.row;
-  if (k === 'hour') showHour(hourOf(Date.now(), jd));
-  else if (k === 'day' || k === 'week') openSheet('The day', daySheet);
-  else if (k === 'month') openSheet('The month', monthSheet);
-  else openSheet('The year', yearSheet);
-});
-$('sheetClose').addEventListener('click', () => $('sheet').close());
+$('outBtn').addEventListener('click', zoomOut);
+$('nowBtn').addEventListener('click', goNow);
+$('prevBtn').addEventListener('click', () => go(v?.prev, 'side'));
+$('nextBtn').addEventListener('click', () => go(v?.next, 'side'));
+$('crumbs').addEventListener('click', (e) => { const c = e.target.closest('[data-level]'); if (c && c.dataset.level !== view.level) zoomTo(c.dataset.level); });
+$('modeTime').addEventListener('click', () => { if (view.mode !== 'time') { view.mode = 'time'; render('in'); } });
+$('modeSpace').addEventListener('click', () => { if (view.mode !== 'space') { view.mode = 'space'; render('out'); } });
 for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
 
-tick();
+render();
 setInterval(tick, 1000);
 document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && tick());
 locationOnLoad();

@@ -104,17 +104,18 @@ export function buildDial(svg, jd, tz) {
 }
 
 /** Move the hand and highlight the current hour and next zman. */
-export function updateDial(svg, now, jd, h, nextKey) {
-  const a = angleOf(now, jd);
-  svg.querySelector('#hand')?.setAttribute('transform', `rotate(${a.toFixed(3)} ${C} ${C})`);
+export function updateDial(svg, now, jd, h, nextKey, live = true) {
+  const hand = svg.querySelector('#hand');
+  if (hand) hand.style.display = live ? '' : 'none';
+  if (live) hand?.setAttribute('transform', `rotate(${angleOf(now, jd).toFixed(3)} ${C} ${C})`);
   svg.classList.toggle('is-day', h.isDay);
-  const cur = (h.isDay ? 'd' : 'n') + (h.hour - 1);
+  const cur = live ? (h.isDay ? 'd' : 'n') + (h.hour - 1) : '';
   svg.querySelectorAll('[data-seg]').forEach((p) => p.classList.toggle('now', p.dataset.seg === cur));
   svg.querySelectorAll('[data-num]').forEach((p) => p.classList.toggle('now', p.dataset.num === cur));
   for (const z of jd.list) {
     const d = svg.querySelector(`[data-z="${z.key + z.part}"]`);
     if (!d) continue;
-    d.classList.toggle('past', z.t <= now);
+    d.classList.toggle('past', live && z.t <= now);
     d.classList.toggle('next', z.key + z.part === nextKey);
   }
 }

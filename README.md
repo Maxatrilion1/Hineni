@@ -4,16 +4,15 @@
 
 ## What it shows
 
-The clock's job is orientation: where you stand in Jewish time and space.
+The clock's job is orientation: where you stand in Jewish time and space. It is one dial you can climb into and out of.
 
-- **The dial.** 24 *sha'os zmaniyos*: 12 day hours (gold, across the top from sunrise on the left to sunset on the right) and 12 night hours (blue, underneath). The Jewish day starts on the right, at sunset. The regular clock sits inside, bent to fit.
-- **Each hour has a month and a tribe.** Hour 1 is Nisan's and Yehudah's, hour 2 Iyar's and Yissachar's, and so on (Arizal: hours and months share the twelve permutations of the Name; the cycle repeats at night). A thin band shows each tribe's flag colors (Bamidbar Rabbah 2:7).
-- **The center** shows the hour, its tribe and emblem, the Hebrew day and date.
-- **Tap an hour** for its tribe (emblem, flag, Yaakov's and Moshe's blessings, name, mother, camp, stone), its month (letter, sense, mazal), its ruling planet (Shabbos 156a) and the zmanim in it, in Jewish and civil time.
-- **Where you are in time**: a stack from hour to day to week to month to year to the shemitah cycle to the 6,000 years (Sanhedrin 97a), each tappable: the day's Creation, Shir shel Yom, sefirah and ushpiz; the month's molad and Kiddush Levanah; the 19-year cycle, shemitah and maaser.
-- **Where you are in space**: distance and direction to Yerushalayim, with a live compass on phones, and the camp around the Mishkan with the tribes of the hour and month marked.
-- **Zmanim** (folded): each in Jewish time ("3:00 of the day") and civil time, with Shabbos, Yom Tov and fast times.
-- **Coming up** (folded): holidays, fasts, Chabad dates.
+- **Day** (the start): 24 *sha'os zmaniyos*, gold across the top from sunrise to sunset, blue underneath for the night. The regular clock sits inside, bent to fit. Each hour carries its month and tribe, shown as a band in the tribe's flag colors (Bamidbar Rabbah 2:7).
+- **Inside an hour**: the ring is the hour itself, 60 zmani minutes filling as it passes. The tribe's emblem and name sit in the center; its month, letter, sense and mazal around it. Below: Yaakov's or Moshe's blessing, the tribe's story, flag, name, mother, stone, where it camped, the hour's planet, and the hour in Jewish and civil time.
+- **Zoom out**: week (the days of Creation, Shabbos at the top), month (the moon's face day by day), year (the months with their tribes and flags), shemitah (the seven years and their tithes), and the 6,000 years (Sanhedrin 97a's three eras and the cosmic week).
+- **The path** above the dial (6th millennium › Shemitah 5/7 › תשפ״ז › Kislev › Week › day › hour) shows where you are. Tap any step to go there, ‹ › to walk sideways, and Now to return.
+- **Space**: the dial becomes the camp around the Mishkan, oriented to north (or turning with your phone), with the dot on the rim pointing to Yerushalayim and the tribes of this hour and month marked.
+- **Emblems** are drawn line art in one style, matched to the Midrash and to Bereishis 1.
+- **Zmanim** (in the day view): each in Jewish time ("3:00 of the day") and civil time, with Shabbos, Yom Tov and fast times.
 
 ## Shitah
 
@@ -35,6 +34,9 @@ Any static host works (GitHub Pages, Netlify, Cloudflare Pages). On HTTPS it ins
 - `js/zmanim.js`: zmanim, the Jewish-day model, dial angles
 - `js/hebrew.js`: Hebrew date (built-in browser calendar), gematria, month data
 - `js/calendar.js`: holidays, Omer, molad, Kiddush Levanah, planetary hours
+- `js/levels.js`: the zoom levels, their rings and panels
+- `js/emblems.js`: the line emblems
+- `js/lore.js`: tribes, days, direction to Yerushalayim
 - `js/sky.js`: the sky gradient from the sun's altitude
 - `js/places.js`: geolocation, place names, city search
 - `js/dial.js`: SVG dial
