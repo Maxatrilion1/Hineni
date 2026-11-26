@@ -697,3 +697,8 @@ body.journeying #geoBanner, body.intro-on #geoBanner { display: none; }
 .halos-ghost { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
 .outer-rings { transform-origin: 50% 50%; }
 .halos-ghost .outer-rings { position: absolute; inset: 0; }
+
+/* The old dial on its way to becoming the outer ring: its ring band, and its middle */
+.ghost-band { -webkit-mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%); mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%); transform-origin: 50% 50%; }
+.ghost-band text { opacity: 1 !important; }
+.ghost-mid { -webkit-mask-image: radial-gradient(circle closest-side, #000 68.4%, transparent 68.8%); mask-image: radial-gradient(circle closest-side, #000 68.4%, transparent 68.8%); }

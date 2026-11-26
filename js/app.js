@@ -104,15 +104,24 @@ function animateV2(dir) {
   const opts = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'both' };
   const S = (s) => `scale(${s.toFixed(4)})`;
   pushRings(g, dir, delay);
-  // The dial you leave: expands into the outer ring (in), or sinks to the middle (out).
-  const ghost = document.createElement('div');
-  ghost.className = 'ring-ghost';
-  ghost.innerHTML = g.html;
-  w.appendChild(ghost);
-  const s0 = ringT[g.level]?.s ?? 1.25;
-  ghost.animate(dir === 'in'
-    ? [{ transform: 'none', opacity: 1 }, { transform: S(s0), opacity: 0 }]
-    : [{ transform: 'none', opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], opts).finished.then(() => ghost.remove(), () => ghost.remove());
+  // The dial you leave. Stepping in: its ring fades a little as it expands, turns gently, and settles
+  // exactly where it now belongs as the first outer ring; its middle melts away. Stepping out: it sinks.
+  const to = ringT[g.level];
+  const mk = (cls) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = g.html; w.appendChild(d); return d; };
+  if (dir === 'in' && to) {
+    const ring = mk('ring-ghost ghost-band'), mid = mk('ring-ghost ghost-mid');
+    ring.animate([{ transform: 'none', opacity: 1 }, { transform: `rotate(${to.rot.toFixed(2)}deg) scale(${to.s.toFixed(4)})`, opacity: 0.45 }], opts)
+      .finished.then(() => ring.remove(), () => ring.remove());
+    mid.animate([{ opacity: 1 }, { opacity: 0, offset: 0.45 }, { opacity: 0 }], opts).finished.then(() => mid.remove(), () => mid.remove());
+    // The real ring takes over only once the old one has arrived.
+    document.querySelectorAll(`#halos .or2[data-level="${g.level}"]`).forEach((el) => {
+      el.getAnimations().forEach((a) => a.cancel());
+      el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.97 }, { opacity: 1 }], opts);
+    });
+  } else {
+    const ghost = mk('ring-ghost');
+    ghost.animate([{ transform: 'none', opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], opts).finished.then(() => ghost.remove(), () => ghost.remove());
+  }
   // The new dial: in from slightly smaller (in), or down from its outer-ring size (out).
   const from = dir === 'in' ? 'scale(.9)' : S(g.T[view.level]?.s ?? 1.25);
   for (const el of [$('dial'), $('centerBtn')]) {
@@ -510,7 +519,8 @@ function outerRingsV2() {
     const s = (outer + (k ? 6 : 10)) / 158;
     outer = 188 * s;
     const face = levelFace(L);
-    const rot = face.marker == null ? 0 : hand - face.marker;
+    let rot = face.marker == null ? 0 : hand - face.marker;
+    rot = ((rot % 360) + 540) % 360 - 180; // the shorter way round
     ringT[L] = { rot, s };
     const upright = face.html.replace(/<text([^>]*?) x="(-?[\d.]+)" y="(-?[\d.]+)"([^>]*?)>/g, (m, a1, tx, ty, a2) => /transform=/.test(a1 + a2) ? m : `<text${a1} x="${tx}" y="${ty}"${a2} transform="rotate(${(-rot).toFixed(2)} ${tx} ${ty})">`);
     face.html = upright;
