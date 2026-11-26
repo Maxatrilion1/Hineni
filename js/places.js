@@ -1,4 +1,4 @@
-// Where you are: geolocation, place names, search, and weather.
+// Where you are: geolocation, place names and city search.
 // Network lookups are optional: everything falls back to the built-in city list.
 
 export const NEW_YORK = { name: 'New York', lat: 40.7128, lon: -74.006, tz: 'America/New_York' };
@@ -92,27 +92,6 @@ export async function searchPlaces(q) {
       name: r.name, detail: [r.admin1, r.country].filter(Boolean).join(', '),
       lat: +r.latitude.toFixed(4), lon: +r.longitude.toFixed(4), tz: r.timezone,
     }));
-  } catch {
-    return null;
-  }
-}
-
-const WMO = [
-  [[0], 'Clear', '☀️'], [[1, 2], 'Partly cloudy', '⛅'], [[3], 'Overcast', '☁️'], [[45, 48], 'Fog', '🌫️'],
-  [[51, 53, 55, 56, 57], 'Drizzle', '🌦️'], [[61, 63, 65, 66, 67], 'Rain', '🌧️'], [[71, 73, 75, 77], 'Snow', '🌨️'],
-  [[80, 81, 82], 'Showers', '🌦️'], [[85, 86], 'Snow showers', '🌨️'], [[95, 96, 99], 'Thunderstorm', '⛈️'],
-];
-
-export async function weather({ lat, lon }) {
-  const f = new Intl.NumberFormat().resolvedOptions().locale.startsWith('en-US') || navigator.language === 'en-US';
-  try {
-    const j = await getJSON(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=temperature_2m,weather_code,cloud_cover,is_day${f ? '&temperature_unit=fahrenheit' : ''}`
-    );
-    const c = j.current;
-    const w = WMO.find(([codes]) => codes.includes(c.weather_code)) || [[], '', ''];
-    const icon = c.weather_code === 0 && !c.is_day ? '🌙' : w[2];
-    return { temp: Math.round(c.temperature_2m), unit: f ? '°F' : '°C', label: w[1], icon, clouds: c.cloud_cover / 100 };
   } catch {
     return null;
   }

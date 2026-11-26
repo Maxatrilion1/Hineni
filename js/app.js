@@ -3,7 +3,7 @@ import { hebrewDate, gematria, WEEKDAYS, monthLore, moonPhase } from './hebrew.j
 import { MONTH_NUM, molad, moladText, nextMonth, kiddushLevanah, omerDay, omerSefirah, planetOf } from './calendar.js';
 import { buildDial, updateDial } from './dial.js';
 import { paintSky } from './sky.js';
-import { NEW_YORK, CITIES, isIsrael, candleMinutes, geolocate, geoPermission, placeName, searchPlaces, weather, distanceKm } from './places.js';
+import { NEW_YORK, CITIES, isIsrael, candleMinutes, geolocate, geoPermission, placeName, searchPlaces, distanceKm } from './places.js';
 
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem('hineni.' + k)); } catch { return null; } },
@@ -12,7 +12,7 @@ const store = {
 
 let loc = store.get('loc') || NEW_YORK;
 let prefs = { ma: false, candles: 'auto', ...(store.get('prefs') || {}) };
-let jd = null, builtFor = '', wx = null, wxFor = '', wxAt = 0;
+let jd = null, builtFor = '';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -181,7 +181,7 @@ function renderUpcoming() {
 function tick() {
   const now = Date.now();
   if (!jd || builtFor !== locKey() || now >= jd.end || now < jd.start) rebuild(now);
-  paintSky(now, loc, wx?.clouds ?? null);
+  paintSky(now, loc);
   if (jd.polar) return;
 
   const h = hourOf(now, jd);
@@ -207,19 +207,6 @@ function tick() {
     li.classList.toggle('next', li.dataset.z === nextKey);
   });
   if ($('hourDlg').open && openHour) renderHour(openHour, now);
-  if (now - wxAt > 20 * 60000 || wxFor !== locKey()) refreshWeather();
-}
-
-// ---------- Weather ----------
-async function refreshWeather() {
-  wxAt = Date.now();
-  wxFor = locKey();
-  wx = await weather(loc);
-  const el = $('wx');
-  if (!wx) { el.hidden = true; return; }
-  el.hidden = false;
-  el.textContent = `${wx.icon} ${wx.temp}${wx.unit}`;
-  el.title = wx.label;
 }
 
 // ---------- Hour detail ----------

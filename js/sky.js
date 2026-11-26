@@ -43,8 +43,8 @@ function drawStars(el) {
   el.innerHTML = `<svg width="100%" height="100%" aria-hidden="true">${dots.join('')}</svg>`;
 }
 
-/** Paint the sky for this moment. clouds: 0..1 cover, or null when unknown. */
-export function paintSky(now, loc, clouds = null) {
+/** Paint the sky for this moment. */
+export function paintSky(now, loc) {
   const alt = sunAltitude(now, loc.lat, loc.lon);
   const s = skyAt(alt);
   const root = document.documentElement.style;
@@ -52,9 +52,7 @@ export function paintSky(now, loc, clouds = null) {
   root.setProperty('--sky-mid', rgb(s.cols[1]));
   root.setProperty('--sky-low', rgb(s.cols[2]));
   root.setProperty('--sky-ink', s.topDark ? '#f3f1fb' : '#1f2433');
-  const c = clouds ?? 0;
-  root.setProperty('--cloud', (c * (s.light ? 0.5 : 0.7)).toFixed(2));
-  root.setProperty('--stars', (s.stars * (1 - c * 0.9)).toFixed(2));
+  root.setProperty('--stars', s.stars.toFixed(2));
   drawStars(document.getElementById('stars'));
   document.body.classList.toggle('day', s.light);
   document.body.classList.toggle('night', !s.light);

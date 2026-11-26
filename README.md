@@ -13,7 +13,7 @@
 - **Candle lighting and havdalah** for Shabbos and Yom Tov, including after-nightfall lighting on second days.
 - **The moon**: the molad as announced in shul (Jerusalem time, with chalakim) and in your time, and the Kiddush Levanah window.
 - **Tap any hour** for its exact times and its ruling planet (Shabbos 156a).
-- **A live sky** behind the clock that follows the sun's real altitude where you are, with stars at night and clouds from the weather.
+- **A live sky** behind the clock that follows the sun's real altitude where you are, with stars at night.
 - **Where you are**: geolocation with a place name, search for any city, New York by default.
 
 ## Shitah
@@ -37,11 +37,11 @@ Any static host works (GitHub Pages, Netlify, Cloudflare Pages). On HTTPS it ins
 - `js/hebrew.js`: Hebrew date (built-in browser calendar), gematria, month data
 - `js/calendar.js`: holidays, Omer, molad, Kiddush Levanah, planetary hours
 - `js/sky.js`: the sky gradient from the sun's altitude
-- `js/places.js`: geolocation, place names, city search, weather
+- `js/places.js`: geolocation, place names, city search
 - `js/dial.js`: SVG dial
 - `js/app.js`: UI, location, the once-a-second tick
 
-Online services (optional, the clock works without them): Open-Meteo for weather and city search, BigDataCloud for the place name of your coordinates.
+Online services (optional, the clock works without them): Open-Meteo for city search, BigDataCloud for the place name of your coordinates.
 
 ## Next ideas
 
