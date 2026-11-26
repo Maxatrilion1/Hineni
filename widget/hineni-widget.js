@@ -4,6 +4,7 @@
 //
 // Setup: install Scriptable from the App Store → tap + → paste this whole file → name it "Hineni".
 // Then long-press the home screen → + → Scriptable → pick a size → tap the widget → Script: Hineni.
+// Lock screen too: long-press the lock screen → Customize → Lock Screen → add a Scriptable widget → Script: Hineni.
 
 const SITE = 'https://claude.ai/artifact/LYZpksh76vFZ9vqPQr7S3M';
 const FALLBACK = { lat: 40.7128, lon: -74.006, name: 'New York' };
@@ -75,7 +76,10 @@ function compute(now, loc) {
   // Next marker worth knowing.
   const zm = [['Sunrise', day.netz], ['Latest Shema', day.netz + 3 * (day.shkiah - day.netz) / 12], ['Midday', day.netz + 6 * (day.shkiah - day.netz) / 12], ['Plag', day.netz + 10.75 * (day.shkiah - day.netz) / 12], ['Sunset', day.shkiah], ['Nightfall', day.tzeis]];
   const next = zm.find(([, t]) => t > now) || ['Sunset', day.shkiah];
-  return { isDay, hour, frac, angle: angle % 360, tribe: TRIBES[hour - 1], hd, weekday: WEEKDAY_HE[D.getDay()], hourEnd, next, minLeft: Math.round((hourEnd - now) / 60000) };
+  const dayNum = D.getDay() + 1;
+  // At sunset this Jewish day ends and the next begins.
+  const after = dayNum === 6 ? 'Shabbos begins' : dayNum === 7 ? 'the 1st day begins' : `the ${ord(dayNum + 1)} day begins`;
+  return { isDay, hour, frac, angle: angle % 360, tribe: TRIBES[hour - 1], hd, weekday: WEEKDAY_HE[D.getDay()], dayNum, sunset: day.shkiah, after, year: +new Intl.DateTimeFormat('en-u-ca-hebrew', { year: 'numeric' }).format(D), hourEnd, next, minute: Math.min(60, Math.floor(frac * 60) + 1), minLeft: Math.round((hourEnd - now) / 60000) };
 }
 
 // ---------- Drawing (Scriptable) ----------
@@ -95,7 +99,8 @@ function drawDial(s, size) {
     const nowSeg = (s.isDay ? 'd' : 'n') + (s.hour - 1);
     for (const [part, base] of [['n', 90], ['d', 270]]) {
       const a1 = base + 15 * i, cur = nowSeg === part + i;
-      sector(Rin, R, a1 + 0.6, a1 + 14.4, cur ? (part === 'd' ? '#d9a640' : '#6a74d0') : part === 'd' ? (i % 2 ? '#e3d0a3' : '#ecdcb6') : (i % 2 ? '#252a55' : '#2b3060'));
+      if (cur) sector(Rin - 2, R + 2, a1 - 0.6, a1 + 15.6, part === 'd' ? '#d9a640' : '#6a74d0');
+      else sector(Rin, R, a1 + 0.6, a1 + 14.4, part === 'd' ? (i % 2 ? '#e3d0a3' : '#ecdcb6') : (i % 2 ? '#252a55' : '#2b3060'));
       sector(Rb, Rin - 1, a1 + 0.6, a1 + 14.4, TRIBES[i][3]);
     }
   }
@@ -143,6 +148,21 @@ async function build() {
   w.refreshAfterDate = new Date(Math.min(s.hourEnd + 30000, Date.now() + 15 * 60000));
   const ink = new Color(s.isDay ? '#1f2433' : '#ecebf7'), muted = new Color(s.isDay ? '#4d5568' : '#a3a7cc'), gold = new Color(s.isDay ? '#8a6214' : '#e9c46a');
   const fmt = (t) => { const df = new DateFormatter(); df.useNoDateStyle(); df.useShortTimeStyle(); return df.string(new Date(t)); };
+  const sunsetLine = s.isDay && Date.now() < s.sunset ? `Sunset ${fmt(s.sunset)}, then ${s.after}` : `${s.next[0]} ${fmt(s.next[1])}`;
+  // Lock screen
+  if (family === 'accessoryInline') { w.addText(`${ord(s.hour)} hour · the hour of ${s.tribe[0]}`); return w; }
+  if (family === 'accessoryCircular') {
+    const st = w.addStack(); st.layoutVertically(); st.centerAlignContent();
+    const a = st.addText(`${s.hour}`); a.font = Font.boldSystemFont(22); a.centerAlignText();
+    const b2 = st.addText(s.tribe[1]); b2.font = Font.systemFont(10); b2.centerAlignText();
+    return w;
+  }
+  if (family === 'accessoryRectangular') {
+    const a = w.addText(`${ord(s.hour)} hour · the hour of ${s.tribe[0]}`); a.font = Font.boldSystemFont(14);
+    const b2 = w.addText(`The ${ord(s.dayNum)} day · ${s.hd.he}`); b2.font = Font.systemFont(12);
+    const c2 = w.addText(`Minute ${s.minute} of 60`); c2.font = Font.systemFont(11);
+    return w;
+  }
   if (family === 'small') {
     w.setPadding(8, 8, 8, 8);
     const img = w.addImage(drawDial(s, 300)); img.centerAlignImage();
@@ -152,13 +172,22 @@ async function build() {
   row.addImage(drawDial(s, family === 'large' ? 300 : 260)).imageSize = family === 'large' ? new Size(150, 150) : new Size(130, 130);
   row.addSpacer(12);
   const col = row.addStack(); col.layoutVertically();
-  const t1 = col.addText(`${s.weekday} · ${s.hd.he}`); t1.font = Font.semiboldSystemFont(13); t1.textColor = gold;
+  const t1 = col.addText(`The ${ord(s.dayNum)} day · ${s.hd.he}`); t1.font = Font.semiboldSystemFont(13); t1.textColor = gold;
   col.addSpacer(4);
   const t2 = col.addText(`${ord(s.hour)} hour of the ${s.isDay ? 'day' : 'night'}`); t2.font = Font.boldSystemFont(17); t2.textColor = ink;
-  const t3 = col.addText(`${s.tribe[0]} ${s.tribe[1]} · ${s.tribe[2]}`); t3.font = Font.mediumSystemFont(13); t3.textColor = ink;
+  const t3 = col.addText(`the hour of ${s.tribe[0]} ${s.tribe[1]}`); t3.font = Font.mediumSystemFont(13); t3.textColor = ink;
   col.addSpacer(6);
-  const t4 = col.addText(`${s.minLeft} min left in this hour`); t4.font = Font.systemFont(12); t4.textColor = muted;
-  const t5 = col.addText(`${s.next[0]} ${fmt(s.next[1])}`); t5.font = Font.systemFont(12); t5.textColor = muted;
+  const t4 = col.addText(`Minute ${s.minute} of 60`); t4.font = Font.systemFont(12); t4.textColor = muted;
+  const t5 = col.addText(sunsetLine); t5.font = Font.systemFont(12); t5.textColor = muted; t5.minimumScaleFactor = 0.7;
+  if (family === 'large') {
+    w.addSpacer(14);
+    const h = w.addText('HERE I AM'); h.font = Font.semiboldSystemFont(10); h.textColor = muted;
+    w.addSpacer(3);
+    const ladder = [`${s.year.toLocaleString()} of 6,000`, `${s.year % 7 || 7} of 7`, s.hd.month, `${ord(s.hd.day)} day of the month`, `the ${ord(s.dayNum)} day`, `the ${ord(s.hour)} hour`];
+    const l = w.addText(ladder.join('  ›  ')); l.font = Font.mediumSystemFont(12); l.textColor = ink; l.minimumScaleFactor = 0.6;
+    w.addSpacer(8);
+    const m = w.addText(`${s.tribe[2]}, the month of this hour · the hour of ${s.tribe[0]}`); m.font = Font.systemFont(11); m.textColor = muted;
+  }
   return w;
 }
 
