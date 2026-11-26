@@ -36,6 +36,7 @@ export function intro(target) {
       const time = (now - t0) / 1000;
       let p = 0;
       if (phase === 'orient') p = Math.min(1, (now - start) / 2600);
+      if (phase === 'gone') p = 1; // hold the landed ring while it fades; never snap back to the spiral
       const e = ease(p);
       const G = goal();
       const R0 = Math.min(W * 0.34, 170), cx = lerp(W / 2, G.cx, e), cy = lerp(H * 0.6, G.cy, e);
@@ -50,7 +51,7 @@ export function intro(target) {
       const step = 0.04, pts = [];
       for (let t = -turns * Math.PI; t <= turns * Math.PI; t += step) {
         const a = t + spin, x = R * Math.cos(a), z = R * Math.sin(a);
-        const y = ((t / (2 * Math.PI)) - rise) * pitch;
+        const y = ((t / (2 * Math.PI)) + rise) * pitch; // time rises
         const yv = y * Math.cos(phi) - z * Math.sin(phi), d = y * Math.sin(phi) + z * Math.cos(phi);
         const sc = f / (f + d);
         const X = cx + x * sc, Y = cy - yv * sc;

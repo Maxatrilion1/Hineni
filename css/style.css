@@ -565,9 +565,9 @@ body.journeying #panel { display: none; }
 .preload *, .preload *::before, .preload *::after { transition: none !important; }
 
 /* ===== Steady screen: scroll up and down only ===== */
-html, body { overflow-x: hidden; overscroll-behavior-x: none; }
+html, body { overflow-x: hidden; overflow-x: clip; overscroll-behavior-x: none; }
 body { touch-action: pan-y; }
-.clock { overflow-x: clip; overflow-y: visible; }
+.clock { overflow: visible; }
 #dial, .center { will-change: transform; }
 
 /* No side arrows: the title stands alone */
@@ -649,3 +649,8 @@ body.journeying #dialWrap { cursor: pointer; }
 .intro.orienting { background: radial-gradient(120% 90% at 50% 40%, rgba(29,35,80,.55), rgba(11,14,36,.35) 70%); }
 .intro.dissolve { opacity: 0; }
 body.intro-on .journey { display: none; }
+
+/* The circles around the dial run to the screen's edge, behind the words and cards */
+.halos { z-index: 0; }
+.titlebar, .controls, #panel, .foot, .journey { position: relative; z-index: 2; }
+.journey { position: fixed; }

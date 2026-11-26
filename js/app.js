@@ -112,6 +112,7 @@ function render(dir) {
 
   if (view.mode === 'space') {
     renderSpace();
+    setHalos('');
     pendingGhost = null;
     return;
   }
@@ -151,6 +152,7 @@ function render(dir) {
   if (journey) $('panel').innerHTML = '';
   $('viewTitle').innerHTML = v.title || '';
   $('centerBtn').dataset.level = view.level;
+  if (!journey) setHalos(outerRings());
   lastMarker = view.level === 'day' ? (x.now >= x.jd.start && x.now < x.jd.end ? angleOf(x.now, x.jd) : null) : v.marker ?? null;
   animate(dir, lastMarker);
   if (journey) showJourney();
@@ -303,9 +305,18 @@ function nestDial() {
   return svg;
 }
 
+function setHalos(html) {
+  const h = $('halos');
+  if (h.dataset.h === html) return; // redrawing would restart the fade-in
+  h.dataset.h = html;
+  h.innerHTML = html;
+}
+
 /** Around the dial during the journey: one thin gold ring for each circle you have come through. */
 function outerRings() {
-  const lvl = STEP_LEVEL[journey.step], n = Math.max(0, OUTER.indexOf(lvl === 'hour' ? 'day' : lvl) + (lvl === 'hour' ? 1 : 0));
+  if (view.mode !== 'time' || (journey && journey.step === 'nest')) return '';
+  const lvl = journey ? STEP_LEVEL[journey.step] : view.level;
+  const n = Math.max(0, OUTER.indexOf(lvl === 'hour' ? 'day' : lvl) + (lvl === 'hour' ? 1 : 0));
   if (!n) return '';
   const rows = scales(x).slice(0, n).reverse(); // nearest first
   const C = 200;
@@ -330,7 +341,7 @@ function showJourney() {
   $('journey').hidden = false;
   document.body.classList.add('journeying');
   document.body.dataset.jstep = journey.step;
-  $('halos').innerHTML = outerRings();
+  setHalos(outerRings());
 }
 
 function startJourney() {
@@ -350,7 +361,7 @@ function endJourney() {
   $('journey').hidden = true;
   document.body.classList.remove('journeying');
   delete document.body.dataset.jstep;
-  $('halos').innerHTML = '';
+  setHalos('');
   goNow();
 }
 
@@ -431,7 +442,7 @@ function tick() {
     lastMinute = minute;
     if ($('nestDlg').open) renderNest();
     if (view.mode === 'space') renderSpace();
-    if (journey) $('halos').innerHTML = outerRings();
+    setHalos(outerRings());
     if (view.mode === 'time' && view.level !== 'day' && !(journey && journey.step === 'nest')) {
       // Move markers without disturbing the panel.
       const fresh = view.level === 'hour' ? hourView(context(view.focus, now, loc, opts()), hourOf(view.focus, x.jd)) : { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[view.level](context(view.focus, now, loc, opts()));
