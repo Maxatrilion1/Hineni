@@ -7,7 +7,7 @@ import { TRIBES, CAMPS, DAYS, MONTH_FOCUS, DAY_DEPTH, hourMonth, towardJerusalem
 import { art, artAt } from './art.js';
 import { parshahFor } from './parshah.js';
 
-export const RENDER = { lite: false };
+export const RENDER = { lite: false, rot: 0 };
 export const LEVELS = ['hour', 'day', 'week', 'month', 'year', 'shemitah', 'world'];
 const C = 200, R_OUT = 188, R_IN = 158, R_BAND = 150, R_NUM = 173, R_ICON = 122;
 const pt = (r, a) => [C + r * Math.sin((a * Math.PI) / 180), C - r * Math.cos((a * Math.PI) / 180)];
@@ -85,7 +85,8 @@ const DEFS = `<defs><radialGradient id="sunGlow2"><stop offset="0%" stop-color="
 /** Text set along an arc, letter by letter, reading right to left; on the lower half it is turned to stay readable. */
 function arcText(str, r, mid, cls, fs) {
   const chars = [...str], step = ((fs * 0.6) / r) * (180 / Math.PI), span = step * (chars.length - 1);
-  const bottom = ((mid % 360) + 360) % 360 > 90 && ((mid % 360) + 360) % 360 < 270;
+  // RENDER.rot: how far this face will be turned on screen, so the words read upright where they end up.
+  const m = (((mid + RENDER.rot) % 360) + 360) % 360, bottom = m > 90 && m < 270;
   return chars.map((c, k) => {
     if (c === ' ') return '';
     const a = bottom ? mid - span / 2 + k * step : mid + span / 2 - k * step, [x, y] = pt(r, a);

@@ -37,22 +37,29 @@ function jewishTime(t, jd) {
 }
 
 // ---------- Navigation ----------
+// While a step is still moving, a new tap waits: two steps at once tangle into each other.
+let busyUntil = 0;
+const busy = () => performance.now() < busyUntil;
+const hold = (ms) => { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) busyUntil = performance.now() + ms; };
 function go(next, dir) {
-  if (!next) return;
+  if (!next || busy()) return;
   view.level = next.level;
   view.focus = next.focus;
   view.follow = false;
   render(dir);
 }
 function goNow() {
+  if (busy()) return;
   Object.assign(view, { mode: 'time', level: 'day', focus: Date.now(), follow: true });
   render('out');
 }
 function zoomOut() {
+  if (busy()) return;
   const i = LEVELS.indexOf(view.level);
   if (i < LEVELS.length - 1) { view.level = LEVELS[i + 1]; render('out'); }
 }
 function zoomTo(level) {
+  if (busy()) return;
   const dir = LEVELS.indexOf(level) > LEVELS.indexOf(view.level) ? 'out' : 'in';
   view.level = level;
   // Back at the day you're living in: follow the clock again.
@@ -78,18 +85,22 @@ function animateV2(dir) {
   const opts = { duration: STEP, delay, easing: calm, fill: 'both' };      // for ghosts, removed when done
   const keep = { duration: STEP, delay, easing: calm, fill: 'backwards' }; // for what stays
   const S = (s) => `scale(${s.toFixed(4)})`;
+  if (dir === 'out' && g.T[view.level]?.s > 1) g.handoff = view.level;
   pushRings(g, dir, delay);
   // The dial you leave. Stepping in: its ring fades a little as it expands, turns gently, and settles
   // exactly where it now belongs as the first outer ring; its middle melts away. Stepping out: it sinks.
   const to = ringT[g.level];
-  const mk = (cls) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = g.html; w.appendChild(d); return d; };
+  const mk = (cls, html = g.html) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; w.appendChild(d); return d; };
+  const gone = (anim, el) => anim.finished.then(() => el.remove(), () => el.remove());
   if (dir === 'in' && to) {
-    const ring = mk('ring-ghost ghost-band'), mid = mk('ring-ghost ghost-mid');
+    // Its ring band, with no gold "now" (that belongs to the new circle), moves out and turns into its outer place,
+    // dimming as it goes, then hands over to the real ring. Its words fade early and come back, upright, with the real ring.
+    const ring = mk('ring-ghost ghost-band no-now'), words = mk('ring-ghost ghost-band ghost-words no-now'), mid = mk('ring-ghost ghost-mid');
     const end = `rotate(${to.rot.toFixed(2)}deg) scale(${to.s.toFixed(4)})`;
-    // Moves out and turns in one continuous motion, dimming as it goes, then hands over to the real ring.
-    ring.animate([{ transform: 'none', opacity: 1, easing: calm }, { transform: end, opacity: 0.4, offset: 0.82 }, { transform: end, opacity: 0 }], { ...opts, easing: 'linear' })
-      .finished.then(() => ring.remove(), () => ring.remove());
-    mid.animate([{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }], opts).finished.then(() => mid.remove(), () => mid.remove());
+    gone(ring.animate([{ transform: 'none', opacity: 1, easing: calm }, { transform: end, opacity: 0.4, offset: 0.82 }, { transform: end, opacity: 0 }], { ...opts, easing: 'linear' }), ring);
+    gone(words.animate([{ transform: 'none', opacity: 1, easing: calm }, { transform: end, opacity: 0, offset: 0.82 }, { transform: end, opacity: 0 }], { ...opts, easing: 'linear' }), words);
+    words.animate([{ opacity: 1 }, { opacity: 0, offset: 0.22 }, { opacity: 0 }], { duration: STEP, fill: 'both', composite: 'replace' });
+    gone(mid.animate([{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }], opts), mid);
     // The real ring takes over only once the old one has arrived.
     document.querySelectorAll(`#halos .or2[data-level="${g.level}"]`).forEach((el) => {
       el.getAnimations().forEach((a) => a.cancel());
@@ -97,13 +108,24 @@ function animateV2(dir) {
     });
   } else {
     const ghost = mk('ring-ghost');
-    ghost.animate([{ transform: 'none', opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], opts).finished.then(() => ghost.remove(), () => ghost.remove());
+    gone(ghost.animate([{ transform: 'none', opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], opts), ghost);
+  }
+  const from = g.T[view.level];
+  if (dir === 'out' && from && from.s > 1) {
+    // Stepping out: the outer ring you are stepping into comes in, turning back upright, and becomes the circle.
+    const band = mk('ring-ghost ghost-band no-words', $('dial').outerHTML.replace(/ id="[^"]*"/g, ''));
+    gone(band.animate([{ transform: `rotate(${from.rot.toFixed(2)}deg) scale(${from.s.toFixed(4)})`, opacity: 0.4 }, { transform: 'none', opacity: 1, offset: 0.8 }, { transform: 'none', opacity: 0 }], opts), band);
+    for (const el of [$('dial'), $('centerBtn')]) {
+      el.style.transformOrigin = '50% 50%';
+      el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.55 }, { opacity: 1 }], keep);
+    }
+    return;
   }
   // The new dial: in from slightly smaller (in), or down from its outer-ring size (out).
-  const from = dir === 'in' ? 'scale(.9)' : S(g.T[view.level]?.s ?? 1.25);
+  const fromS = dir === 'in' ? 'scale(.9)' : S(from?.s ?? 1.25);
   for (const el of [$('dial'), $('centerBtn')]) {
     el.style.transformOrigin = '50% 50%';
-    el.animate([{ transform: from, opacity: 0 }, { opacity: 0, offset: 0.45 }, { transform: 'none', opacity: 1 }], keep);
+    el.animate([{ transform: fromS, opacity: 0 }, { opacity: 0, offset: 0.45 }, { transform: 'none', opacity: 1 }], keep);
   }
 }
 
@@ -118,6 +140,7 @@ function pushRings(g, dir, delay) {
   old.className = 'halos-ghost';
   old.innerHTML = g.halos || '';
   w.prepend(old);
+  old.querySelector(`.or2[data-level="${g.handoff}"]`)?.remove(); // it is becoming the circle itself
   old.querySelectorAll('.or2').forEach((el) => { const t = el.style.transform; el.animate([{ transform: t, opacity: 1 }, { transform: `${t} scale(${f})`, opacity: 0 }], opts); });
   old.querySelectorAll('.outer-rings').forEach((el) => el.animate([{ transform: 'none', opacity: 1 }, { transform: `scale(${v})`, opacity: 0 }], opts));
   old.querySelectorAll('.or-hand').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }], opts));
@@ -166,25 +189,26 @@ function nestToFace() {
   // Beat 1 (0–0.9 s): the inner rings melt away; the outer ring stays.
   // Beat 2 (0.9–1.9 s): the outer ring alone becomes the new circle.
   // Beat 3 (1.9–2.6 s): the circle's words and pictures arrive.
-  const T = 3200, ease = 'cubic-bezier(.4, .1, .2, 1)';
+  const T = 5200, ease = 'cubic-bezier(.4, .1, .2, 1)';
+  hold(T * 0.9);
   g.querySelectorAll('.nr').forEach((r, i) => {
     r.style.transformBox = 'view-box'; r.style.transformOrigin = '200px 200px';
-    if (i === 0) r.animate([{ opacity: 1 }, { opacity: 1, offset: 0.35 }, { opacity: 1, offset: 0.62 }, { opacity: 0, offset: 0.75 }, { opacity: 0 }], { duration: T, easing: ease, fill: 'forwards' });
+    if (i === 0) r.animate([{ opacity: 1 }, { opacity: 1, offset: 0.25 }, { opacity: 0, offset: 0.45 }, { opacity: 0 }], { duration: T, easing: ease, fill: 'forwards' });
     else {
-      r.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.9)', offset: 0.32 }, { opacity: 0 }], { duration: T, easing: ease, fill: 'forwards' });
-      r.querySelectorAll('.nr-dot').forEach((d) => d.animate([{ opacity: 1 }, { opacity: 0, offset: 0.2 }, { opacity: 0 }], { duration: T, fill: 'forwards' }));
+      r.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.9)', offset: 0.2 }, { opacity: 0 }], { duration: T, easing: ease, fill: 'forwards' });
+      r.querySelectorAll('.nr-dot').forEach((d) => d.animate([{ opacity: 1 }, { opacity: 0, offset: 0.12 }, { opacity: 0 }], { duration: T, fill: 'forwards' }));
     }
   });
-  g.querySelectorAll('.nr-label').forEach((el, i) => el.animate([{ opacity: 1 }, { opacity: 0, offset: i === 0 ? 0.45 : 0.25 }, { opacity: 0 }], { duration: T, fill: 'forwards' }));
-  g.querySelectorAll('.face').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 1, offset: 0.35 }, { opacity: 0, offset: 0.7 }, { opacity: 0 }], { duration: T, fill: 'forwards' }));
+  g.querySelectorAll('.nr-label').forEach((el, i) => el.animate([{ opacity: 1 }, { opacity: 0, offset: i === 0 ? 0.28 : 0.16 }, { opacity: 0 }], { duration: T, fill: 'forwards' }));
+  g.querySelectorAll('.face').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 1, offset: 0.22 }, { opacity: 0, offset: 0.45 }, { opacity: 0 }], { duration: T, fill: 'forwards' }));
   g.querySelector('.c-sub, .nr-now')?.remove();
   // The new circle: its ring first (beat 2), then everything inside it (beat 3).
   const dial = $('dial');
   const inner = [...dial.querySelectorAll('text, .art-at, .moonph, .ray, .marker, .band')];
-  dial.animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: ease });
-  inner.forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: 'ease' }));
-  $('centerBtn').animate([{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: 'ease' });
-  $('journey').animate([{ opacity: 0 }, { opacity: 0, offset: 0.72 }, { opacity: 1 }], { duration: T, easing: 'ease' });
+  dial.animate([{ opacity: 0 }, { opacity: 0, offset: 0.22 }, { opacity: 1, offset: 0.45 }, { opacity: 1 }], { duration: T, easing: ease });
+  inner.forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1 }], { duration: T, easing: 'ease' }));
+  $('centerBtn').animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1 }], { duration: T, easing: 'ease' });
+  $('journey').animate([{ opacity: 0 }, { opacity: 0, offset: 0.8 }, { opacity: 1 }], { duration: T, easing: 'ease' });
   // The outer ring's gold arc travels and narrows into the gold "now" segment of the first circle.
   const seg = dial.querySelector('.rs.now[data-a]');
   const nowFrac = scales(x)[0], frac = (nowFrac.at + nowFrac.frac) / nowFrac.parts;
@@ -199,13 +223,13 @@ function nestToFace() {
     const e3 = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     const a0 = 0, aE = Math.max(1, frac * 360), t0 = performance.now();
     (function step(now) {
-      const t = (now - t0) / T, k = e3(Math.min(1, Math.max(0, (t - 0.3) / 0.42)));
+      const t = (now - t0) / T, k = e3(Math.min(1, Math.max(0, (t - 0.2) / 0.62)));
       const r1 = 170.5 + (158 - 170.5) * k, r2 = 185.5 + (188 - 185.5) * k;
       path.setAttribute('d', sec(r1, r2, a0 + (b1 - a0) * k, aE + (b2 - aE) * k));
-      ov.style.opacity = t < 0.3 ? 0 : t < 0.78 ? 1 : Math.max(0, 1 - (t - 0.78) / 0.2);
+      ov.style.opacity = t < 0.2 ? 0 : t < 0.84 ? 1 : Math.max(0, 1 - (t - 0.84) / 0.16);
       if (t < 1) requestAnimationFrame(step); else ov.remove();
     })(t0);
-    g.querySelector('.nr .nr-arc')?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.29 }, { opacity: 0, offset: 0.31 }, { opacity: 0 }], { duration: T, fill: 'forwards' });
+    g.querySelector('.nr .nr-arc')?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.19 }, { opacity: 0, offset: 0.21 }, { opacity: 0 }], { duration: T, fill: 'forwards' });
   }
   setTimeout(() => g.remove(), T + 50);
 }
@@ -260,7 +284,7 @@ function render(dir) {
   $('modeSpace').setAttribute('aria-selected', view.mode === 'space');
   const atNow = view.follow && view.level === 'day' && view.mode === 'time';
   $('nowBtn').classList.toggle('here', atNow);
-  $('nestBtn').innerHTML = nestIcon();
+  $('nestBtn').querySelector('.nest-ico').innerHTML = nestIcon();
 
   if (x.jd.polar) {
     $('panel').innerHTML = `<div class="pcard"><p>The sun doesn't rise or set here today, so the hours can't be calculated. Polar zmanim need a rav's guidance.</p></div>`;
@@ -308,13 +332,14 @@ function render(dir) {
     $('panel').innerHTML = journey ? '' : v.panel;
   }
   if (journey) $('panel').innerHTML = '';
-  $('viewTitle').innerHTML = v.title || '';
+  if (view.level !== 'day') $('viewTitle').innerHTML = v.title || ''; // the day's title is set live by updateDay
   $('centerBtn').dataset.level = view.level;
   lastMarker = view.level === 'day' ? (x.now >= x.jd.start && x.now < x.jd.end ? angleOf(x.now, x.jd) : null) : v.marker ?? null;
   shownLevel = view.level;
   setHalos(outerRings());
   if (pendingNest) { pendingGhost = null; pendingBlock = null; pendingLetters = null; nestToFace(); }
   else {
+    if (pendingGhost && (dir === 'in' || dir === 'out')) hold(STEP * 0.92);
     animateV2(dir);
     morphBlock();
     flyLetters(dir);
@@ -391,7 +416,7 @@ function updateDay(now) {
   const date = `${WEEKDAYS[wd].he} · ${gematria(hd.day)} ${hebrewDate(x.date).he.split(' ').slice(1, -1).join(' ')}`;
   $('viewTitle').innerHTML = live ? `Today · <bdi class="he" lang="he">${date}</bdi>` : `<bdi class="he" lang="he">${date}</bdi>`;
   $('centerBtn').innerHTML = live
-    ? `<span class="c-art">${art(ht.t.icon, 58)}</span><span class="c-big">${ordinal(h.hour)} hour</span><span class="c-line">of the ${h.isDay ? 'day' : 'night'} · ${ht.tribe}</span><span class="c-sub">${fmt(now)}</span>`
+    ? `<span class="c-art">${art(ht.t.icon, 58)}</span><span class="c-big">${ordinal(h.hour)} hour</span><span class="c-line">of the ${h.isDay ? 'day' : 'night'} · ${ht.tribe}</span><span class="c-sub civil-now">(${fmt(now)})</span>`
     : `<span class="c-art">${art(x.jd.info.wd >= 0 ? ['light','firmament','plants','lights','fishbirds','man','candles'][wd] : 'globe', 58)}</span><span class="c-line">${WEEKDAYS[wd].en}</span><span class="c-sub">Tap an hour to step inside</span>`;
   if (live) {
     document.querySelectorAll('#zmanim .z').forEach((li) => {
@@ -441,16 +466,16 @@ function journeyCopy(step) {
   const { hd, wd } = x, pos = hd.year % 7 || 7, mil = Math.floor(hd.year / 1000) + 1;
   const h = hourOf(Date.now(), x.nowJd), ht = hourTribe(h.hour);
   return {
-    nest: ['The circles of time', 'Each circle sits inside the one around it: the world, the shemitah cycle, the year, the month, the week, the day and the hour. You are at the center.', 'Tap the outer ring'],
-    world: [`The ${ordinal(mil)} millennium`, "This is where you are in the six thousand years of the world: its sixth day, its Friday, getting ready for Shabbos (Sanhedrin 97a).", 'Tap the middle to step in'],
-    shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'Inside the millennium, the land keeps a seven-year rhythm. The seventh year, it rests.', 'Tap the middle'],
-    year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'Inside the cycle, this year and its months. Each month belongs to one of the twelve tribes.', 'Tap the middle'],
-    month: [`${hd.month}`, `Inside the year, the moon's month: the month of ${monthTribe(hd)}. Today is the ${ordinal(hd.day)}.`, 'Tap the middle'],
-    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `Inside the month, the week, counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, 'Now tap outside the circle to step back out'],
+    nest: ['Time, according to Judaism', 'In Judaism, time is not a straight line but circles inside circles: the six thousand years of the world, the seven-year shemitah cycle, the year, the month, the week, the day and the hour. You stand at the center of them all.', 'Tap the outer ring'],
+    world: [`The ${ordinal(mil)} millennium`, "Our sages teach that the world runs for six thousand years, like the six days of creation, and the seventh millennium is a Shabbos (Sanhedrin 97a). We are in the sixth: the world's Friday, getting ready.", 'Tap the middle to step in'],
+    shemitah: [pos === 7 ? 'A shemitah year' : `Shemitah · year ${pos} of 7`, 'The Torah counts years in sevens. Six years the land of Israel is worked, and in the seventh, the shemitah, it rests (Vayikra 25).', 'Tap the middle'],
+    year: [`${hd.year} · <span class="he" lang="he">${gematria(hd.year % 1000)}</span>`, 'The Jewish year follows both the moon and the sun. It begins at Rosh Hashanah, and a thirteenth month is added in some years to keep Pesach in spring. Each month is linked to one of the twelve tribes.', 'Tap the middle'],
+    month: [`${hd.month}`, `A Jewish month begins with the new moon, Rosh Chodesh, and grows and wanes with it. This is ${hd.month}, the month of ${monthTribe(hd)}. Today is its ${ordinal(hd.day)} day.`, 'Tap the middle'],
+    week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `In Hebrew the weekdays have no names of their own, only numbers counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, 'Now tap outside the circle to step back out'],
     out: ['Back to the month', 'Every circle holds the one inside it. Step out any time to see the bigger picture.', 'Tap the middle to go back in'],
     week2: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, 'And the week again.', 'Tap the middle'],
-    day: ['Today', 'And inside it all: today, live. Twelve hours of night and twelve of day, each held by a tribe. The line is now.', "Tap the hour you're in"],
-    hour: [`The ${ordinal(h.hour)} hour · ${ht.tribe}`, "This is the hour you're in: its tribe, its energy, its pasuk. Step in to any hour like this. The day is home.", 'Tap the middle to come back to today'],
+    day: ['Today', 'A Jewish day begins at sunset: "there was evening and there was morning." It has twelve hours of night and twelve of day. Each is a twelfth of the dark or the light, so they stretch in summer and shrink in winter. The line is now.', "Tap the hour you're in"],
+    hour: [`The ${ordinal(h.hour)} hour · ${ht.tribe}`, "This is the hour you're in. Each hour is linked to a month and its tribe, with its own quality and pasuk. You can step into any hour like this. The day is home.", 'Tap the middle to come back to today'],
   }[step];
 }
 
@@ -483,7 +508,7 @@ function setHalos(html) {
 function outerRings() { if (!journey && prefs.view === 'clean') { ringT = {}; return ''; } return outerRingsV2(); }
 
 /** The clock face of a circle, as SVG markup, and where its "now" is. */
-function levelFace(level) {
+function levelFace(level, rot = 0) {
   if (level === 'day') {
     const tmp = document.createElementNS(SVGNS, 'svg');
     const live = x.now >= x.jd.start && x.now < x.jd.end;
@@ -491,11 +516,11 @@ function levelFace(level) {
     updateDial(tmp, x.now, x.jd, hourOf(live ? x.now : x.focus, x.jd), '', live);
     return { html: tmp.innerHTML, marker: live ? angleOf(x.now, x.jd) : null };
   }
-  RENDER.lite = true; // the faint outer faces carry no medallions
+  RENDER.lite = true; RENDER.rot = rot; // the faint outer faces carry no medallions
   try {
     const f = { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[level](x);
     return { html: f.svg, marker: f.marker ?? null };
-  } finally { RENDER.lite = false; }
+  } finally { RENDER.lite = false; RENDER.rot = 0; }
 }
 
 /** V2: the outer circles as real clock faces, turned so every "now" lies on the hand's line. */
@@ -510,13 +535,14 @@ function outerRingsV2() {
   OUTER.slice(0, idx).reverse().forEach((L, k) => {
     const s = (outer + (k ? 6 : 10)) / 158;
     outer = 188 * s;
-    const face = levelFace(L);
+    let face = levelFace(L);
     let rot = face.marker == null ? 0 : hand - face.marker;
     rot = ((rot % 360) + 540) % 360 - 180; // the shorter way round
+    if (rot && L !== 'day') face = levelFace(L, rot); // lay its words out again for where they will sit
     ringT[L] = { rot, s };
     const upright = face.html.replace(/<text([^>]*?) x="(-?[\d.]+)" y="(-?[\d.]+)"([^>]*?)>/g, (m, a1, tx, ty, a2) => /transform=/.test(a1 + a2) ? m : `<text${a1} x="${tx}" y="${ty}"${a2} transform="rotate(${(-rot).toFixed(2)} ${tx} ${ty})">`);
     face.html = upright;
-    html += `<div class="or2" data-level="${L}" style="--o:${[0.36, 0.26, 0.2, 0.15, 0.11][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
+    html += `<div class="or2" data-level="${L}" style="--o:${[0.36, 0.26, 0.2, 0.15, 0.11, 0.08][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
   });
   if (lastMarker != null) {
     const a = (hand * Math.PI) / 180, p = (r) => `${(200 + r * Math.sin(a)).toFixed(1)} ${(200 - r * Math.cos(a)).toFixed(1)}`;
@@ -553,15 +579,21 @@ function startJourney() {
 function endJourney() {
   journey = null;
   store.set('journeyDone', true);
-  $('journey').hidden = true;
+  // The card sinks away, the clock grows to its full size and steps back to today, and the rest of the page fades in.
+  const card = $('journey');
+  card.animate([{ opacity: 1, transform: 'translateX(-50%)' }, { opacity: 0, transform: 'translateX(-50%) translateY(24px)' }], { duration: 700, easing: 'ease', fill: 'forwards' })
+    .finished.then(() => { card.hidden = true; card.getAnimations().forEach((a) => a.cancel()); });
+  document.body.classList.add('arriving');
   document.body.classList.remove('journeying');
   delete document.body.dataset.jstep;
-  setHalos('');
-  goNow();
+  setTimeout(() => document.body.classList.remove('arriving'), STEP + 1500);
+  Object.assign(view, { mode: 'time', level: 'day', focus: Date.now(), follow: true });
+  render('out');
 }
 
 /** One action moves the journey on: 'outer' (the outer ring), 'middle', 'outside', or 'hour' (a block of the day). */
 function journeyDo(action, arg) {
+  if (busy()) return;
   const st = journey.step;
   const move = (step, level, dir, focus) => {
     journey.step = step;
@@ -617,6 +649,7 @@ function hourBegan(h) {
 function tick() {
   const now = Date.now();
   paintSky(now, loc);
+  if (busy()) return;
   if (!x || (view.follow && (now >= x.jd.end || now < x.jd.start)) || key() !== renderedKey) { render(); lastMinute = Math.floor(now / 60000); return; }
   if (x.jd.polar) return;
   x.now = now;
@@ -633,7 +666,7 @@ function tick() {
   lastHourKey = hk;
   if (view.mode === 'time' && view.level === 'day') updateDay(now);
   const minute = Math.floor(now / 60000);
-  if (minute !== lastMinute) {
+  if (minute !== lastMinute && !busy()) {
     lastMinute = minute;
     if ($('nestDlg').open) renderNest();
     if (view.mode === 'space') renderSpace();
@@ -783,7 +816,7 @@ function pickLevel(e) {
 }
 $('scale').addEventListener('click', pickLevel);
 $('nestRings').addEventListener('click', pickLevel);
-$('nestBtn').addEventListener('click', () => { renderNest(); $('nestDlg').showModal(); });
+$('nestBtn').addEventListener('click', () => { $('setDlg').close(); renderNest(); $('nestDlg').showModal(); });
 $('nestClose').addEventListener('click', () => $('nestDlg').close());
 // Tap inside the circle to step in; tap outside it to step out.
 document.addEventListener('click', (e) => {

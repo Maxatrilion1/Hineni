@@ -89,62 +89,48 @@ export function intro(target, { onLand, dots = [] } = {}) {
         q.keep = 1 - Math.min(1, out * 2) * Math.min(1, p * 3);
         return q;
       };
-      // Sample evenly, and add the exact points where each coil turns from its near side to its far side
-      // (where sin a = 0), so the line between light and dark sits still instead of snapping between samples.
-      const seams = [];
-      for (let k = Math.ceil(2 * (-wMax + ph)); k <= Math.floor(2 * (wMax + ph)); k++) seams.push(k / 2 - ph);
-      let si = 0;
-      for (let w = -wMax; w <= wMax + 1e-9; w += step) {
-        while (si < seams.length && seams[si] <= w) {
-          const ws = seams[si++];
-          if (ws > -wMax) { const a = sample(ws), b = sample(ws); a.far = true; b.far = false; a.seam = b.seam = true; pts.push(a, b); }
-        }
-        pts.push(sample(w));
-      }
-      const runs = (far) => {
-        const out = []; let cur = null;
-        for (const q of pts) {
-          if (q.sc <= 0 || q.sc > 3) { cur = null; continue; }
-          if (q.far === far) { if (!cur) out.push((cur = [])); cur.push(q); } else if (!q.seam) cur = null;
-        }
-        return out;
-      };
-      ctx.lineCap = 'butt'; ctx.lineJoin = 'round'; // ends meet the far side in the same shade, so no knobs
+      for (let w = -wMax; w <= wMax + 1e-9; w += step) pts.push(sample(w));
+      const ok = (q) => q.sc > 0 && q.sc <= 3;
       const farK = lerp(0.45, 1, e);   // the far side brightens smoothly as you come to look straight down
-      // Shade the ribbon continuously by how far each part has turned away: no hard line between light and dark.
-      // Colours are solid (pre-mixed with the night behind), so short overlapping pieces join invisibly.
-      const NIGHT = '#151a3c';
-      const toHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
-      const mixH = (h1, h2, t) => { const a = hex(h1), b = hex(h2); return toHex(a.map((v, i) => lerp(v, b[i], t))); };
-      const faceAt = (sa) => {
-        const away = Math.max(0, Math.min(1, (sa + 0.35) / 0.7));       // 0 facing you … 1 turned away
-        return mixH('#efdfb8', NIGHT, away * away * (3 - 2 * away) * 0.55 * (1 - e)); // smooth, and gone once it lies flat
+      // The ribbon is shaded point by point by how far it has turned away from you, so the bright front
+      // bends smoothly round into the darker back: no edge, no cut, at the turn.
+      const NIGHT = hex('#151a3c'), FACE = hex('#efdfb8'), RIMC = hex('#4a3418'), DARK = 0.78;
+      const cache = new Map();
+      const color = (rim, sa) => {
+        const k = (rim ? 1000 : 0) + Math.round((sa + 1) * 24);
+        let c = cache.get(k);
+        if (!c) {
+          const s2 = (k % 1000) / 24 - 1, away = Math.max(0, Math.min(1, (s2 + 0.85) / 1.4)); // starts dimming well before the turn
+          const t = away * away * (3 - 2 * away) * DARK * (1 - e);
+          let v = FACE.map((q, i) => lerp(q, NIGHT[i], t));
+          if (rim) v = v.map((q, i) => lerp(q, RIMC[i], 0.38));      // the rim: always one step darker than its face
+          c = `rgb(${v.map(Math.round).join(',')})`; cache.set(k, c);
+        }
+        return c;
       };
-      // The rim is always the same step darker than the face it surrounds, on the light side and the dark side alike.
-      const shade = (base, sa) => (base === '#efdfb8' ? faceAt(sa) : mixH(faceAt(sa), '#4a3418', 0.38));
-      // Each half-coil is one unbroken stroke. A gradient across it darkens it toward its two sides, where it turns
-      // away; the far half is darkest in its middle. Both meet the same shade at the turn, so there is no seam.
-      const ribbon = (pass) => {
-        const far = pass === 0;
-        for (const base of ['#b08a4b', '#efdfb8']) {
-          const kW = base === '#b08a4b' ? 1 : 0.72;
-          for (const run of runs(far)) {
-            if (run.length < 2) continue;
-            const mid = run[run.length >> 1], keep = mid.keep;
-            if (keep <= 0.01) continue;
-            const A = run[0], B = run[run.length - 1];
-            const g = ctx.createLinearGradient(A.X, A.Y, B.X, B.Y);
-            const sideC = shade(base, 0), midC = shade(base, far ? 1 : -1);
-            g.addColorStop(0, sideC); g.addColorStop(0.5, midC); g.addColorStop(1, sideC);
-            ctx.globalAlpha = keep; ctx.strokeStyle = g; ctx.lineWidth = band * mid.sc * kW;
-            ctx.lineCap = kW === 1 ? 'butt' : 'round'; // outline ends flat, face ends round: smooth turns, no knobs
-            ctx.beginPath(); run.forEach((q, i) => (i ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y))); ctx.stroke();
+      ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+      // Neighbouring pieces of the same shade go out as one stroke, so the whole ribbon is a few dozen strokes.
+      const ribbon = (far) => {
+        for (const rim of [true, false]) {
+          const kW = rim ? 1 : 0.72;
+          let path = null, key = '', prevIn = false;
+          const flush = () => { if (path && path.length > 1) { ctx.globalAlpha = path.keep; ctx.strokeStyle = path.c; ctx.lineWidth = band * path.sc * kW; ctx.lineCap = path.first ? 'butt' : 'round'; ctx.beginPath(); path.forEach((q, i) => (i ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y))); ctx.stroke(); } path = null; };
+          for (let i = 1; i < pts.length; i++) {
+            const a = pts[i - 1], b = pts[i];
+            const inPass = ok(a) && ok(b) && (a.sa + b.sa > 0) === far && (a.keep + b.keep) / 2 > 0.01;
+            if (!inPass) { flush(); prevIn = false; continue; }
+            const c = color(rim, (a.sa + b.sa) / 2), keep = Math.round(((a.keep + b.keep) / 2) * 20) / 20, k2 = c + keep;
+            if (path && k2 === key && Math.abs(b.sc - path.sc) < 0.04) { path.push(b); continue; }
+            const first = !prevIn;
+            flush();
+            path = [a, b]; path.c = c; path.keep = keep; path.sc = b.sc; path.first = first; key = k2; prevIn = true;
           }
+          flush();
         }
         ctx.globalAlpha = 1;
       };
       for (const far of [true, false]) {
-        ribbon(far ? 0 : 1);
+        ribbon(far);
         // Marks ride the ribbon: 24 to a turn, every sixth larger.
         const m0 = Math.ceil((-wMax + s) * 24), m1 = Math.floor((wMax + s) * 24);
         for (let m = m0; m <= m1; m++) {
@@ -167,7 +153,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
         const ed = eAt(i - 3), w = phase === 'idle' ? wIdle : lerp(dotFrom[i][0], land[i], ed);
         const fade = phase === 'idle' ? fIdle : lerp(dotFrom[i][1], 1, e);
         const q = at(w, lerp(R0, (178 - 22 * i) * G.k, ed));
-        const away = Math.max(0, Math.min(1, (q.sa + 0.35) / 0.7)), dimD = away * away * (3 - 2 * away) * 0.55 * (1 - e);
+        const away = Math.max(0, Math.min(1, (q.sa + 0.85) / 1.4)), dimD = away * away * (3 - 2 * away) * 0.78 * (1 - e);
         let al = alphaAt(Math.max(-3.4, Math.min(3.4, w)), q.Y) * fade * (1 - dimD);
         if (al <= 0.02) return;
         const r = lerp(band * q.sc * 0.22, 6 * G.k, e);
@@ -188,7 +174,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
         phase = 'gone';
         el.classList.add('dissolve');
         onLand?.();
-        setTimeout(() => { done = true; el.remove(); removeEventListener('resize', size); resolve(); }, 1000);
+        setTimeout(() => { done = true; el.remove(); removeEventListener('resize', size); resolve(); }, 500);
       }
       requestAnimationFrame(frame);
     }

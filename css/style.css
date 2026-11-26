@@ -615,7 +615,7 @@ body[data-jstep="day"] .seg.now { animation: tapme2 1.8s ease-in-out infinite; }
 body.journeying #dialWrap { cursor: pointer; }
 
 /* ===== Opening: the spiral of time ===== */
-.intro { position: fixed; inset: 0; z-index: 40; background: radial-gradient(120% 90% at 50% 40%, #1d2350, #0b0e24 70%); display: grid; grid-template-rows: auto 1fr auto; justify-items: center; padding: max(48px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom)); transition: background 3.6s ease, opacity 1s ease; }
+.intro { position: fixed; inset: 0; z-index: 40; background: radial-gradient(120% 90% at 50% 40%, #1d2350, #0b0e24 70%); display: grid; grid-template-rows: auto 1fr auto; justify-items: center; padding: max(48px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom)); transition: background 3.6s ease, opacity .5s ease; }
 .intro canvas { position: absolute; inset: 0; }
 .intro-top { position: relative; text-align: center; transition: opacity .8s ease; }
 .intro-he { font-family: var(--he); font-size: clamp(44px, 14vw, 64px); font-weight: 700; color: #e9c46a; line-height: 1.1; }
@@ -675,7 +675,14 @@ body.journeying #geoBanner, body.intro-on #geoBanner { display: none; }
 
 /* The old dial on its way to becoming the outer ring: its ring band, and its middle */
 .ghost-band { -webkit-mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%); mask-image: radial-gradient(circle closest-side, transparent 68.4%, #000 68.8%, #000 81.6%, transparent 82%); transform-origin: 50% 50%; }
-.ghost-band text { opacity: 1 !important; }
+/* The leaving ring carries no gold "now"; its words travel on their own layer and fade early */
+.no-now .rs.now:not(.alt):not(.sab) { fill: var(--day-a); } .no-now .rs.now.alt { fill: var(--day-b); } .no-now .rs.now.sab { fill: var(--sab); }
+.no-now .seg.day.now { fill: var(--day-a); } .no-now .seg.day.now.alt { fill: var(--day-b); }
+.no-now .seg.night.now { fill: var(--night-a); } .no-now .seg.night.now.alt { fill: var(--night-b); }
+.no-now .seg.shabbos.now { fill: #e9d7a3; }
+.no-now .rnum.now { fill: var(--day-ink); font-weight: 500; }
+.ghost-words text { opacity: 1 !important; }
+.ghost-words path, .ghost-words circle, .ghost-words line, .ghost-words rect, .ghost-words image, .ghost-words polygon, .ghost-words ellipse { display: none; }
 .ghost-mid { -webkit-mask-image: radial-gradient(circle closest-side, #000 68.4%, transparent 68.8%); mask-image: radial-gradient(circle closest-side, #000 68.4%, transparent 68.8%); }
 
 /* Tidy: nothing spills out of its box */
@@ -702,4 +709,37 @@ body.day { --card: rgba(255, 251, 241, .94); }
 .intro.orienting::before { opacity: 0; }
 
 /* Clean / Detailed appears only once the journey is done */
-body.journeying .ver, body.intro-on .ver { visibility: hidden; }
+
+
+/* Header: the name, with Time / Space beside it */
+.brand { gap: 10px; min-width: 0; }
+.brand .seg-toggle button { padding: 5px 12px; font-size: 13px; }
+.top { gap: 8px; }
+.top-actions .pill#locBtn { max-width: 36vw; }
+.top-actions #locName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.controls { justify-content: flex-end; }
+body.journeying .seg-toggle, body.intro-on .seg-toggle { visibility: hidden; }
+
+/* Settings: grouped, with room between every row */
+.set-group { margin: 6px 0 18px; }
+.set-group h3 { margin: 0 0 4px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.set-group .opt { padding: 14px 0; }
+.set-group > :last-child { border-bottom: 0; }
+.set-row { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 14px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); font: inherit; cursor: pointer; }
+.set-row > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.set-row small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.nest-ico { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--accent); }
+.nest-ico circle { stroke: var(--accent); opacity: .75; }
+.nest-ico .nest-core { fill: var(--accent); stroke: none; opacity: 1; }
+.journey-ico { font-size: 16px; }
+.opt .ver { flex: none; }
+
+/* Your ordinary clock time: a quiet aside */
+.civil-now { opacity: .7; }
+
+/* The end of the journey: the clock grows to its full size and the rest of the page comes in */
+#dialWrap { transition: opacity 1s ease, width 1.8s cubic-bezier(.4, .1, .2, 1); }
+@keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+body.arriving .seg-toggle, body.arriving .controls, body.arriving .titlebar { animation: arrive 1.4s ease 1.6s both; }
+body.arriving #panel, body.arriving .foot { animation: arrive 1.6s ease 2.6s both; }
+.titlebar { min-height: 26px; }

@@ -20,7 +20,12 @@
   <div class="sky" aria-hidden="true"></div>
   <main class="app">
     <header class="top">
-      <div class="brand"><span class="he" lang="he">הִנֵּנִי</span><nav id="ver" class="ver" aria-label="Version"></nav></div>
+      <div class="brand"><span class="he" lang="he">הִנֵּנִי</span>
+        <div class="seg-toggle" role="tablist" aria-label="View">
+          <button id="modeTime" type="button" role="tab" aria-selected="true">Time</button>
+          <button id="modeSpace" type="button" role="tab" aria-selected="false">Space</button>
+        </div>
+      </div>
       <div class="top-actions">
         <button id="locBtn" class="pill" type="button" aria-label="Change location">
           <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
@@ -38,14 +43,7 @@
         <div class="banner-actions"><button id="geoYes" class="btn" type="button">Use my location</button><button id="geoNo" class="btn ghost" type="button">Keep New York</button></div>
       </div>
       <div class="controls">
-        <div class="seg-toggle" role="tablist" aria-label="View">
-          <button id="modeTime" type="button" role="tab" aria-selected="true">Time</button>
-          <button id="modeSpace" type="button" role="tab" aria-selected="false">Space</button>
-        </div>
-        <div class="ctrl-right">
-          <button id="nestBtn" class="nest-btn" type="button" aria-label="All the circles of time"></button>
-          <button id="nowBtn" class="pill today" type="button">Today</button>
-        </div>
+        <button id="nowBtn" class="pill today" type="button">Today</button>
       </div>
       <div class="titlebar">
         <div id="viewTitle" class="view-title"></div>
@@ -94,11 +92,19 @@
 
   <dialog id="setDlg" class="sheet">
     <div class="sheet-head"><h2>Settings</h2><button id="setClose" class="pill" type="button">Done</button></div>
-    <label class="opt"><span><b>Magen Avraham times</b><small>Also show latest Shema and Shacharis counted from dawn to nightfall.</small></span><input id="optMA" type="checkbox"></label>
-    <label class="opt"><span><b>Candle lighting</b><small>Minutes before sunset. Auto: 40 in Jerusalem, 30 in Haifa, 18 elsewhere.</small></span>
-      <select id="optCandles"><option value="auto">Auto</option><option value="18">18</option><option value="20">20</option><option value="22">22</option><option value="30">30</option><option value="40">40</option></select>
-    </label>
-    <button id="replayJourney" class="btn ghost wide" type="button">The journey</button>
+    <div class="set-group">
+      <h3>The clock</h3>
+      <div class="opt"><span><b>View</b><small>Detailed shows the bigger circles of time around the clock. Clean shows the clock alone.</small></span><nav id="ver" class="ver" aria-label="Clean or detailed"></nav></div>
+      <button id="nestBtn" class="set-row" type="button"><span class="nest-ico" aria-hidden="true"></span><span><b>All the circles of time</b><small>From the six thousand years to this hour. Tap one to go there.</small></span></button>
+      <button id="replayJourney" class="set-row" type="button"><span class="nest-ico journey-ico" aria-hidden="true">✦</span><span><b>The journey</b><small>Walk through the circles again, from the outside in.</small></span></button>
+    </div>
+    <div class="set-group">
+      <h3>Zmanim</h3>
+      <label class="opt"><span><b>Magen Avraham times</b><small>Also show latest Shema and Shacharis counted from dawn to nightfall.</small></span><input id="optMA" type="checkbox"></label>
+      <label class="opt"><span><b>Candle lighting</b><small>Minutes before sunset. Auto: 40 in Jerusalem, 30 in Haifa, 18 elsewhere.</small></span>
+        <select id="optCandles"><option value="auto">Auto</option><option value="18">18</option><option value="20">20</option><option value="22">22</option><option value="30">30</option><option value="40">40</option></select>
+      </label>
+    </div>
     <p class="fine">Shitah: Alter Rebbe (Chabad). Hours run from sunrise to sunset; dawn 16.1°, nightfall 6°. Israel locations keep one day of Yom Tov.</p>
   </dialog>
 
