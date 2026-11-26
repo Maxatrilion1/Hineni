@@ -6,7 +6,7 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const lerp = (a, b, t) => a + (b - a) * t;
 const rgba = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${Math.max(0, Math.min(1, a)).toFixed(3)})`;
 
-export function intro(target, { onLand } = {}) {
+export function intro(target, { onLand, dots = [] } = {}) {
   return new Promise((resolve) => {
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const el = document.createElement('div');
@@ -26,6 +26,7 @@ export function intro(target, { onLand } = {}) {
 
     const t0 = performance.now();
     let phase = 'idle', start = 0, done = false, spinAt = 0, riseAt = 0, spinFrom = 0;
+    const cFinal = [];
     const goal = () => {
       const r = target.getBoundingClientRect();
       return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, k: r.width / 460 };
@@ -35,7 +36,7 @@ export function intro(target, { onLand } = {}) {
       if (done) return;
       const time = (now - t0) / 1000;
       let p = 0;
-      if (phase === 'orient') p = Math.min(1, (now - start) / 2600);
+      if (phase === 'orient') p = Math.min(1, (now - start) / 3800);
       if (phase === 'gone') p = 1; // hold the landed shape while it fades; never snap back to the spiral
       const e = ease(p);
       const G = goal();
@@ -47,7 +48,7 @@ export function intro(target, { onLand } = {}) {
       const pitch = lerp(R0 * 0.82, 0, e);
       const f = R0 * 4.2;
       if (phase === 'idle') { spinAt = -time * 0.05; riseAt = (time * 0.025) % 1; } // slow, and the turn and the rise both climb
-      else spinAt = spinFrom - ((now - start) / 1000) * 0.05 * (1 - e);
+      else spinAt = spinFrom - 0.05 * 3.8 * (p - (p * p) / 2); // eases to a stop, never backwards
       const spin = spinAt, rise = riseAt;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -80,7 +81,8 @@ export function intro(target, { onLand } = {}) {
       ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
       // Each half-coil is one unbroken ribbon; its fade toward the screen edges comes from a gradient along it.
       const strokeRuns = (back, color, k) => {
-        for (const run of runs(back)) {
+        for (const whole of runs(back)) for (let k = 0; k < whole.length - 1; k += 36) {
+          const run = whole.slice(k, k + 37); // short pieces, so each one's fade follows the ribbon
           if (run.length < 2) continue;
           const sc = run.reduce((a, q) => a + q.sc, 0) / run.length;
           const A = run[0], B = run[run.length - 1];
@@ -105,13 +107,31 @@ export function intro(target, { onLand } = {}) {
           ctx.beginPath(); ctx.arc(q.X, q.Y, band * q.sc * (k % 6 === 0 ? 0.2 : 0.11), 0, Math.PI * 2); ctx.fill();
         }
       }
+      // The seven "now" dots. Each rides its own coil; during the turn it glides along the coil
+      // so that, when the spiral lies flat, it sits exactly on its circle's "now" dot.
+      dots.forEach((frac, i) => {
+        const cIdle = i - 3 + ((frac + 0.37 * i) % 1) - 0.5;   // somewhere on its coil while idle
+        let c = cIdle;
+        if (cFinal[i] != null) c = lerp(cIdle, cFinal[i], e);
+        const t = 2 * Math.PI * (c - rise), a = t + spin;
+        const R = lerp(R0, (178 - 22 * i) * G.k, e), x = R * Math.cos(a), z = R * Math.sin(a), y = c * pitch;
+        const yv = y * Math.cos(phi) - z * Math.sin(phi), d = y * Math.sin(phi) + z * Math.cos(phi), sc = f / (f + d);
+        const X = cx + x * sc, Y = cy - yv * sc;
+        let al = (1 - e) * Math.min(1, Math.min(Y - H * 0.24, H - Y) / (H * 0.16)) + e;
+        if (e < 0.5 && Math.sin(a) > 0) al *= 0.45;
+        if (al <= 0.02) return;
+        const r = lerp(band * sc * 0.42, 6 * G.k, e);
+        ctx.globalAlpha = Math.max(0, Math.min(1, al));
+        ctx.fillStyle = '#fbf6ea'; ctx.strokeStyle = '#a07a2c'; ctx.lineWidth = Math.max(1.5, r * 0.4);
+        ctx.beginPath(); ctx.arc(X, Y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      });
       ctx.globalAlpha = 1;
 
       if (phase === 'orient' && p >= 1) {
         phase = 'gone';
         el.classList.add('dissolve');
         onLand?.();
-        setTimeout(() => { done = true; el.remove(); removeEventListener('resize', size); resolve(); }, 1100);
+        setTimeout(() => { done = true; el.remove(); removeEventListener('resize', size); resolve(); }, 1600);
       }
       requestAnimationFrame(frame);
     }
@@ -121,6 +141,15 @@ export function intro(target, { onLand } = {}) {
       if (phase !== 'idle') return;
       if (reduce) { done = true; el.remove(); resolve(); return; }
       phase = 'orient'; start = performance.now(); spinFrom = spinAt;
+      // Where each dot must end: on coil i-3, at the angle of its circle's "now" (0 = top, clockwise).
+      // On the flat spiral, angle a maps to the dial as a = θ − 90°; the spin ends where it started.
+      dots.forEach((frac, i) => {
+        const theta = frac * 2 * Math.PI, a = theta - Math.PI / 2;
+        const cIdle = i - 3 + ((frac + 0.37 * i) % 1) - 0.5;
+        let c = (a - (spinFrom - 0.05 * 3.8 * 0.5)) / (2 * Math.PI) + riseAt;       // one solution; shift by whole turns to the nearest
+        c += Math.round(cIdle - c);
+        cFinal[i] = c;
+      });
       el.classList.add('orienting');
     });
   });

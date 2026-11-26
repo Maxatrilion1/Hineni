@@ -87,16 +87,16 @@ const ART = {
     <ellipse cx="46.6" cy="39.2" rx="3" ry="2.3" fill="${D}" opacity=".6"/>
     <path d="M28 30l12 0M27 34h13" stroke="${D}" stroke-width=".8" opacity=".35"/>` },
   wolf: { bg: ['#6e5486', '#2a1f3a'], ring: ['#a33a32', '#3d7a4c', '#7fa7d9', '#e7c55a', '#7a4f9e', '#f2efe6', '#23263a', '#c27b8a', '#2f4fa8', '#9a8b7a', '#6fb6b4', '#141414'], body: (G, D, L) => `
-    ${stars([[14, 14, .7], [22, 8, .5], [56, 34, .6]])}
-    <path d="M52 13.5a6.5 6.5 0 1 0 4 11.6 5.2 5.2 0 1 1-4-11.6z" fill="#efe6cc"/>
-    <path d="M6 57.5h52" stroke="${G}" stroke-width="1" opacity=".5"/>
-    <path d="M19.6 53.6C13.4 54.4 9 51.6 8.4 46.6c2.4 3 6 4 10.4 3.2z" fill="${G}"/>
-    <path d="M17.6 57.4c-1-6.6-.4-12.2 2.2-16.6 2-3.4 4.8-6.4 6.8-9.6 1.6-2.6 2.6-5.6 3.6-8.6l1-5.4 1.2-5 2.6 4.6c2.6-1.4 5.6-3.4 8.6-6.2l3.2-2.4-.6 3c-1.8 3-4.4 5.8-7.2 8.2-1 2.4-1.4 5.4-1.2 8.8.4 4.6 1.6 9.4 2 14.2l.8 15h-4.2l-.6-10.4c-1.4 2.2-3.6 3.6-6.2 4.2l1.2 6.2z" fill="${G}"/>
-    <path d="M31.2 18.4l1.4-6 1.6 4.6z" fill="${D}" opacity=".7"/>
-    <path d="M36.4 15.2c1-.6 2-.6 2.8 0-.8.8-1.8 1-2.8 0z" fill="${D}"/>
-    <path d="M44.4 8.8l3-2.4-.4 2.2z" fill="${D}"/>
-    <path d="M33.6 22.4c-.6 3-1.8 6-3.8 8.4M27 34c-2 2.6-3.4 5.6-4 9" stroke="${D}" stroke-width=".9" fill="none" opacity=".45"/>
-    <path d="M22.6 41.4l-2.6 1.4 2.2 1-2.2 1.8 2.4.6" stroke="${L}" stroke-width=".9" fill="none" opacity=".6"/>` },
+    <path d="M51 10.5a5 5 0 1 0 3.2 9 4 4 0 1 1-3.2-9z" fill="#efe6cc" opacity=".9"/>
+    <path d="M27.5 21L30.5 8.5l5 11.5z" fill="${D}"/>
+    <path d="M20 58C18 50 16.4 42 18 34.4c1-4.8 3-8.6 5.4-11.6L24.2 6.6l7.4 12.2c3.2.6 6.2 2.6 8.8 5.8l13 5c2.6 1 4 2.4 3.6 4.4-.4 1.8-2 2.4-4 2.4l-7.8.8c1.6 1.4 1.6 3 0 4.2-3.6 2.4-7.4 3.4-9.6 6.2-2.4 3.2-2.8 7.4-2 10.4z" fill="${G}"/>
+    <path d="M26 9.6l4.2 8.6-3.4 1.6z" fill="${D}" opacity=".55"/>
+    <path d="M36.4 25.2c1.4-1.3 3.4-1.5 4.8-.3-1.3 1.5-3.4 1.7-4.8.3z" fill="${D}"/>
+    <ellipse cx="55.6" cy="33.4" rx="1.9" ry="1.5" fill="${D}"/>
+    <path d="M52.8 37.4l-7.6.8" stroke="${D}" stroke-width="1" stroke-linecap="round"/>
+    <path d="M40.6 25l12.6 5" stroke="${L}" stroke-width=".9" opacity=".55"/>
+    <path d="M27.6 30.4l-3.4 2.6 3.2.8-3.2 2.8 3.4.6-2.6 3 3.2.2" fill="none" stroke="${D}" stroke-width=".9" opacity=".55"/>
+    <path d="M36 47.4l-2.8 2.6 3 .4-2.4 2.8 2.8.2" fill="none" stroke="${D}" stroke-width=".9" opacity=".5"/>` },
   snake: { bg: ['#4566b8', '#1a2a5e'], body: (G, D, L) => `
     <path d="M13 52c-5-8 5-13.6 16-11.6 9 1.6 18.4.4 18.4-7.4S36 23.4 34 17.6" stroke="${D}" stroke-width="8.4" fill="none" stroke-linecap="round"/>
     <path d="M13 52c-5-8 5-13.6 16-11.6 9 1.6 18.4.4 18.4-7.4S36 23.4 34 17.6" stroke="${G}" stroke-width="6.4" fill="none" stroke-linecap="round"/>

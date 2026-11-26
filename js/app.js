@@ -62,8 +62,8 @@ function zoomTo(level) {
 
 // ---------- Render ----------
 // The next circle grows out of the segment you step into; stepping out, the old circle sinks back into its place.
-let lastMarker = null, pendingGhost = null, shownLevel = null, ringT = {}, pendingBlock = null, pendingNest = null;
-const DUR = 1500;
+let lastMarker = null, pendingGhost = null, shownLevel = null, ringT = {}, pendingBlock = null, pendingNest = null, pendingLetters = null;
+const DUR = 2200;
 function originOf(angle) {
   if (angle == null) return '50% 50%';
   const r = 173 / 460 * 100, a = angle * Math.PI / 180;
@@ -95,7 +95,7 @@ function animate(dir, newMarker) {
 function animateV2(dir) {
   const g = pendingGhost; pendingGhost = null;
   if (!g || !(dir === 'in' || dir === 'out') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const opts = { duration: 1500, easing: 'cubic-bezier(.35, .1, .2, 1)' };
+  const opts = { duration: 2200, easing: 'cubic-bezier(.35, .1, .2, 1)' };
   const T = (t) => `rotate(${t.rot.toFixed(2)}deg) scale(${t.s.toFixed(4)})`;
   const was = g.T, w = $('dialWrap');
   // The rings: each from its old place.
@@ -142,7 +142,7 @@ function morphBlock() {
   const path = document.createElementNS(SVGNS, 'path');
   ov.appendChild(path);
   $('dialWrap').appendChild(ov);
-  const mid = (a[0] + a[1]) / 2, w0 = a[1] - a[0], t0 = performance.now(), D = 1300;
+  const mid = (a[0] + a[1]) / 2, w0 = a[1] - a[0], t0 = performance.now(), D = 2200;
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   (function step(now) {
     const p = Math.min(1, (now - t0) / D), e = ease(p), w = w0 + (359.9 - w0) * e;
@@ -160,15 +160,15 @@ function nestToFace() {
   g.className = 'ring-ghost';
   g.innerHTML = html;
   $('dialWrap').appendChild(g);
-  const opts = { duration: 1400, easing: 'cubic-bezier(.35, .1, .2, 1)', fill: 'forwards' };
+  const opts = { duration: 2000, easing: 'cubic-bezier(.35, .1, .2, 1)', fill: 'forwards' };
   g.querySelectorAll('.nr').forEach((r, i) => {
     r.style.transformBox = 'view-box'; r.style.transformOrigin = '200px 200px';
     if (i === 0) r.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.03)', opacity: 1, offset: 0.5 }, { transform: 'scale(1.05)', opacity: 0 }], opts);
     else r.animate([{ transform: 'scale(1)', opacity: 1, filter: 'blur(0)' }, { transform: 'scale(.82)', opacity: 0, filter: 'blur(3px)', offset: 0.6 }, { opacity: 0 }], opts);
   });
   g.querySelectorAll('.nr-label, .face').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0, offset: 0.4 }, { opacity: 0 }], opts));
-  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0, transform: 'scale(.97)' }, { opacity: 0, offset: 0.3 }, { opacity: 1, transform: 'none' }], { duration: 1400, easing: 'ease' });
-  setTimeout(() => g.remove(), 1450);
+  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0, transform: 'scale(.97)' }, { opacity: 0, offset: 0.3 }, { opacity: 1, transform: 'none' }], { duration: 2000, easing: 'ease' });
+  setTimeout(() => g.remove(), 2050);
 }
 
 /** V1 with a block to follow: the old circle fades back while the block closes, then the new one settles in. */
@@ -179,9 +179,39 @@ function fadeOld() {
   ghost.className = 'ring-ghost';
   ghost.innerHTML = g.html;
   $('dialWrap').appendChild(ghost);
-  ghost.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.06)' }], { duration: 800, easing: 'ease-out', fill: 'forwards' }).finished.then(() => ghost.remove(), () => ghost.remove());
-  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.45 }, { opacity: 1 }], { duration: 1400, easing: 'ease' });
+  ghost.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.06)' }], { duration: 1200, easing: 'ease-out', fill: 'forwards' }).finished.then(() => ghost.remove(), () => ghost.remove());
+  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.45 }, { opacity: 1 }], { duration: 2200, easing: 'ease' });
 }
+/** The old circle's letters travel to the new circle's places, fading as the new letters arrive. */
+function flyLetters(dir) {
+  const from = pendingLetters; pendingLetters = null;
+  if (!from || !from.length || !(dir === 'in' || dir === 'out') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const to = [...$('dial').querySelectorAll('text.rnum, text.num')].map((t) => ({ x: +t.getAttribute('x'), y: +t.getAttribute('y') }));
+  if (!to.length) return;
+  const ang = (p) => (Math.atan2(p.x - 200, -(p.y - 200)) * 180 / Math.PI + 360) % 360;
+  const ov = document.createElementNS(SVGNS, 'svg');
+  ov.setAttribute('viewBox', '-30 -30 460 460');
+  ov.setAttribute('class', 'fly');
+  $('dialWrap').appendChild(ov);
+  const D = 2200, toAng = to.map(ang);
+  from.forEach((p) => {
+    // Each letter goes to the new place nearest its own angle, so the travel is short and gentle.
+    const a = ang(p);
+    let best = 0, bd = 999;
+    toAng.forEach((b, j) => { const d = Math.abs(((b - a + 540) % 360) - 180); if (d < bd) { bd = d; best = j; } });
+    const q = to[best];
+    const t = document.createElementNS(SVGNS, 'text');
+    t.setAttribute('x', p.x); t.setAttribute('y', p.y); t.setAttribute('class', 'rnum fly-l');
+    t.textContent = p.s;
+    ov.appendChild(t);
+    t.animate([{ transform: 'translate(0px, 0px)', opacity: 1 }, { opacity: 1, offset: 0.55 }, { transform: `translate(${(q.x - p.x).toFixed(1)}px, ${(q.y - p.y).toFixed(1)}px)`, opacity: 0 }],
+      { duration: D, easing: 'cubic-bezier(.45, .05, .25, 1)', fill: 'forwards' });
+  });
+  // The new letters come in as the old ones arrive.
+  $('dial').querySelectorAll('text.rnum, text.num').forEach((t) => t.animate([{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }], { duration: D, easing: 'ease' }));
+  setTimeout(() => ov.remove(), D + 60);
+}
+
 function renderVer() {
   $('ver').innerHTML = ['v1', 'v2'].map((k) => `<button type="button" data-ver="${k}" class="${prefs.rings === k ? 'on' : ''}">${k.toUpperCase()}</button>`).join('');
 }
@@ -189,6 +219,7 @@ function renderVer() {
 function render(dir) {
   const now = Date.now();
   if ((dir === 'in' || dir === 'out') && $('dial').firstChild) {
+    pendingLetters = [...$('dial').querySelectorAll('text.rnum, text.num')].map((t) => ({ x: +t.getAttribute('x'), y: +t.getAttribute('y'), s: t.textContent, he: true }));
     const nb = $('dial').querySelector('.rs.now[data-a], .seg.now[data-a]');
     pendingBlock = dir === 'in' && nb ? nb.dataset.a.split(',').map(Number) : null;
     pendingGhost = { html: $('dial').outerHTML.replace(/ id="[^"]*"/g, ''), center: $('centerBtn').innerHTML, marker: lastMarker, level: shownLevel, T: { ...ringT, [shownLevel]: { rot: 0, s: 1 } } };
@@ -253,10 +284,11 @@ function render(dir) {
   lastMarker = view.level === 'day' ? (x.now >= x.jd.start && x.now < x.jd.end ? angleOf(x.now, x.jd) : null) : v.marker ?? null;
   shownLevel = view.level;
   setHalos(outerRings());
-  if (pendingNest) { pendingGhost = null; pendingBlock = null; nestToFace(); }
+  if (pendingNest) { pendingGhost = null; pendingBlock = null; pendingLetters = null; nestToFace(); }
   else {
     if (prefs.rings === 'v2') animateV2(dir); else if (pendingBlock) fadeOld(); else animate(dir, lastMarker);
     morphBlock();
+    flyLetters(dir);
   }
   if (journey) showJourney();
   renderVer();
@@ -447,6 +479,8 @@ function outerRingsV2() {
     const face = levelFace(L);
     const rot = face.marker == null ? 0 : hand - face.marker;
     ringT[L] = { rot, s };
+    const upright = face.html.replace(/<text([^>]*?) x="(-?[\d.]+)" y="(-?[\d.]+)"([^>]*?)>/g, (m, a1, tx, ty, a2) => /transform=/.test(a1 + a2) ? m : `<text${a1} x="${tx}" y="${ty}"${a2} transform="rotate(${(-rot).toFixed(2)} ${tx} ${ty})">`);
+    face.html = upright;
     html += `<div class="or2" data-level="${L}" style="--o:${[0.45, 0.32, 0.24, 0.18, 0.13][k]};transform: rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})"><svg viewBox="-30 -30 460 460">${face.html.replace(/ id="[^"]*"/g, '')}</svg></div>`;
   });
   if (lastMarker != null) {
@@ -497,7 +531,7 @@ function startJourney() {
   render();
   $('journey').hidden = true;
   document.body.classList.add('intro-on');
-  intro($('dialWrap'), { onLand: () => document.body.classList.remove('intro-on') }).then(() => showJourney());
+  intro($('dialWrap'), { onLand: () => document.body.classList.remove('intro-on'), dots: scales(x).map((r) => (r.at + r.frac) / r.parts) }).then(() => showJourney());
 }
 
 function endJourney() {
