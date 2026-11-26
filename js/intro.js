@@ -8,8 +8,8 @@ const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const mixA = (h1, h2, t, a) => { const c1 = hex(h1), c2 = hex(h2); return `rgba(${c1.map((v, i) => Math.round(lerp(v, c2[i], t))).join(',')},${Math.max(0, Math.min(1, a)).toFixed(3)})`; };
 
 const RISE = 1 / 30;   // coils per second the spiral slides down (the camera rising): one coil every 30 s
-const TURN = 1 / 40;   // turns per second of its own gentle turn: one turn every 40 s
-const ORIENT = 5;      // seconds for the tilt and landing
+const TURN = 1 / 60;   // turns per second of its own gentle turn: one turn every 60 s
+const ORIENT = 3;      // seconds for the tilt and landing
 const TAU = Math.PI * 2;
 
 export function intro(target, { onLand, dots = [] } = {}) {
@@ -164,7 +164,8 @@ export function intro(target, { onLand, dots = [] } = {}) {
         const ed = eAt(i - 3), w = phase === 'idle' ? wIdle : lerp(dotFrom[i][0], land[i], ed);
         const fade = phase === 'idle' ? fIdle : lerp(dotFrom[i][1], 1, e);
         const q = at(w, lerp(R0, (178 - 22 * i) * G.k, ed));
-        let al = alphaAt(Math.max(-3.4, Math.min(3.4, w)), q.Y) * fade * (q.far ? farK : 1);
+        const away = Math.max(0, Math.min(1, (q.sa + 0.35) / 0.7)), dimD = away * away * (3 - 2 * away) * 0.55 * (1 - e);
+        let al = alphaAt(Math.max(-3.4, Math.min(3.4, w)), q.Y) * fade * (1 - dimD);
         if (al <= 0.02) return;
         const r = lerp(band * q.sc * 0.22, 6 * G.k, e);
         ctx.globalAlpha = Math.min(1, al * lerp(0.4, 1, e));
@@ -184,7 +185,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
         phase = 'gone';
         el.classList.add('dissolve');
         onLand?.();
-        setTimeout(() => { done = true; el.remove(); removeEventListener('resize', size); resolve(); }, 1600);
+        setTimeout(() => { done = true; el.remove(); removeEventListener('resize', size); resolve(); }, 1000);
       }
       requestAnimationFrame(frame);
     }

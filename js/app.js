@@ -96,7 +96,7 @@ function animate(dir, newMarker) {
  *  1. the "now" block closes into a full ring while everything holds still (morphBlock);
  *  2. the old circle expands outward into the first outer ring, pushing the outer rings out,
  *     while the new circle fades in at the centre. Ring angles change by cross-fading, never by spinning. */
-const STAGE = 1500, SETTLE = 2000; // one calm tempo for every step
+const STAGE = 3000, SETTLE = 3000; // the block becomes the gold ring, then the ring finds its place: same pace
 function animateV2(dir) {
   const g = pendingGhost; pendingGhost = null;
   if (!g || !(dir === 'in' || dir === 'out') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;

@@ -640,7 +640,7 @@ body[data-jstep="day"] .seg.now { animation: tapme2 1.8s ease-in-out infinite; }
 body.journeying #dialWrap { cursor: pointer; }
 
 /* ===== Opening: the spiral of time ===== */
-.intro { position: fixed; inset: 0; z-index: 40; background: radial-gradient(120% 90% at 50% 40%, #1d2350, #0b0e24 70%); display: grid; grid-template-rows: auto 1fr auto; justify-items: center; padding: max(48px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom)); transition: background 3.6s ease, opacity 1.6s ease; }
+.intro { position: fixed; inset: 0; z-index: 40; background: radial-gradient(120% 90% at 50% 40%, #1d2350, #0b0e24 70%); display: grid; grid-template-rows: auto 1fr auto; justify-items: center; padding: max(48px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom)); transition: background 3.6s ease, opacity 1s ease; }
 .intro canvas { position: absolute; inset: 0; }
 .intro-top { position: relative; text-align: center; transition: opacity .8s ease; }
 .intro-he { font-family: var(--he); font-size: clamp(44px, 14vw, 64px); font-weight: 700; color: #e9c46a; line-height: 1.1; }
@@ -672,7 +672,7 @@ body.intro-on .journey { display: none; }
 .brand { align-items: center; }
 
 /* While the spiral lands, the circles wait underneath, then appear as it fades */
-#dialWrap { transition: opacity 1.6s ease; }
+#dialWrap { transition: opacity 1s ease; }
 body.intro-on #dialWrap { opacity: 0; }
 
 /* The block that becomes the next circle */
@@ -723,5 +723,8 @@ body.day { --card: rgba(255, 251, 241, .94); }
 
 /* The night behind the spiral fades slowly into the real sky as it lands (gradients can't fade, so the night is its own layer) */
 .intro, .intro.orienting { background: transparent; }
-.intro::before { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, #1d2350, #0b0e24 70%); opacity: 1; transition: opacity 5s cubic-bezier(.4, .1, .3, 1); pointer-events: none; }
+.intro::before { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, #1d2350, #0b0e24 70%); opacity: 1; transition: opacity 3s cubic-bezier(.4, .1, .3, 1); pointer-events: none; }
 .intro.orienting::before { opacity: 0; }
+
+/* Clean / Detailed appears only once the journey is done */
+body.journeying .ver, body.intro-on .ver { visibility: hidden; }
