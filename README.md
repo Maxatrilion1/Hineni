@@ -13,7 +13,7 @@
 - **Candle lighting and havdalah** for Shabbos and Yom Tov, including after-nightfall lighting on second days.
 - **The moon**: the molad as announced in shul (Jerusalem time, with chalakim) and in your time, and the Kiddush Levanah window.
 - **Tap any hour** for its exact times and its ruling planet (Shabbos 156a).
-- **A live sky** behind the clock that follows the sun's real altitude where you are, with stars at night.
+- **A live sky** behind the clock that follows the sun's real altitude where you are.
 - **Where you are**: geolocation with a place name, search for any city, New York by default.
 
 ## Shitah

@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="night">
-  <div class="sky" aria-hidden="true"><div id="stars" class="stars"></div></div>
+  <div class="sky" aria-hidden="true"></div>
   <main class="app">
     <header class="top">
       <div class="brand"><span class="he" lang="he">הִנֵּנִי</span><span class="brand-en">Hineni</span></div>
@@ -40,9 +40,12 @@
       <div class="dial-wrap">
         <svg id="dial" viewBox="-12 -12 424 424" role="img" aria-label="Jewish clock dial. Tap an hour for details."></svg>
         <button id="centerBtn" class="center" type="button" aria-label="Details for the current hour">
-          <span id="cPeriod" class="c-period"></span>
-          <span id="cHour" class="c-hour he" lang="he"></span>
-          <span id="cHourLabel" class="c-label"></span>
+          <span id="cEyebrow" class="c-eyebrow"></span>
+          <span id="cWindowHe" class="c-window he" lang="he"></span>
+          <span id="cWindowEn" class="c-window-en"></span>
+          <span id="cDetail" class="c-detail"></span>
+          <span class="c-rule"></span>
+          <span id="cHour" class="c-hour"></span>
           <span id="cCivil" class="c-civil"></span>
         </button>
       </div>
@@ -51,20 +54,29 @@
 
     <section class="info">
       <div id="date" class="card date"></div>
-      <div class="card">
-        <h2>Zmanim</h2>
+      <details class="card fold" id="zFold">
+        <summary><span class="fold-title">Zmanim</span><span id="zSum" class="fold-sum"></span></summary>
         <ol id="zmanim" class="zmanim"></ol>
         <p class="fine" id="hourLen"></p>
-      </div>
-      <div id="upcoming" class="card"></div>
-      <div id="moon" class="card"></div>
-      <div id="month" class="card month"></div>
-      <details class="card how">
-        <summary>How to read the clock</summary>
-        <p>The day is divided into 12 hours from sunrise to sunset, and the night into 12 from sunset to sunrise. These are <em>sha'os zmaniyos</em>: they stretch in summer and shrink in winter.</p>
-        <p>The outer ring holds the 24 hours. The day (gold) runs across the top from sunrise on the left to sunset on the right, like the sun across the sky. The night (blue) runs underneath. The Jewish day begins at the right, at sunset.</p>
-        <p>The inner ring is the ordinary clock, bent to fit. Where its hours bunch up, Jewish hours are short; where they spread, Jewish hours are long. The dots are the zmanim.</p>
-        <p>Tap any hour, or the center, to see its times and the planet the Gemara says rules it. The sky behind the clock follows the real sun where you are.</p>
+      </details>
+      <details class="card fold">
+        <summary><span class="fold-title">Coming up</span><span id="upSum" class="fold-sum"></span></summary>
+        <div id="upcoming"></div>
+      </details>
+      <details class="card fold">
+        <summary><span class="fold-title">The moon</span><span id="moonSum" class="fold-sum"></span></summary>
+        <div id="moon"></div>
+      </details>
+      <details class="card fold">
+        <summary><span class="fold-title">The month</span><span id="monthSum" class="fold-sum"></span></summary>
+        <div id="month"></div>
+      </details>
+      <details class="card fold how">
+        <summary><span class="fold-title">How to read the clock</span></summary>
+        <p>A Jewish day begins at sunset. The night is divided into 12 hours, and the day, from sunrise to sunset, into another 12. These are <em>sha'os zmaniyos</em>: each is one twelfth of the daylight or the darkness, so they stretch in summer and shrink in winter.</p>
+        <p>On the dial the day's hours (gold) run across the top, from sunrise on the left to sunset on the right, the way the sun crosses the sky. The night's hours (blue) run underneath. The marker on the rim is where you are now.</p>
+        <p>The thin inner ring is the ordinary clock, bent to fit: where its hours crowd together the Jewish hours are short, and where they spread out the Jewish hours are long. The small dots are the zmanim.</p>
+        <p>The center tells you where you stand: which part of the day it is, what can be davened, and until when. Tap it, or any hour, for that hour's details.</p>
       </details>
     </section>
 

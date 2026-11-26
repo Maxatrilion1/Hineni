@@ -34,6 +34,33 @@ function moonGlyph(day) {
   return ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'][Math.round(moonPhase(day) * 8) % 8];
 }
 
+// ---------- Where you stand in the day ----------
+/** The halachic part of the day right now: what it's time for, and until when. */
+function windowAt(now) {
+  const d = jd.day, e = jd.eve, n = jd.night;
+  const W = (he, en, detail, until) => ({ he, en, detail, until });
+  if (now < e.tzeis) return W('בין השמשות', 'Twilight', 'Nightfall', e.tzeis);
+  if (now < n.chatzosL) return W('מעריב', 'Maariv', 'Midnight', n.chatzosL);
+  if (now < d.alos) return W('חצות הלילה', 'After midnight', 'Dawn', d.alos);
+  if (now < d.netz) return W('עלות השחר', 'Dawn', 'Sunrise', d.netz);
+  if (now < d.shema) return W('שחרית', 'Shacharis', 'Shema until', d.shema);
+  if (now < d.tefillah) return W('שחרית', 'Shacharis', 'Shacharis until', d.tefillah);
+  if (now < d.chatzos) return W('יום', 'Morning', 'Midday', d.chatzos);
+  if (now < d.minchaG) return W('חצות היום', 'Midday', 'Mincha from', d.minchaG);
+  const candles = jd.list.find((z) => z.key === 'candles' && z.part === 'day');
+  if (candles && now < candles.t) return W('מנחה', 'Mincha', 'Candle lighting', candles.t);
+  if (now < d.plag) return W('מנחה', 'Mincha', 'Plag Hamincha', d.plag);
+  return W('מנחה', 'Mincha', 'Until sunset', d.shkiah);
+}
+
+function eyebrow() {
+  const { hd, hols, wd } = jd.info;
+  const main = hols.find((h) => ['yt', 'fast', 'chm', 'minor', 'chabad', 'rc'].includes(h.kind));
+  const he = `${gematria(hd.day)} ${hebrewDate(jd.day.date).he.split(' ').slice(1, -1).join(' ')}`;
+  if (wd === 6) return `${he} · שבת קודש`;
+  return main ? `${he} · ${main.he}` : `${he} · ${WEEKDAYS[wd].he}`;
+}
+
 // ---------- Build (once per Jewish day / location change) ----------
 function rebuild(now) {
   jd = jewishDay(now, loc, opts());
@@ -77,7 +104,14 @@ function renderDate(now) {
       <span>${shabbos}</span>
     </div>
     ${omer ? `<div class="omer"><b>Tonight's count: day ${omer} of the Omer</b><span>${omerSefirah(omer).tr} · <span class="he" lang="he">${omerSefirah(omer).he}</span></span></div>` : ''}
+    ${monthLine(hd)}
     ${afterSunset ? `<p class="fine">The Jewish day began at sunset, so it's already ${w.en} by Jewish reckoning.</p>` : ''}`;
+}
+
+function monthLine(hd) {
+  const l = monthLore(hd.month);
+  if (!l) return '';
+  return `<div class="month-line"><span class="ml-letter he" lang="he">${l.letter}</span><span>${hd.month} is the month of <b>${l.tribe}</b>. Its sense is ${l.sense.toLowerCase()}, its mazal ${l.mazal}.</span></div>`;
 }
 
 function renderZmanimList() {
@@ -124,8 +158,8 @@ function renderMoon(now) {
   else kls = `Kiddush Levanah has passed for ${hd.month}`;
   const showNext = hd.day >= 20;
   const mm = showNext ? nxt : cur;
+  $('moonSum').textContent = now >= kl.start && now < kl.end ? 'Kiddush Levanah now' : `Molad ${mm.month} ${fmtDay(mm.utc)}`;
   $('moon').innerHTML = `
-    <h2>The moon</h2>
     <div class="moon-row">
       <div class="moon-big" aria-hidden="true">${moonGlyph(hd.day)}</div>
       <div>
@@ -140,10 +174,9 @@ function renderMoon(now) {
 function renderMonth() {
   const hd = jd.info.hd;
   const l = monthLore(hd.month);
-  if (!l) { $('month').hidden = true; return; }
-  $('month').hidden = false;
+  if (!l) return;
+  $('monthSum').textContent = `${l.tribe} · ${l.letter}`;
   $('month').innerHTML = `
-    <h2>The month of ${hd.month}</h2>
     <dl class="lore">
       <div><dt>Tribe</dt><dd>${l.tribe}</dd></div>
       <div><dt>Mazal</dt><dd>${l.mazal}<small>${l.mazalEn}</small></dd></div>
@@ -168,7 +201,9 @@ function renderUpcoming() {
       items.push({ i, h, inf });
     }
   }
-  $('upcoming').innerHTML = `<h2>Coming up</h2><ul class="upcoming">${items
+  const first = items[0];
+  $('upSum').textContent = first ? `${first.h.name.replace(/ · \d+\w+ light/, '')} ${first.i === 1 ? 'tomorrow' : `in ${first.i} days`}` : '';
+  $('upcoming').innerHTML = `<ul class="upcoming">${items
     .map(({ i, h, inf }) => {
       const civ = new Date(Date.UTC(inf.date.y, inf.date.m - 1, inf.date.d, 12));
       const civTxt = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(civ);
@@ -189,16 +224,21 @@ function tick() {
   const nextKey = next ? next.key + next.part : '';
   updateDial($('dial'), now, jd, h, nextKey);
 
-  const twilight = !h.isDay && jd.eve.tzeis && now < jd.eve.tzeis;
-  $('cPeriod').textContent = h.isDay ? 'Day · יום' : twilight ? 'Twilight' : 'Night · לילה';
-  $('cHour').textContent = gematria(h.hour);
-  $('cHourLabel').textContent = `${ordinal(h.hour)} hour · ${h.minutes} min`;
-  $('cCivil').textContent = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: loc.tz }).format(now);
+  const w = windowAt(now);
+  $('cEyebrow').textContent = eyebrow();
+  $('cWindowHe').textContent = w.he;
+  $('cWindowHe').classList.toggle('long', w.he.length > 6);
+  $('cWindowEn').textContent = w.en;
+  $('cDetail').textContent = `${w.detail} ${fmt(w.until)} · ${until(w.until - now).replace(/^in /, '')}`;
+  $('cHour').textContent = `${ordinal(h.hour)} hour of the ${h.isDay ? 'day' : 'night'} · ${gematria(h.hour)}`;
+  $('cCivil').textContent = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZone: loc.tz }).format(now);
+  $('zSum').textContent = next ? `${next.tr} ${fmt(next.t)}` : '';
 
   if (next) {
     $('next').innerHTML = `<span class="next-label">Next</span>
       <span class="next-name">${esc(next.tr)} <span class="he" lang="he">${next.he}</span></span>
       <span class="next-when"><b>${until(next.t - now)}</b> · ${fmt(next.t)}</span>`;
+    $('next').hidden = false;
   }
   document.querySelectorAll('#zmanim .z').forEach((li) => {
     const z = jd.list.find((x) => x.key + x.part === li.dataset.z);

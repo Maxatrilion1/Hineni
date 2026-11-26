@@ -7,7 +7,7 @@
   --radius: 18px;
 }
 :root {
-  --sky-top: #05081e; --sky-mid: #0b1232; --sky-low: #151d4a; --sky-ink: #f3f1fb; --stars: 1;
+  --sky-top: #05081e; --sky-mid: #0b1232; --sky-low: #151d4a; --sky-ink: #f3f1fb;
 }
 body.night {
   --bg: #0e1230; --ink: #ecebf7; --muted: #a3a7cc; --card: rgba(20, 25, 64, .78); --solid: #161b43; --line: rgba(120, 130, 210, .28);
@@ -31,7 +31,6 @@ body {
   background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-mid) 55%, var(--sky-low) 100%);
   transition: background 2s;
 }
-.stars { position: absolute; inset: 0; opacity: var(--stars); transition: opacity 2s; }
 
 .he { font-family: var(--he); }
 button { font: inherit; color: inherit; }
@@ -92,15 +91,19 @@ button { font: inherit; color: inherit; }
 .hand { transition: transform 1s linear; }
 
 .center {
-  position: absolute; inset: 27%; border-radius: 50%; border: 0; background: transparent; padding: 0;
+  position: absolute; inset: 25%; border-radius: 50%; border: 0; background: transparent; padding: 0;
   display: grid; place-content: center; text-align: center; gap: 2px; cursor: pointer;
 }
 .center > span { display: block; }
 button:focus-visible, .seg:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.c-period { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.c-hour { font-size: clamp(52px, 17vw, 84px); line-height: 1; font-weight: 700; color: var(--accent); }
-.c-label { font-size: 15px; font-weight: 500; }
-.c-civil { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.c-eyebrow { font-family: var(--he); font-size: clamp(12px, 3.4vw, 14px); color: var(--muted); direction: rtl; }
+.c-window { font-size: clamp(38px, 12vw, 56px); line-height: 1.05; font-weight: 700; color: var(--accent); margin-top: 2px; white-space: nowrap; }
+.c-window.long { font-size: clamp(28px, 8.4vw, 40px); padding-block: 4px; }
+.c-window-en { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+.c-detail { font-size: clamp(11.5px, 3.1vw, 13px); margin-top: 6px; max-width: 13.5em; margin-inline: auto; line-height: 1.35; font-variant-numeric: tabular-nums; }
+.c-rule { width: 36px; height: 1px; background: var(--line); margin: 8px auto 6px; }
+.c-hour { font-size: 12px; color: var(--muted); }
+.c-civil { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .next-card {
   width: min(100%, 460px); display: grid; grid-template-columns: auto 1fr; align-items: center;
@@ -222,4 +225,23 @@ button:focus-visible, .seg:focus-visible, input:focus-visible, select:focus-visi
 }
 .cities button small { color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .foot { color: var(--sky-ink); opacity: .8; }
-@media (prefers-reduced-motion: reduce) { .hand, .sky, .stars { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .hand, .sky { transition: none; } }
+
+/* Folding sections */
+.fold { padding: 0; }
+.fold > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 15px 18px;
+}
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::after { content: ''; width: 7px; height: 7px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg) translateY(-3px); flex: none; transition: transform .2s; }
+.fold[open] > summary::after { transform: rotate(-135deg); }
+.fold-title { font-weight: 600; }
+.fold-sum { margin-left: auto; color: var(--muted); font-size: 13.5px; text-align: right; font-variant-numeric: tabular-nums; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fold > :not(summary) { margin-inline: 18px; }
+.fold > :last-child { margin-bottom: 16px; }
+.fold .zmanim { margin-top: 0; }
+.how p { margin-top: 0; }
+
+.month-line { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; line-height: 1.45; }
+.ml-letter { font-size: 30px; color: var(--accent); font-weight: 700; line-height: 1; min-width: 1em; text-align: center; }
