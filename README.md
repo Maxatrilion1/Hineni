@@ -5,6 +5,8 @@
 ## What it shows
 
 - **First visit: a journey from the outside in.** The 6th millennium, then the shemitah cycle, the year, the month, the week, and finally Today, live, ending with an invitation to enter the hour you're in. It can be replayed from Settings.
+- **The parshah of the week** on the week circle, for Israel and the diaspora. Worked out from the calendar itself and checked Shabbos by Shabbos against Hebcal for 2000–2080 (8,348 readings, no differences).
+- **A new hour** is marked gently: the center medallion turns to the next tribe and a small note slides up.
 - **Gestures**: swipe left from the middle of the dial to step in one circle; swipe in from the edge of the screen to step out one.
 - **The circles button** opens all seven circles nested one inside the other, each showing where you are; tap one to go there. **Today** is always one tap away.
 
@@ -18,6 +20,18 @@ The clock's job is orientation: where you stand in Jewish time and space. It is 
 - **Mosaic medallions** for the twelve tribes and the seven days, in the manner of an ancient synagogue floor: earthy stone grounds, ochre figures, fine tesserae, a tiled border, matched to the Midrash and to Bereishis 1.
 - **The scale** under the dial shows every circle at once: millennium, shemitah, year, month, week, day, hour. Tap a row to turn the dial into that circle.
 - **Zmanim** (in the day view): each in Jewish time ("3:00 of the day") and civil time, with Shabbos, Yom Tov and fast times.
+
+## On your iPhone
+
+**As an app icon:** open Hineni in Safari → Share → Add to Home Screen. Opens full screen once Hineni is on its own address.
+
+**As a live widget:** `widget/hineni-widget.js` runs in the free [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) app.
+
+1. Install Scriptable, open it, tap **+**, paste the whole file, and name it *Hineni*. Tap ▶ once and allow location.
+2. Long-press the home screen → **+** → Scriptable → choose a size → **Add Widget**.
+3. Long-press the new widget → **Edit Widget** → Script: **Hineni**.
+
+It shows the day dial with the hand, the hour you're in and its tribe, the Hebrew date, minutes left in the hour and the next zman. Tapping it opens Hineni. iOS decides how often widgets refresh, so the hand can lag a few minutes.
 
 ## Shitah
 
@@ -36,6 +50,8 @@ Any static host works (GitHub Pages, Netlify, Cloudflare Pages). On HTTPS it ins
 ## Code
 
 - `js/solar.js`: NOAA sun-position algorithm
+- `js/parshah.js`: the weekly parshah
+- `widget/hineni-widget.js`: the iPhone widget (Scriptable)
 - `js/zmanim.js`: zmanim, the Jewish-day model, dial angles
 - `js/hebrew.js`: Hebrew date (built-in browser calendar), gematria, month data
 - `js/calendar.js`: holidays, Omer, molad, Kiddush Levanah, planetary hours

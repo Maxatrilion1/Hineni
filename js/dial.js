@@ -55,9 +55,12 @@ export function buildDial(svg, jd, tz) {
       tribe.flag.forEach((c, j) => {
         el('path', { d: sector(R_BAND, R_IN - 1, a1 + (15 * j) / k, a1 + (15 * (j + 1)) / k), fill: c, class: 'band', 'data-band': part + i }, segs);
       });
+      // Numeral above, tribe name below, stacked upright so they fit at every angle.
       const [x, y] = pt(R_NUM, a1 + 7.5);
-      const t = el('text', { x: f(x), y: f(y), class: `num ${part === 'd' ? 'day' : 'night'}`, 'data-num': part + i }, segs);
+      const t = el('text', { x: f(x), y: f(y - 6), class: `num ${part === 'd' ? 'day' : 'night'}`, 'data-num': part + i }, segs);
       t.textContent = gematria(i + 1).replace(/[׳״]/g, '');
+      const tn = el('text', { x: f(x), y: f(y + 7.5), class: `tname ${part === 'd' ? 'day' : 'night'}`, 'data-num': part + i }, segs);
+      tn.textContent = TRIBES[monthLore(hourMonth(i + 1).month).tribe].he;
     }
   }
   // Horizon: shkiah (right) and netz (left).

@@ -312,13 +312,33 @@ async function startCompass() {
 
 // ---------- Tick ----------
 const key = () => [view.mode, view.level, view.follow ? x?.jd?.start : view.focus, loc.lat, loc.lon, prefs.ma, prefs.candles].join('|');
-let lastMinute = -1;
+let lastMinute = -1, lastHourKey = null, toastTimer = null;
+function hourBegan(h) {
+  const ht = hourTribe(h.hour);
+  $('toast').innerHTML = `${art(ht.t.icon, 40)}<span><b>The ${ordinal(h.hour)} hour of the ${h.isDay ? 'day' : 'night'} has begun</b><small>${ht.tribe} · ${ht.month}</small></span>`;
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('toast').classList.remove('show'), 7000);
+  $('centerBtn').classList.add('turning');
+  setTimeout(() => $('centerBtn').classList.remove('turning'), 800);
+}
 function tick() {
   const now = Date.now();
   paintSky(now, loc);
   if (!x || (view.follow && (now >= x.jd.end || now < x.jd.start)) || key() !== renderedKey) { render(); lastMinute = Math.floor(now / 60000); return; }
   if (x.jd.polar) return;
   x.now = now;
+  // A new hour: a gentle cue, and an hour view that was following the clock moves with it.
+  const nh = hourOf(now, x.nowJd && now < x.nowJd.end ? x.nowJd : x.jd);
+  const hk = `${nh.isDay}-${nh.hour}`;
+  if (lastHourKey && hk !== lastHourKey && !journey) {
+    hourBegan(nh);
+    if (view.mode === 'time' && view.level === 'hour') {
+      const prev = hourOf(view.focus, x.jd);
+      if (`${prev.isDay}-${prev.hour}` === lastHourKey) { view.focus = now; setTimeout(() => render('side'), 400); }
+    }
+  }
+  lastHourKey = hk;
   if (view.mode === 'time' && view.level === 'day') updateDay(now);
   const minute = Math.floor(now / 60000);
   if (minute !== lastMinute) {
@@ -482,7 +502,11 @@ $('dial').style.touchAction = 'manipulation';
 $('modeSpace').addEventListener('click', () => { if (view.mode !== 'space') { view.mode = 'space'; $('panel').innerHTML = ''; render('out'); } });
 for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
 
+// Paint the right sky and colors before anything shows, with no fade on first load.
+document.documentElement.classList.add('preload');
+paintSky(Date.now(), loc);
 if (!store.get('journeyDone')) startJourney(); else render();
+requestAnimationFrame(() => setTimeout(() => document.documentElement.classList.remove('preload'), 50));
 setInterval(tick, 1000);
 document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && tick());
 locationOnLoad();

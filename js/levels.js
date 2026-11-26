@@ -5,6 +5,7 @@ import { hebrewDate, gematria, WEEKDAYS, monthLore, moonPhase } from './hebrew.j
 import { MONTH_NUM, isLeap, molad, moladText, nextMonth, kiddushLevanah, planetOf } from './calendar.js';
 import { TRIBES, CAMPS, DAYS, MONTH_FOCUS, DAY_DEPTH, hourMonth, towardJerusalem, compassWord } from './lore.js';
 import { art, artAt } from './art.js';
+import { parshahFor } from './parshah.js';
 
 export const LEVELS = ['hour', 'day', 'week', 'month', 'year', 'shemitah', 'world'];
 const C = 200, R_OUT = 188, R_IN = 158, R_BAND = 150, R_NUM = 173, R_ICON = 122;
@@ -89,7 +90,8 @@ function ring(segs, { marker = null, extra = '' } = {}) {
       g.band.forEach((c, j) => { s += `<path d="${sector(R_BAND, R_IN - 1, g.a1 + ((g.a2 - g.a1) * j) / k, g.a1 + ((g.a2 - g.a1) * (j + 1)) / k)}" fill="${c}" class="band" data-child="${g.id}"/>`; });
     }
     const mid = (g.a1 + g.a2) / 2;
-    if (g.label) { const [x, y] = pt(R_NUM, mid); s += `<text x="${f(x)}" y="${f(y)}" class="rnum${g.isNow ? ' now' : ''}${/sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : ''} ${g.labelCls || ''}">${g.label}</text>`; }
+    if (g.sub) { const [sx, sy0] = pt(R_NUM, mid), sy = sy0 + 7.5; s += `<text x="${f(sx)}" y="${f(sy)}" class="rsub${g.isNow ? ' now' : ''}${/sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : ''}">${g.sub}</text>`; }
+    if (g.label) { const [x, y0] = pt(R_NUM, mid), y = g.sub ? y0 - 6 : y0; s += `<text x="${f(x)}" y="${f(y)}" class="rnum${g.isNow ? ' now' : ''}${/sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : ''} ${g.labelCls || ''}">${g.label}</text>`; }
     if (g.art) { const [x, y] = pt(R_ICON, mid); s += artAt(g.art, x, y, g.artSize || 30, g.isNow ? 'now' : 'dim'); }
     if (g.moon != null) { const [x, y] = pt(R_ICON + 8, mid); s += moonShape(x, y, 5, g.moon, g.isNow); }
   });
@@ -120,15 +122,17 @@ export function weekView(x) {
   const segs = DAYS.map((d, i) => {
     const [a1, a2] = seven(i), date = addDays(start, i);
     const hols = dayInfo(date, x.opts.israel).hols.filter((h) => h.kind !== 'erev' && h.kind !== 'rc');
-    return { a1, a2, id: i, label: i === 6 ? 'ש' : plain(gematria(i + 1)), art: d.icon, artSize: 34, isNow: nowIn === i, isFocus: i === x.wd, cls: i === 6 ? 'sab' : '', band: hols.length ? ['#c9973a'] : null, date };
+    return { a1, a2, id: i, label: i === 6 ? 'ש' : plain(gematria(i + 1)), sub: d.creationHe, art: d.icon, artSize: 34, isNow: nowIn === i, isFocus: i === x.wd, cls: i === 6 ? 'sab' : '', band: hols.length ? ['#c9973a'] : null, date };
   });
   let marker = null;
   if (nowIn >= 0 && nowIn < 7) { const [a1, a2] = seven(nowIn); marker = a1 + (a2 - a1) * dayFrac(x); }
   const W = WEEKDAYS[x.wd];
+  const P = parshahFor(start, x.opts.israel);
+  const pName = P.holiday ? P.holiday : `Parshas ${P.names}`;
   return {
-    title: 'The week', svg: ring(segs, { marker }),
-    center: centerHTML({ big: W.he, line: x.wd === 6 ? 'Shabbos Kodesh' : `${DAYS[x.wd].creation}`, sub: x.wd === 6 ? '' : `Shabbos in ${6 - x.wd} day${6 - x.wd === 1 ? '' : 's'}` }),
-    panel: weekPanel(x, start),
+    title: P.holiday ? 'The week' : `The week of ${P.names}`, svg: ring(segs, { marker }),
+    center: centerHTML({ big: W.he, line: P.holiday ? P.holiday : `פרשת ${P.he}`, sub: x.wd === 6 ? 'Shabbos Kodesh' : `Shabbos in ${6 - x.wd} day${6 - x.wd === 1 ? '' : 's'}` }),
+    panel: (P.holiday ? '' : `<section class="pcard feature"><h3>This week's parshah</h3><div class="parshah"><span class="he" lang="he">פרשת ${P.he}</span><b>Parshas ${esc(P.names)}</b><small>Read on Shabbos, ${civ(P.date)}</small></div></section>`) + weekPanel(x, start),
     children: Object.fromEntries(segs.map((s) => [s.id, { level: 'day', focus: x.chatzos(s.date) }])),
     prev: { level: 'week', focus: x.chatzos(addDays(start, -4)) }, next: { level: 'week', focus: x.chatzos(addDays(start, 10)) },
   };
@@ -158,7 +162,7 @@ export function yearView(x) {
   const nowHd = x.nowJd.info.hd;
   const segs = Y.months.map((m, i) => {
     const lore = monthLore(m.name), T = TRIBES[lore.tribe], he = monthHe(m.start);
-    return { a1: i * step, a2: (i + 1) * step, id: i, label: he, labelCls: he.length > 4 ? 'small' : '', art: T.icon, artSize: 30, band: T.flag,
+    return { a1: i * step, a2: (i + 1) * step, id: i, label: he, labelCls: 'small', sub: T.he, art: T.icon, artSize: 30, band: T.flag,
       isNow: nowHd.year === x.hd.year && nowHd.month === m.name, isFocus: x.hd.month === m.name, m };
   });
   let marker = null;
@@ -200,7 +204,7 @@ export function worldView(x) {
   const mil = Math.floor(x.hd.year / 1000);
   const segs = Array.from({ length: 7 }, (_, i) => {
     const [a1, a2] = seven(i);
-    return { a1, a2, id: i, label: i === 6 ? 'ש' : plain(gematria(i + 1)), art: DAYS[i].icon, artSize: 34, band: [ERA_COLOR[i]], isNow: i === mil, isFocus: i === mil, cls: i === 6 ? 'sab' : '' };
+    return { a1, a2, id: i, label: i === 6 ? 'ש' : plain(gematria(i + 1)), sub: ['תהו', 'תהו', 'תורה', 'תורה', 'ימות המשיח', 'ימות המשיח', 'שבת'][i], art: DAYS[i].icon, artSize: 34, band: [ERA_COLOR[i]], isNow: i === mil, isFocus: i === mil, cls: i === 6 ? 'sab' : '' };
   });
   const [a1, a2] = seven(mil), c = cosmic(x.hd.year);
   return {
@@ -254,7 +258,7 @@ export function scales(x) {
     { level: 'shemitah', label: 'Shemitah', value: pos === 7 ? 'Shemitah year' : `Year ${pos} of 7`, parts: 7, at: pos - 1, frac: dayIndex(Y.rh, n.day.date) / Y.len },
     { level: 'year', label: 'Year', value: `<span class="he" lang="he">${gematria(hd.year % 1000)}</span> · ${hd.year}`, parts: Y.months.length, at: mi, frac: (hd.day - 1 + df) / mlen },
     { level: 'month', label: 'Month', value: `${hd.day} ${hd.month} · ${monthLore(hd.month).tribe}`, parts: mlen, at: hd.day - 1, frac: df },
-    { level: 'week', label: 'Week', value: `<span class="he" lang="he">${WEEKDAYS[wd].he}</span> · ${DAYS[wd].creation}`, parts: 7, at: wd, frac: df },
+    { level: 'week', label: 'Week', value: `<span class="he" lang="he">${WEEKDAYS[wd].he}</span> · ${(() => { const P = parshahFor(addDays(n.day.date, -wd), x.opts.israel); return P.holiday ? DAYS[wd].creation : 'Parshas ' + P.names; })()}`, parts: 7, at: wd, frac: df },
     { level: 'day', label: 'Day', value: `${ordinal(h.hour)} hour of the ${h.isDay ? 'day' : 'night'}`, parts: 24, at: hourIdx, frac: hourFrac, split: 12 },
     { level: 'hour', label: 'Hour', value: `${ht.tribe} · ${ht.month}`, parts: 12, at: Math.min(11, Math.floor(hourFrac * 12)), frac: (hourFrac * 12) % 1 },
   ];

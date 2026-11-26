@@ -549,3 +549,23 @@ body.journeying .titlebar { display: none; }
 @keyframes ringIn { from { transform: scale(.82); opacity: .1; } to { transform: none; opacity: 1; } }
 @keyframes ringOut { from { transform: scale(1.18); opacity: .1; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ghost, .dial-wrap.in > *, .dial-wrap.out > * { animation: none !important; } }
+
+/* Names under the numerals */
+.rsub, .tname { font-family: var(--he); font-size: 8.6px; text-anchor: middle; dominant-baseline: central; pointer-events: none; fill: var(--day-ink); opacity: .8; }
+.tname.night { fill: var(--night-ink); }
+.rsub.now, .tname.now { opacity: 1; font-weight: 700; }
+.rsub.on-dark { fill: var(--night-ink); }
+.num { font-size: 13.5px; }
+
+/* A new hour begins */
+.toast { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translate(-50%, 140%); z-index: 20; display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 10px; border-radius: 999px; background: var(--solid); border: 1px solid color-mix(in srgb, var(--gold) 50%, var(--line)); box-shadow: 0 10px 30px rgba(0,0,0,.2); transition: transform .6s cubic-bezier(.2,.8,.2,1); max-width: calc(100% - 32px); }
+.toast.show { transform: translate(-50%, 0); }
+.toast b { display: block; font-size: 14.5px; }
+.toast small { color: var(--muted); font-size: 12.5px; }
+.center .art { transition: opacity .8s ease, transform .8s ease; }
+.center.turning .art { opacity: 0; transform: scale(.85) rotate(-8deg); }
+.parshah { display: grid; gap: 2px; text-align: center; padding: 4px 0; }
+.parshah .he { font-size: clamp(26px, 8vw, 34px); font-weight: 700; color: var(--accent); }
+.parshah b { font-size: 16px; }
+.parshah small { color: var(--muted); }
+.preload *, .preload *::before, .preload *::after { transition: none !important; }
