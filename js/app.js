@@ -96,7 +96,7 @@ function animate(dir, newMarker) {
  *  1. the "now" block closes into a full ring while everything holds still (morphBlock);
  *  2. the old circle expands outward into the first outer ring, pushing the outer rings out,
  *     while the new circle fades in at the centre. Ring angles change by cross-fading, never by spinning. */
-const STAGE = 1200, SETTLE = 1500;
+const STAGE = 1500, SETTLE = 2000; // one calm tempo for every step
 function animateV2(dir) {
   const g = pendingGhost; pendingGhost = null;
   if (!g || !(dir === 'in' || dir === 'out') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -193,7 +193,7 @@ function nestToFace() {
   // Beat 1 (0–0.9 s): the inner rings melt away; the outer ring stays.
   // Beat 2 (0.9–1.9 s): the outer ring alone becomes the new circle.
   // Beat 3 (1.9–2.6 s): the circle's words and pictures arrive.
-  const T = 2600, ease = 'cubic-bezier(.4, .1, .2, 1)';
+  const T = 3200, ease = 'cubic-bezier(.4, .1, .2, 1)';
   g.querySelectorAll('.nr').forEach((r, i) => {
     r.style.transformBox = 'view-box'; r.style.transformOrigin = '200px 200px';
     if (i === 0) r.animate([{ opacity: 1 }, { opacity: 1, offset: 0.35 }, { opacity: 1, offset: 0.62 }, { opacity: 0, offset: 0.75 }, { opacity: 0 }], { duration: T, easing: ease, fill: 'forwards' });

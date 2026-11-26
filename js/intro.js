@@ -7,8 +7,9 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const mixA = (h1, h2, t, a) => { const c1 = hex(h1), c2 = hex(h2); return `rgba(${c1.map((v, i) => Math.round(lerp(v, c2[i], t))).join(',')},${Math.max(0, Math.min(1, a)).toFixed(3)})`; };
 
-const TURN = 1 / 20;   // turns per second while you watch: one turn every 20 s
-const ORIENT = 5.5;    // seconds for the tilt and landing
+const RISE = 1 / 18;   // coils per second the spiral slides down (the camera rising): one coil every 18 s
+const TURN = 1 / 40;   // turns per second of its own gentle turn: one turn every 40 s
+const ORIENT = 5;      // seconds for the tilt and landing
 const TAU = Math.PI * 2;
 
 export function intro(target, { onLand, dots = [] } = {}) {
@@ -33,23 +34,23 @@ export function intro(target, { onLand, dots = [] } = {}) {
 
     // Where each "now" dot must land: on coil i−3 of the flat spiral, at its circle's angle.
     // On the flat spiral a point at w sits at dial angle θ where 2πw ≡ −π/2 − θ.
-    const land = dots.map((frac, i) => {
-      const want = (-0.25 - frac) % 1;            // a/2π for this θ
-      let d = want - (i - 3); d -= Math.round(d);  // nearest point on coil i−3
-      return i - 3 + d;
-    });
+    // a = 2π(w + phase); on the flat spiral x = R cos a, so dial angle θ needs a ≡ θ − π/2.
+    const landAt = (ph) => dots.map((frac, i) => { let d = (frac - 0.25 - ph) - (i - 3); d -= Math.round(d); return i - 3 + d; });
+    let land = landAt(0);
 
     const t0 = performance.now();
-    let phase = 'idle', start = 0, s0 = 0, done = false, dotFrom = [], lastMask = '';
+    let phase = 'idle', start = 0, s0 = 0, ph0 = 0, done = false, dotFrom = [], lastMask = '';
 
     function frame(now) {
       if (done) return;
       const time = (now - t0) / 1000;
-      let p = 0, s;
-      if (phase === 'idle') s = time * TURN;
+      // s: how far the spiral has slid down; ph: the phase of a point's angle (slide + its own turn).
+      let p = 0, s, ph;
+      if (phase === 'idle') { s = time * RISE; ph = time * (RISE + TURN); }
       else {
         p = Math.min(1, (now - start) / 1000 / ORIENT);
-        s = s0 + TURN * ORIENT * (p - (p * p) / 2);   // the screw eases to a stop
+        const k = ORIENT * (p - (p * p) / 2);          // both ease to a stop
+        s = s0 + RISE * k; ph = ph0 + (RISE + TURN) * k;
       }
       const e = ease(p);
       const G = goal();
@@ -65,7 +66,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
 
       // w is the position on the visible spiral (in turns); as the screw turns, the ribbon slides along w.
       const at = (w, R) => {
-        const a = TAU * w, x = -R * Math.cos(a), z = R * Math.sin(a), y = w * pitch0 * (1 - eAt(w));
+        const a = TAU * (w + ph), x = R * Math.cos(a), z = R * Math.sin(a), y = w * pitch0 * (1 - eAt(w));
         const yv = y * Math.cos(phi) - z * Math.sin(phi), d = y * Math.sin(phi) + z * Math.cos(phi), sc = f / (f + d);
         return { X: cx + x * sc, Y: cy - yv * sc, sc, far: Math.sin(a) > 0 };
       };
@@ -162,9 +163,10 @@ export function intro(target, { onLand, dots = [] } = {}) {
     el.querySelector('.intro-go').addEventListener('click', () => {
       if (phase !== 'idle') return;
       if (reduce) { done = true; el.remove(); onLand?.(); resolve(); return; }
-      const now = performance.now();
-      s0 = ((now - t0) / 1000) * TURN;
+      const now = performance.now(), tt = (now - t0) / 1000;
+      s0 = tt * RISE; ph0 = tt * (RISE + TURN);
       dotFrom = dots.map((_, i) => { const cyc = (s0 + i * 0.37) % 1; return [land[i] + 0.5 - cyc, Math.sin(Math.PI * cyc)]; });
+      land = landAt(ph0 + (RISE + TURN) * ORIENT / 2);
       phase = 'orient'; start = now;
       el.classList.add('orienting');
     });

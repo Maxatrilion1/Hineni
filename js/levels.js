@@ -82,6 +82,17 @@ function hand(angle, kind = 'dot', from = 100) {
 }
 const DEFS = `<defs><radialGradient id="sunGlow2"><stop offset="0%" stop-color="#fff6c9"/><stop offset="55%" stop-color="#f5c443"/><stop offset="100%" stop-color="#f5c443" stop-opacity="0"/></radialGradient></defs>`;
 
+/** Text set along an arc, letter by letter, reading right to left; on the lower half it is turned to stay readable. */
+function arcText(str, r, mid, cls, fs) {
+  const chars = [...str], step = ((fs * 0.6) / r) * (180 / Math.PI), span = step * (chars.length - 1);
+  const bottom = ((mid % 360) + 360) % 360 > 90 && ((mid % 360) + 360) % 360 < 270;
+  return chars.map((c, k) => {
+    if (c === ' ') return '';
+    const a = bottom ? mid - span / 2 + k * step : mid + span / 2 - k * step, [x, y] = pt(r, a);
+    return `<text x="${f(x)}" y="${f(y)}" class="${cls}" transform="rotate(${f(bottom ? a + 180 : a)} ${f(x)} ${f(y)})">${c}</text>`;
+  }).join('');
+}
+
 function ring(segs, { marker = null, extra = '' } = {}) {
   let s = DEFS + `<circle cx="${C}" cy="${C}" r="${R_OUT + 6}" class="face"/>`;
   segs.forEach((g, i) => {
@@ -91,8 +102,13 @@ function ring(segs, { marker = null, extra = '' } = {}) {
       g.band.forEach((c, j) => { s += `<path d="${sector(R_BAND, R_IN - 1, g.a1 + ((g.a2 - g.a1) * j) / k, g.a1 + ((g.a2 - g.a1) * (j + 1)) / k)}" fill="${c}" class="band" data-child="${g.id}"/>`; });
     }
     const mid = (g.a1 + g.a2) / 2;
-    if (g.sub) { const [sx, sy0] = pt(R_NUM, mid), sy = sy0 + 7.5; s += `<text x="${f(sx)}" y="${f(sy)}" class="rsub${g.isNow ? ' now' : ''}${/sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : ''}">${g.sub}</text>`; }
-    if (g.label) { const [x, y0] = pt(R_NUM, mid), y = g.sub ? y0 - 6 : y0; s += `<text x="${f(x)}" y="${f(y)}" class="rnum${g.isNow ? ' now' : ''}${/sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : ''} ${g.labelCls || ''}">${g.label}</text>`; }
+    const dark = /sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : '', nowC = g.isNow ? ' now' : '';
+    if (g.sub) s += arcText(g.sub, R_IN + 7, mid, `rsub${nowC}${dark}`, 8.6);
+    if (g.label) {
+      const fs = /small/.test(g.labelCls || '') ? 11.5 : 15, rr = g.sub ? R_OUT - 9 : R_NUM;
+      if ([...g.label].length > 2) s += arcText(g.label, rr, mid, `rnum${nowC}${dark} ${g.labelCls || ''}`, fs);
+      else { const [x, y] = pt(rr, mid); s += `<text x="${f(x)}" y="${f(y)}" class="rnum${nowC}${dark} ${g.labelCls || ''}">${g.label}</text>`; }
+    }
     if (g.art && !RENDER.lite) { const [x, y] = pt(R_ICON, mid); s += artAt(g.art, x, y, g.artSize || 30, g.isNow ? 'now' : 'dim'); }
     if (g.moon != null) { const [x, y] = pt(R_ICON + 8, mid); s += moonShape(x, y, 5, g.moon, g.isNow); }
   });
