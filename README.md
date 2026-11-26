@@ -2,7 +2,7 @@
 
 *"Here I am."* A Jewish clock for orienting yourself in Jewish time and space: where you stand in the hour, the day, the week, the month, the year, the shemitah cycle and the six thousand years.
 
-**Open it:** https://maxatrilion1.github.io/hineni/
+**Open it:** https://maxatrilion1.github.io/Hineni/
 
 Created by [Maxatrilion1](https://github.com/Maxatrilion1).
 

@@ -6,7 +6,7 @@
 // Then long-press the home screen → + → Scriptable → pick a size → tap the widget → Script: Hineni.
 // Lock screen too: long-press the lock screen → Customize → Lock Screen → add a Scriptable widget → Script: Hineni.
 
-const SITE = 'https://maxatrilion1.github.io/hineni/';
+const SITE = 'https://maxatrilion1.github.io/Hineni/';
 const FALLBACK = { lat: 40.7128, lon: -74.006, name: 'New York' };
 
 // ---------- Sun ----------
