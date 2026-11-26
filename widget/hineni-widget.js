@@ -8,7 +8,7 @@
 // Location: open the script once in Scriptable (allow "While Using"); the widget uses that place and never asks again.
 // Or type coordinates in the widget's Parameter field, e.g. 31.778, 35.235 for Jerusalem.
 
-const SITE = 'https://maxatrilion1.github.io/Hineni/';
+const SITE = 'https://maxatrilion1.github.io/Hineni/?from=widget';
 const FALLBACK = { lat: 40.7128, lon: -74.006, name: 'New York' };
 
 // ---------- Sun ----------

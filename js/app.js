@@ -15,6 +15,8 @@ const store = {
   set(k, v) { try { localStorage.setItem('hineni.' + k, JSON.stringify(v)); } catch {} },
 };
 const $ = (id) => document.getElementById(id);
+/** Count a moment on the GoatCounter dashboard (no cookies, nothing personal). */
+const track = (name) => { try { window.goatcounter?.count?.({ path: name, title: name, event: true }); } catch {} };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 let loc = store.get('loc') || NEW_YORK;
@@ -322,6 +324,7 @@ function render(dir) {
   if (journey) $('panel').innerHTML = '';
   $('centerBtn').dataset.level = view.level;
   lastMarker = view.level === 'day' ? (x.now >= x.jd.start && x.now < x.jd.end ? angleOf(x.now, x.jd) : null) : v.marker ?? null;
+  if (!journey && view.level !== shownLevel) track(`view-${view.level}`);
   shownLevel = view.level;
   $('dialWrap').classList.toggle('not-now', !journey && lastMarker == null);
   markSources();
@@ -526,7 +529,9 @@ function outerRingsV2() {
   return html;
 }
 
+let trackedStep = '';
 function showJourney() {
+  if (journey && journey.step !== trackedStep) { trackedStep = journey.step; track(`journey-${journey.step}`); }
   if (document.body.classList.contains('intro-on') || !journey) return;
   const [big, text, prompt, source] = journeyCopy(journey.step);
   $('jBig').innerHTML = big;
@@ -554,6 +559,7 @@ function startJourney() {
 }
 
 function endJourney() {
+  track('journey-finished');
   journey = null;
   store.set('journeyDone', true);
   // The card sinks away, the clock grows to its full size and steps back to today, and the rest of the page fades in.
@@ -773,6 +779,7 @@ function renderGet() {
   }[d];
   $('copyWidget')?.addEventListener('click', async () => {
     $('copyMsg').textContent = 'Copying…';
+    track('copy-widget');
     try {
       let r = await fetch('widget/hineni-widget.js').catch(() => null);
       if (!r || !r.ok) r = await fetch(WIDGET_RAW);
@@ -785,7 +792,7 @@ function renderGet() {
 }
 
 function initSettings() {
-  $('setBtn').addEventListener('click', () => { $('optMA').checked = prefs.ma; $('optCandles').value = prefs.candles; renderVer(); renderGet(); $('setDlg').showModal(); });
+  $('setBtn').addEventListener('click', () => { track('settings'); $('optMA').checked = prefs.ma; $('optCandles').value = prefs.candles; renderVer(); renderGet(); $('setDlg').showModal(); });
   $('setClose').addEventListener('click', () => $('setDlg').close());
   $('optMA').addEventListener('change', (e) => { prefs.ma = e.target.checked; store.set('prefs', prefs); render(); });
   $('optCandles').addEventListener('change', (e) => { prefs.candles = e.target.value; store.set('prefs', prefs); render(); });
@@ -837,6 +844,7 @@ document.addEventListener('click', (e) => {
 });
 $('panel').addEventListener('click', (e) => {
   const b = e.target.closest('[data-lad]');
+  if (b) track('ladder-tap');
   if (!b || b.dataset.lad === view.level) return;
   const L = b.dataset.lad;
   if (L === 'hour') return go({ level: 'hour', focus: Date.now() }, 'in');
@@ -852,7 +860,7 @@ $('centerBtn').addEventListener('click', () => {
   if (i > 0) zoomTo(LEVELS[i - 1]);
 });
 $('nowBtn').addEventListener('click', goNow);
-$('replayJourney').addEventListener('click', () => { $('setDlg').close(); startJourney(); });
+$('replayJourney').addEventListener('click', () => { track('journey-replay'); $('setDlg').close(); startJourney(); });
 // Tap inside the circle to step in; tap outside it to step out.
 document.addEventListener('click', (e) => {
   if (view.mode !== 'time' || document.body.classList.contains('intro-on')) return;
@@ -873,12 +881,14 @@ $('dialWrap').addEventListener('pointercancel', () => { drag = null; });
 const fadeIn = () => { for (const el of [$('dial'), $('centerBtn'), $('halos')]) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 600, easing: 'ease' }); };
 $('modeTime').addEventListener('click', () => { if (view.mode !== 'time') { settle(); view.mode = 'time'; render(); fadeIn(); } });
 $('dial').style.touchAction = 'manipulation';
-$('modeSpace').addEventListener('click', () => { if (view.mode !== 'space') { settle(); view.mode = 'space'; $('panel').innerHTML = ''; render(); fadeIn(); } });
+$('modeSpace').addEventListener('click', () => { if (view.mode !== 'space') { track('view-space'); settle(); view.mode = 'space'; $('panel').innerHTML = ''; render(); fadeIn(); } });
 for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
 
 // Paint the right sky and colors before anything shows, with no fade on first load.
 document.documentElement.classList.add('preload');
 paintSky(Date.now(), loc);
+if (new URLSearchParams(location.search).get('from') === 'widget') track('opened-from-widget');
+if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) track('opened-as-app');
 if (!store.get('journeyDone')) startJourney(); else render();
 requestAnimationFrame(() => setTimeout(() => document.documentElement.classList.remove('preload'), 50));
 setInterval(tick, 1000);
