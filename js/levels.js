@@ -7,6 +7,7 @@ import { TRIBES, CAMPS, DAYS, MONTH_FOCUS, DAY_DEPTH, hourMonth, towardJerusalem
 import { art, artAt } from './art.js';
 import { parshahFor } from './parshah.js';
 
+export const RENDER = { lite: false };
 export const LEVELS = ['hour', 'day', 'week', 'month', 'year', 'shemitah', 'world'];
 const C = 200, R_OUT = 188, R_IN = 158, R_BAND = 150, R_NUM = 173, R_ICON = 122;
 const pt = (r, a) => [C + r * Math.sin((a * Math.PI) / 180), C - r * Math.cos((a * Math.PI) / 180)];
@@ -92,7 +93,7 @@ function ring(segs, { marker = null, extra = '' } = {}) {
     const mid = (g.a1 + g.a2) / 2;
     if (g.sub) { const [sx, sy0] = pt(R_NUM, mid), sy = sy0 + 7.5; s += `<text x="${f(sx)}" y="${f(sy)}" class="rsub${g.isNow ? ' now' : ''}${/sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : ''}">${g.sub}</text>`; }
     if (g.label) { const [x, y0] = pt(R_NUM, mid), y = g.sub ? y0 - 6 : y0; s += `<text x="${f(x)}" y="${f(y)}" class="rnum${g.isNow ? ' now' : ''}${/sab/.test(g.cls || '') && !g.isNow ? ' on-dark' : ''} ${g.labelCls || ''}">${g.label}</text>`; }
-    if (g.art) { const [x, y] = pt(R_ICON, mid); s += artAt(g.art, x, y, g.artSize || 30, g.isNow ? 'now' : 'dim'); }
+    if (g.art && !RENDER.lite) { const [x, y] = pt(R_ICON, mid); s += artAt(g.art, x, y, g.artSize || 30, g.isNow ? 'now' : 'dim'); }
     if (g.moon != null) { const [x, y] = pt(R_ICON + 8, mid); s += moonShape(x, y, 5, g.moon, g.isNow); }
   });
   s += extra;

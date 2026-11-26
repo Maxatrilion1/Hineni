@@ -213,14 +213,14 @@ export function art(name, size = 48, cls = '') {
       <radialGradient id="bg${id}" cx=".45" cy=".4" r=".8"><stop offset="0" stop-color="${bg0}"/><stop offset="1" stop-color="${bg1}"/></radialGradient>
       <linearGradient id="ink${id}" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="${g1}"/><stop offset="1" stop-color="${g2}"/></linearGradient>
       <pattern id="t${id}" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(8)"><path d="M0 0H2.4V2.4" fill="none" stroke="#2a1c10" stroke-width=".32" opacity=".55"/></pattern>
-      <filter id="g${id}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${uid % 9}"/><feColorMatrix values="0 0 0 0 .2  0 0 0 0 .14  0 0 0 0 .08  0 0 0 .55 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+      <pattern id="g${id}" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="1" cy="1.3" r=".45" fill="#2a1c10" opacity=".22"/><circle cx="3.6" cy="3.4" r=".35" fill="#fff" opacity=".18"/></pattern>
       <clipPath id="c${id}"><circle cx="32" cy="32" r="29"/></clipPath>
     </defs>
     <circle cx="32" cy="32" r="31.8" fill="#3a2a1c"/>
     <g clip-path="url(#c${id})"><rect width="64" height="64" fill="url(#bg${id})"/>
       <g stroke="${D}" stroke-width=".5" stroke-opacity=".55">${a.body(`url(#ink${id})`, D, L, id)}</g>
       <rect width="64" height="64" fill="url(#t${id})" opacity=".35"/>
-      <rect width="64" height="64" fill="#fff" filter="url(#g${id})" opacity=".5"/></g>
+      <rect width="64" height="64" fill="url(#g${id})"/></g>
     ${ring}<circle cx="32" cy="32" r="29" fill="none" stroke="#2a1c10" stroke-width=".8" opacity=".6"/></svg>`;
 }
 

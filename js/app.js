@@ -7,7 +7,7 @@ import { intro } from './intro.js';
 import { art } from './art.js';
 import { DAYS } from './lore.js';
 import { monthLore } from './hebrew.js';
-import { LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
+import { RENDER, LEVELS, context, hourTribe, ordinal, scales, weekView, monthView, yearView, shemitahView, worldView, hourView, spaceView, dayPanel } from './levels.js';
 import { NEW_YORK, CITIES, isIsrael, candleMinutes, geolocate, geoPermission, placeName, searchPlaces, distanceKm } from './places.js';
 
 const store = {
@@ -101,7 +101,8 @@ function animateV2(dir) {
   const g = pendingGhost; pendingGhost = null;
   if (!g || !(dir === 'in' || dir === 'out') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const w = $('dialWrap'), delay = dir === 'in' && pendingBlock ? STAGE : 0;
-  const opts = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'both' };
+  const opts = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'both' };      // for ghosts, removed when done
+  const keep = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'backwards' }; // for what stays
   const S = (s) => `scale(${s.toFixed(4)})`;
   pushRings(g, dir, delay);
   // The dial you leave. Stepping in: its ring fades a little as it expands, turns gently, and settles
@@ -110,13 +111,15 @@ function animateV2(dir) {
   const mk = (cls) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = g.html; w.appendChild(d); return d; };
   if (dir === 'in' && to) {
     const ring = mk('ring-ghost ghost-band'), mid = mk('ring-ghost ghost-mid');
-    ring.animate([{ transform: 'none', opacity: 1 }, { transform: `rotate(${(to.rot * 0.15).toFixed(2)}deg) scale(${(1 + (to.s - 1) * 0.6).toFixed(4)})`, opacity: 0.95, offset: 0.4 }, { transform: `rotate(${to.rot.toFixed(2)}deg) scale(${to.s.toFixed(4)})`, opacity: 0.36 }], { ...opts, easing: 'cubic-bezier(.45, .05, .3, 1)' })
+    const end = `rotate(${to.rot.toFixed(2)}deg) scale(${to.s.toFixed(4)})`;
+    ring.animate([{ transform: 'none', opacity: 1 }, { transform: `rotate(${(to.rot * 0.15).toFixed(2)}deg) scale(${(1 + (to.s - 1) * 0.6).toFixed(4)})`, opacity: 0.9, offset: 0.4 },
+      { transform: end, opacity: 0.4, offset: 0.78 }, { transform: end, opacity: 0 }], { ...opts, easing: 'cubic-bezier(.45, .05, .3, 1)' })
       .finished.then(() => ring.remove(), () => ring.remove());
     mid.animate([{ opacity: 1 }, { opacity: 0, offset: 0.45 }, { opacity: 0 }], opts).finished.then(() => mid.remove(), () => mid.remove());
     // The real ring takes over only once the old one has arrived.
     document.querySelectorAll(`#halos .or2[data-level="${g.level}"]`).forEach((el) => {
       el.getAnimations().forEach((a) => a.cancel());
-      el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.92 }, { opacity: 1 }], opts);
+      el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }], { ...opts, fill: 'backwards', easing: 'linear' });
     });
   } else {
     const ghost = mk('ring-ghost');
@@ -126,7 +129,7 @@ function animateV2(dir) {
   const from = dir === 'in' ? 'scale(.9)' : S(g.T[view.level]?.s ?? 1.25);
   for (const el of [$('dial'), $('centerBtn')]) {
     el.style.transformOrigin = '50% 50%';
-    el.animate([{ transform: from, opacity: 0 }, { opacity: 0, offset: 0.2 }, { transform: 'none', opacity: 1 }], opts);
+    el.animate([{ transform: from, opacity: 0 }, { opacity: 0, offset: 0.2 }, { transform: 'none', opacity: 1 }], keep);
   }
 }
 
@@ -135,6 +138,7 @@ function animateV2(dir) {
 function pushRings(g, dir, delay) {
   if (!(dir === 'in' || dir === 'out')) return;
   const w = $('dialWrap'), opts = { duration: SETTLE, delay, easing: 'cubic-bezier(.4, .1, .2, 1)', fill: 'both' };
+  const keep = { ...opts, fill: 'backwards' };
   const f = dir === 'in' ? 1.18 : 1 / 1.18, v = dir === 'in' ? 1.06 : 1 / 1.06;
   const old = document.createElement('div');
   old.className = 'halos-ghost';
@@ -145,9 +149,9 @@ function pushRings(g, dir, delay) {
   old.querySelectorAll('.or-hand').forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0, offset: 0.3 }, { opacity: 0 }], opts));
   setTimeout(() => old.remove(), delay + SETTLE + 80);
   // The new rings stay hidden until their turn, then slide in from one place further in.
-  document.querySelectorAll('#halos .or2').forEach((el) => { const t = el.style.transform; el.animate([{ transform: `${t} scale(${1 / f})`, opacity: 0 }, { transform: `${t} scale(${(1 / f + 1) / 2})`, opacity: 0, offset: 0.25 }, { transform: t, opacity: 1 }], opts); });
-  document.querySelectorAll('#halos .outer-rings').forEach((el) => el.animate([{ transform: `scale(${1 / v})`, opacity: 0 }, { transform: 'none', opacity: 1 }], opts));
-  document.querySelectorAll('#halos .or-hand').forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }], opts));
+  document.querySelectorAll('#halos .or2').forEach((el) => { const t = el.style.transform; el.animate([{ transform: `${t} scale(${1 / f})`, opacity: 0 }, { transform: `${t} scale(${(1 / f + 1) / 2})`, opacity: 0, offset: 0.25 }, { transform: t, opacity: 1 }], keep); });
+  document.querySelectorAll('#halos .outer-rings').forEach((el) => el.animate([{ transform: `scale(${1 / v})`, opacity: 0 }, { transform: 'none', opacity: 1 }], keep));
+  document.querySelectorAll('#halos .or-hand').forEach((el) => el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.7 }, { opacity: 1 }], keep));
 }
 
 /** The "now" block you stepped into stretches around until it closes into the next circle. */
@@ -243,7 +247,7 @@ function fadeOld() {
   ghost.innerHTML = g.html;
   $('dialWrap').appendChild(ghost);
   ghost.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.08)' }], { duration: SETTLE, delay: STAGE, easing: 'ease-out', fill: 'both' }).finished.then(() => ghost.remove(), () => ghost.remove());
-  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: SETTLE, delay: STAGE, easing: 'ease', fill: 'both' });
+  for (const el of [$('dial'), $('centerBtn')]) el.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: SETTLE, delay: STAGE, easing: 'ease', fill: 'backwards' });
 }
 /** The old circle's letters travel to the new circle's places, fading as the new letters arrive. */
 function flyLetters(dir) {
@@ -271,7 +275,7 @@ function flyLetters(dir) {
       { duration: D, delay, easing: 'cubic-bezier(.45, .05, .25, 1)', fill: 'both' });
   });
   // The new letters come in as the old ones arrive.
-  $('dial').querySelectorAll('text.rnum, text.num').forEach((t) => t.animate([{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }], { duration: D, delay, easing: 'ease', fill: 'both' }));
+  $('dial').querySelectorAll('text.rnum, text.num').forEach((t) => t.animate([{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }], { duration: D, delay, easing: 'ease', fill: 'backwards' }));
   setTimeout(() => ov.remove(), delay + D + 60);
 }
 
@@ -526,8 +530,11 @@ function levelFace(level) {
     updateDial(tmp, x.now, x.jd, hourOf(live ? x.now : x.focus, x.jd), '', live);
     return { html: tmp.innerHTML, marker: live ? angleOf(x.now, x.jd) : null };
   }
-  const f = { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[level](x);
-  return { html: f.svg, marker: f.marker ?? null };
+  RENDER.lite = true; // the faint outer faces carry no medallions
+  try {
+    const f = { week: weekView, month: monthView, year: yearView, shemitah: shemitahView, world: worldView }[level](x);
+    return { html: f.svg, marker: f.marker ?? null };
+  } finally { RENDER.lite = false; }
 }
 
 /** V2: the outer circles as real clock faces, turned so every "now" lies on the hand's line. */

@@ -7,7 +7,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const mixA = (h1, h2, t, a) => { const c1 = hex(h1), c2 = hex(h2); return `rgba(${c1.map((v, i) => Math.round(lerp(v, c2[i], t))).join(',')},${Math.max(0, Math.min(1, a)).toFixed(3)})`; };
 
-const TURN = 1 / 30;   // turns per second while you watch: one turn every 30 s
+const TURN = 1 / 14;   // turns per second while you watch: one turn every 14 s
 const ORIENT = 6;      // seconds for the tilt and landing
 const TAU = Math.PI * 2;
 
@@ -23,7 +23,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
     const cv = el.querySelector('canvas'), ctx = cv.getContext('2d');
     let W, H, dpr;
     const size = () => {
-      dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+      dpr = Math.min(1.5, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
       cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
     };
     size();
@@ -40,7 +40,7 @@ export function intro(target, { onLand, dots = [] } = {}) {
     });
 
     const t0 = performance.now();
-    let phase = 'idle', start = 0, s0 = 0, done = false, dotFrom = [];
+    let phase = 'idle', start = 0, s0 = 0, done = false, dotFrom = [], lastMask = '';
 
     function frame(now) {
       if (done) return;
@@ -80,10 +80,12 @@ export function intro(target, { onLand, dots = [] } = {}) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
-      const step = 1 / 160, pts = [];
-      for (let w = -9; w <= 9; w += step) {
+      const step = 1 / 90, pts = [], wMax = phase === 'idle' ? 5.2 : 9;
+      for (let w = -wMax; w <= wMax; w += step) {
         const q = at(w, lerp(R0, ringR(w), eAt(w)));
         q.al = alphaAt(w, q.Y); q.w = w;
+        const out = w < -3.4 ? -3.4 - w : w > 3.4 ? w - 3.4 : 0;
+        q.keep = 1 - Math.min(1, out * 2) * Math.min(1, p * 3);
         pts.push(q);
       }
       const runs = (far) => {
@@ -96,22 +98,21 @@ export function intro(target, { onLand, dots = [] } = {}) {
       };
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       const farK = lerp(0.45, 1, e);   // the far side brightens smoothly as you come to look straight down
+      // Each half-coil is one continuous stroke; the fade at the screen's top and bottom is a single soft mask after.
       const stroke = (far, c1, c2, k) => {
-        for (const whole of runs(far)) for (let j = 0; j < whole.length - 1; j += 24) {
-          const run = whole.slice(j, j + 25);
+        for (const run of runs(far)) {
           if (run.length < 2) continue;
-          const sc = run.reduce((a, q) => a + q.sc, 0) / run.length, A = run[0], B = run[run.length - 1];
-          const g = ctx.createLinearGradient(A.X, A.Y, B.X, B.Y);
-          [0, 0.5, 1].forEach((o) => { const q = run[Math.round(o * (run.length - 1))]; g.addColorStop(o, mixA(far ? c1 : c2, c2, e, q.al * (far ? farK : 1))); });
-          ctx.strokeStyle = g; ctx.lineWidth = band * sc * k;
-          ctx.beginPath(); run.forEach((q, i) => (i ? ctx.lineTo(q.X, q.Y) : ctx.moveTo(q.X, q.Y))); ctx.stroke();
+          const q = run[run.length >> 1], al = q.keep * (far ? farK : 1);
+          if (al <= 0.01) continue;
+          ctx.strokeStyle = mixA(far ? c1 : c2, c2, e, al); ctx.lineWidth = band * q.sc * k;
+          ctx.beginPath(); run.forEach((r, i) => (i ? ctx.lineTo(r.X, r.Y) : ctx.moveTo(r.X, r.Y))); ctx.stroke();
         }
       };
       for (const far of [true, false]) {
         stroke(far, '#8f7040', '#b08a4b', 1);
         stroke(far, '#c9b48a', '#efdfb8', 0.72);
         // Marks ride the ribbon: 24 to a turn, every sixth larger.
-        const m0 = Math.ceil((-9 + s) * 24), m1 = Math.floor((9 + s) * 24);
+        const m0 = Math.ceil((-wMax + s) * 24), m1 = Math.floor((wMax + s) * 24);
         for (let m = m0; m <= m1; m++) {
           const w = m / 24 - s, q = at(w, lerp(R0, ringR(w), eAt(w)));
           if (q.far !== far || q.sc <= 0) continue;
@@ -140,6 +141,13 @@ export function intro(target, { onLand, dots = [] } = {}) {
         ctx.beginPath(); ctx.arc(q.X, q.Y, r, 0, TAU); ctx.fill(); ctx.stroke();
       });
       ctx.globalAlpha = 1;
+      // Fade at the screen's top and bottom: a CSS mask on the canvas (drawn by the graphics chip), lifting as it lands.
+      const ek = e.toFixed(3);
+      if (ek !== lastMask) {
+        lastMask = ek;
+        const m = `linear-gradient(to bottom, rgba(0,0,0,${ek}) 0%, rgba(0,0,0,${ek}) 24%, #000 40%, #000 84%, rgba(0,0,0,${ek}) 100%)`;
+        cv.style.webkitMaskImage = m; cv.style.maskImage = m;
+      }
 
       if (phase === 'orient' && p >= 1) {
         phase = 'gone';
