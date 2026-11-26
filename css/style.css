@@ -771,3 +771,5 @@ body[data-jstep="month"] #dial .rs.now, body[data-jstep="week"] #dial .rs.now { 
 .lad.here { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 20%, var(--solid)); padding: 10px 14px; }
 .lad.here b { font-size: 16px; }
 .no-now .rs.now, .no-now .seg.now { stroke: var(--face); stroke-width: 1.2; }
+/* Fading copies are never tappable: a tap always reaches the real circle */
+.ring-ghost *, .halos-ghost *, .morph, .fly { pointer-events: none !important; }
