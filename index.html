@@ -55,9 +55,6 @@
 
     <section id="panel" class="info"></section>
 
-    <footer class="fine foot">
-      Times are calculated for sea level and may differ from your shul's luach by a minute or two. Don't rely on them to the last minute.
-    </footer>
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -89,14 +86,6 @@
       <div class="opt"><span><b>View</b><small>Detailed shows the bigger circles of time around the clock. Clean shows the clock alone.</small></span><nav id="ver" class="ver" aria-label="Clean or detailed"></nav></div>
     </div>
     <div class="set-group">
-      <h3>Zmanim</h3>
-      <label class="opt"><span><b>Magen Avraham times</b><small>Also show latest Shema and Shacharis counted from dawn to nightfall.</small></span><input id="optMA" type="checkbox"></label>
-      <label class="opt"><span><b>Candle lighting</b><small>Minutes before sunset. Auto: 40 in Jerusalem, 30 in Haifa, 18 elsewhere.</small></span>
-        <select id="optCandles"><option value="auto">Auto</option><option value="18">18</option><option value="20">20</option><option value="22">22</option><option value="30">30</option><option value="40">40</option></select>
-      </label>
-      <p class="fine">How Hineni counts: hours run from sunrise to sunset, as in the Alter Rebbe's Siddur; dawn at 16.1°, nightfall at 6°, at sea level. Chabad.org computes some times differently (dawn at 16.9°), so they can differ by a few minutes: for halachah, follow your shul's luach. Israel locations keep one day of Yom Tov.</p>
-    </div>
-    <div class="set-group">
       <h3>Get Hineni</h3>
       <details class="get"><summary><b>On your home screen</b><small>Hineni as an app, one tap away.</small></summary><div id="getApp"></div></details>
       <details class="get"><summary><b>As a widget</b><small>The hour you're in, on your home screen or lock screen.</small></summary><div id="getWidget"></div></details>
@@ -104,8 +93,7 @@
     <div class="credit-box">
       <p class="credit">A project of Moshe Fehler</p>
       <button id="donateBtn" class="btn donate-btn" type="button">Support Hineni</button>
-      <p id="donateMsg" class="fine tight center-t">Hineni is free. If it helps you, you can support it with Zelle: 434-882-3721.</p>
-      <p class="fine tight center-t version">Version <span id="appVersion"></span></p>
+      <p id="donateMsg" class="fine tight center-t">Zelle: 434-882-3721</p>
     </div>
   </dialog>
 

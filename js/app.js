@@ -434,7 +434,7 @@ function howHTML() {
   return `<details class="pcard fold"><summary><span class="fold-title">How to read the clock</span></summary>
     <p class="lore-p">A Jewish day begins at sunset (Bereishis 1:5). The night has 12 hours and the day, from sunrise to sunset, has 12 more, as in the Alter Rebbe's Siddur (the Magen Avraham counts the day from dawn to nightfall). Each is a twelfth of the darkness or the daylight, so they stretch in summer and shrink in winter.</p>
     <p class="lore-p">Gold hours run across the top, from sunrise at the left to sunset at the right, like the sun. Blue hours run underneath. The thin inner ring is your ordinary clock, bent to fit.</p>
-    <p class="lore-p">Hineni pairs each hour with a month and its tribe (awaiting a rav's review); the colored band is that tribe's flag (Bamidbar Rabbah 2:7). Tap the gold, or any section, to step inside it, and tap outside the circle to step back out. Under the first box, the row of circles shows where you are inside the bigger ones; tap any of them to go there.</p></details>`;
+    <p class="lore-p">Each hour is paired with a month and its tribe; the colored band is that tribe's flag (Bamidbar Rabbah 2:7). Tap the gold, or any section, to step inside it, and tap outside the circle to step back out. Under the first box, the row of circles shows where you are inside the bigger ones; tap any of them to go there.</p></details>`;
 }
 
 const monthTribe = (hd) => monthLore(hd.month)?.tribe ?? '';
@@ -458,7 +458,7 @@ function journeyCopy(step) {
     month: [`${hd.month}`, `A Jewish month begins with the new moon, Rosh Chodesh, and grows and wanes with it. This is ${hd.month}, the month of ${monthTribe(hd)}. Today is its ${ordinal(hd.day)} day.`, 'Tap the gold to step in', "\"This month shall be for you the first of the months\" (Shemos 12:2); Rashi there: Hashem showed Moshe the new moon."],
     week: [`<span class="he" lang="he">${WEEKDAYS[wd].he}</span>`, `In Hebrew the weekdays have no names of their own, only numbers counting toward Shabbos. Today is the ${ordinal(wd + 1)} day, when Hashem made ${dayMade(wd)}.`, 'Tap the gold to step in', "The days are counted toward Shabbos: Ramban on Shemos 20:8, \"Remember the day of Shabbos\". The work of each day: Bereishis 1."],
     day: ['Today', 'A Jewish day begins at sunset: "there was evening and there was morning." It has twelve hours of night and twelve of day. Each is a twelfth of the dark or the light, so they stretch in summer and shrink in winter. At sunset this day ends and the next one begins. The line is now.', 'Tap the gold to step in', "\"There was evening and there was morning, one day\" (Bereishis 1:5): the night comes first. Seasonal hours (sha'os zmaniyos): Hineni counts the day from sunrise to sunset, as in the Alter Rebbe's Siddur; the Magen Avraham (58:1) counts from dawn to nightfall."],
-    hour: [`The ${ordinal(h.hour)} hour · ${ht.tribe}`, "This is the hour you're in. Hineni pairs each hour with a month and its tribe (this pairing is awaiting a rav's review). Every circle holds the one inside it: tap the gold to step in, tap outside to step back out.", 'Tap outside the circle to step back out to today', "Each hour of the day has one of the twelve permutations of the Name (Tanya, Chinuch Katan). Pairing the hours with the months and tribes, from Nissan, is Hineni's arrangement, awaiting review. The tribes' flags: Bamidbar Rabbah 2:7."],
+    hour: [`The ${ordinal(h.hour)} hour · ${ht.tribe}`, "This is the hour you're in. Each hour is paired with a month and its tribe. Every circle holds the one inside it: tap the gold to step in, tap outside to step back out.", 'Tap outside the circle to step back out to today', "Each hour of the day has one of the twelve permutations of the Name (Tanya, Chinuch Katan). The tribes' flags: Bamidbar Rabbah 2:7."],
   }[step];
 }
 
@@ -805,10 +805,8 @@ function renderGet() {
 }
 
 function initSettings() {
-  $('setBtn').addEventListener('click', () => { track('settings'); $('optMA').checked = prefs.ma; $('optCandles').value = prefs.candles; renderVer(); renderGet(); $('setDlg').showModal(); });
+  $('setBtn').addEventListener('click', () => { track('settings'); renderVer(); renderGet(); $('setDlg').showModal(); });
   $('setClose').addEventListener('click', () => $('setDlg').close());
-  $('optMA').addEventListener('change', (e) => { prefs.ma = e.target.checked; store.set('prefs', prefs); render(); });
-  $('optCandles').addEventListener('change', (e) => { prefs.candles = e.target.value; store.set('prefs', prefs); render(); });
 }
 
 // ---------- Events ----------
@@ -915,8 +913,6 @@ document.addEventListener('visibilitychange', () => document.visibilityState ===
 locationOnLoad();
 
 // Updates: when a new version is published, switch to it straight away (only for returning visitors, not on a first visit).
-const VERSION = 32;
-$('appVersion').textContent = VERSION;
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   const hadOne = !!navigator.serviceWorker.controller;
   let reloaded = false;

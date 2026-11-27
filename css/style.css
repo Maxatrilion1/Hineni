@@ -797,3 +797,13 @@ body.journeying .clock { min-height: calc(100svh - 330px - env(safe-area-inset-b
 /* Sources readable in day and night; the review mark clearly a question mark */
 .src-body { color: var(--ink); opacity: .82; }
 .review { width: 17px; height: 17px; font-size: 11.5px; color: #fff; background: #b07a1c; }
+
+/* The angels around you: a small map with you in the middle */
+.angels { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-areas: "above above above" ". ahead ." "left you right" ". behind ."; gap: 8px; text-align: center; margin: 4px 0 2px; }
+.ang { display: grid; gap: 1px; padding: 8px 4px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.ang b { font-size: 14px; }
+.ang bdi { font-family: var(--he); font-size: 14px; }
+.ang small { font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.a-above { grid-area: above; background: color-mix(in srgb, var(--gold) 18%, transparent); }
+.a-ahead { grid-area: ahead; } .a-left { grid-area: left; } .a-right { grid-area: right; } .a-behind { grid-area: behind; }
+.a-you { grid-area: you; place-items: center; background: none; color: var(--accent); }
