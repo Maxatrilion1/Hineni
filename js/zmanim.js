@@ -2,10 +2,10 @@ import { hebrewDate } from './hebrew.js';
 import { holidaysOn, isYomTov } from './calendar.js';
 import { sunAt } from './solar.js';
 
-// Shitah: Alter Rebbe / Chabad, as published by chabad.org.
-// Sha'os zmaniyos run from netz to shkiah; alos 16.1°, tzeis 6°.
+// Hours from sunrise to sunset, as in the Alter Rebbe's Siddur; alos 16.1°, tzeis 6°, sunrise and sunset at sea level.
+// Chabad.org computes differently (alos 16.9°, "true" sunrise and sunset), so times can differ by a few minutes.
 export const SHITAH = {
-  name: 'Alter Rebbe (Chabad)',
+  name: "hours from sunrise to sunset (the Alter Rebbe's Siddur); dawn 16.1°, nightfall 6°, at sea level",
   alos: -16.1,
   horizon: -0.833,
   tzeis: -6,

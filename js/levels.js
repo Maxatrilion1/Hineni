@@ -353,6 +353,8 @@ function emblemPhrase(e) {
   if (/^(the|a|an) /.test(l) || /s$/.test(l)) return l;
   return (/^[aeiou]/.test(l) ? 'an ' : 'a ') + l;
 }
+/** Marks something we have not yet sourced to the letter: shown with a question mark until a rav has reviewed it (see QUESTIONS.md). */
+const REVIEW = '<span class="review" title="Awaiting a rav\'s review">?</span>';
 /** A source, folded: tap "Source" to open it, tap again to close. */
 export const src = (html) => `<p class="src-body">${html}</p>`;
 const BUILT_REF = ['1:3–5', '1:6–8', '1:9–13', '1:14–19', '1:20–23', '1:24–31', '2:1–3'];
@@ -367,27 +369,30 @@ function hourPanel(x, sel, ht, a, b, live) {
   return `
     ${card(live ? 'This hour' : `${ordinal(sel.hour)} hour of the ${sel.isDay ? 'day' : 'night'}`, `
       <div class="hold"><div><span>Energy</span><p>${esc(F.energy)}</p></div><div><span>Focus</span><p>${esc(F.focus)}</p></div><div><span>Be aware</span><p>${esc(F.aware)}</p></div></div>
-      ${src(`Each hour belongs to a month, in order from Nissan, after the Arizal's twelve permutations of the Name for months and hours. The month's sense and letter: Sefer Yetzirah, chapter 5. Its energy draws on the classic teachings on the months, such as Bnei Yissaschar. "Focus" and "Be aware" are Hineni's own reflections.`)}`, 'feature')}
+      ${src(`Linking this hour to a month (the 1st hour to Nissan, the 2nd to Iyar, and so through the night) is Hineni's arrangement and is awaiting a rav's review. The source it builds on: each hour of the day has one of the twelve permutations of the Name (Tanya, Chinuch Katan), while Tanya gives the night hours permutations of another Name. Each line of the energy names its source. "Focus" and "Be aware" are Hineni's own reflections.`)}`, 'feature')}
     ${card('', `<div class="blessing"><div class="he" lang="he">${T.blessing.he}</div><div>${esc(T.blessing.en)}</div><small>${T.blessing.ref}</small></div>`)}
     ${card(`Where ${ht.tribe} camped`, campSvg(ht.tribe) + `<p class="fine">On the ${T.camp} side of the Mishkan, under a ${esc(T.flagText)} flag bearing ${esc(emblemPhrase(T.emblem))} (Bamidbar 2; Bamidbar Rabbah 2:7).</p>`)}
     ${card(`The tribe of ${ht.tribe}`, `<div class="tribe-row">${art(T.icon, 64)}<p class="lore-p">${esc(T.about)}</p></div>
-      ${kv('Name', esc(T.name))}${kv('Mother', T.mother)}${kv('Flag', `${swatch(T.flag)} ${esc(T.flagText)}`)}${kv('Stone', `${L.stone}, on the choshen`)}`)}
+      ${kv('Name', esc(T.name))}${kv('Mother', T.mother)}${kv('Flag', `${swatch(T.flag)} ${esc(T.flagText)}`)}${kv('Stone', `${L.stone}, on the choshen`)}
+      ${src('Flag, emblem and stone: Bamidbar Rabbah 2:7 (Rashi and Targum Yonasan pair the stones with the tribes in birth order instead, Shemos 28:21). Blessings: Bereishis 49; Devarim 33. Each line of the story names its source.')}`)}
     ${card(`Its month: ${ht.month}`, `<div class="facets">
       <div><span>Letter</span><b class="he" lang="he">${L.letter}</b></div><div><span>Sense</span><b>${L.sense}</b></div>
-      <div><span>Mazal</span><b>${L.mazal}</b><small>${L.mazalEn}</small></div><div><span>Planet</span><b>${p.tr}</b><small>${p.en}</small></div></div>`)}
+      <div><span>Mazal</span><b>${L.mazal}</b><small>${L.mazalEn}</small></div><div><span>Planet</span><b>${p.tr}</b><small>${p.en}</small></div></div>
+      ${src(`Letter, sense and mazal of the month: Sefer Yetzirah, Gra version 5:7-10 (other versions order the senses differently). The planet that rules each hour, in the order שצ״ם חנכ״ל: Rashi on Berachos 59b; what it brings: Shabbos 156a, where Rabbi Chanina holds the hour's mazal has effect and Rabbi Yochanan says "there is no mazal for Israel".`)}`)}
     ${card('The hour in time', `${live ? jewishNow(x, sel, a, b) : ''}${kv('Jewish time', `${sel.hour - 1}:00 – ${sel.hour}:00 of the ${sel.isDay ? 'day' : 'night'}`)}${kv('Part of the ' + (sel.isDay ? 'day' : 'night'), partOf(sel))}${kv('Your clock', `${fmtT(x, a)} – ${fmtT(x, b)} · ${Math.round((b - a) / 60000)} min`)}${zs.map((z) => kv(esc(z.tr), fmtT(x, z.t))).join('')}`)}
-    <p class="fine src">Each hour follows a month: the first hour is Nisan's, the second Iyar's, as the Arizal ties hours and months to the same twelve permutations of the Name; Hineni repeats the cycle at night. Senses and letters: Sefer Yetzirah. The planet of the hour: Shabbos 156a, which concludes <bdi lang="he">אין מזל לישראל</bdi>.</p>`;
+    <p class="fine src">${REVIEW} Which month and tribe each hour carries is awaiting a rav's review.</p>`;
 }
 
 /** Where we are inside the hour, the Jewish way: its minutes, and its 1,080 chalakim. */
 function jewishNow(x, sel, a, b) {
   const fr = (x.now - a) / (b - a), m = Math.floor(fr * 60), ch = Math.floor(fr * 1080) + 1;
-  return kv('Now', `${sel.hour - 1}:${String(m).padStart(2, '0')} of the ${sel.isDay ? 'day' : 'night'}<small>Minute ${m + 1} of the hour's 60 · chelek ${ch.toLocaleString()} of its 1,080 (Rambam, Kiddush HaChodesh 6:2)</small>`);
+  return kv('Now', `${sel.hour - 1}:${String(m).padStart(2, '0')} of the ${sel.isDay ? 'day' : 'night'}<small>Minute ${m + 1} of the hour's 60 · chelek ${ch.toLocaleString()} of its 1,080, as the Rambam divides an hour (Kiddush HaChodesh 6:2)</small>`);
 }
 function partOf(sel) {
-  if (!sel.isDay) return `The ${ordinal(Math.ceil(sel.hour / 4))} watch of three<small>The night has three watches of four hours (Brachos 3a)</small>`;
+  if (!sel.isDay) return `The ${ordinal(Math.ceil(sel.hour / 4))} watch of three<small>Three watches of four hours, as Rabbi Nasan holds; Rebbi counts four (Berachos 3a)</small>`;
   const h = sel.hour;
-  return h <= 3 ? 'Morning: the time for Shema' : h === 4 ? 'Morning: the time for Shacharis' : h <= 6 ? 'Late morning, toward midday (chatzos)' : h <= 9 ? 'Afternoon: from Mincha Gedolah' : 'Late afternoon: Mincha Ketanah and plag';
+  // Mishnah Berachos 4:1 and Shulchan Aruch OC 58, 89, 233; hours counted from sunrise, as Hineni counts them.
+  return h <= 3 ? 'Morning: Shema is said by the end of the 3rd hour' : h === 4 ? 'Morning: the last hour for Shacharis' : h <= 6 ? 'Late morning, toward midday (chatzos)' : h <= 9 ? `Afternoon: Mincha from 6½ hours (Mincha Gedolah)` : `Late afternoon: Mincha Ketanah from 9½ hours; plag at 10¾`;
 }
 
 export function dayPanel(x) {
@@ -403,13 +408,13 @@ export function dayPanel(x) {
       ${marks.length ? `<p class="day-marks">${marks.join(' · ')}</p>` : ''}
       <p class="lore-p">${esc(Q.built)}</p>
       <div class="hold"><div><span>Today asks</span><p>${esc(Q.ask)}</p></div></div>
-      ${live && x.now < x.jd.day.shkiah ? `<p class="edge-note">This day ends at sunset, <b>${fmtT(x, x.jd.day.shkiah)}</b>, and ${wd === 5 ? '<b>Shabbos</b> begins' : `<b>the ${ordinal((wd + 1) % 7 + 1)} day</b> begins`}. A Jewish day runs from sunset to sunset.</p>` : ''}
+      ${live && x.now < x.jd.day.shkiah ? `<p class="edge-note">This day ends at sunset, <b>${fmtT(x, x.jd.day.shkiah)}</b>, and ${wd === 5 ? '<b>Shabbos</b> begins' : `<b>the ${ordinal((wd + 1) % 7 + 1)} day</b> begins`}. A Jewish day begins at sunset (Bereishis 1:5); the time until nightfall is twilight, bein hashmashos, a doubtful time in halachah.</p>` : ''}
       ${src(`The work of the day: Bereishis ${BUILT_REF[wd]}. A day begins in the evening: "there was evening and there was morning" (Bereishis 1:5). Nissan is counted as the first month (Shemos 12:2), so ${hd.month} is the ${ordinal(MONTH_NUM[hd.month])}; the count of years begins in Tishrei (Rosh Hashanah 1:1). "Today asks" is Hineni's own reflection on the day's work, not a quotation.`)}`, 'feature day-head')}
     ${card('The day\'s light', `<div class="facets">
       <div><span>Sefirah</span><b>${D.sefirah}</b><small>${esc(Q.quality.split(': ')[1].split(',')[0])}</small></div>
-      <div><span>Guest</span><b>${D.ushpiz}</b><small>${esc(Q.guest.replace(/^\w+,? ?/, ''))}</small></div>
+      <div><span>Guest ${REVIEW}</span><b>${D.ushpiz}</b><small>${esc(Q.guest.replace(/^\w+,? ?/, ''))}</small></div>
       <div><span>Song</span><b>Tehillim ${D.shir}</b><small class="he" lang="he">${D.shirHe}</small></div></div>
-      ${src('The seven days and the seven lower sefiros, from Chesed to Malchus: Kabbalah, following the Zohar. The seven "guests" (ushpizin): Zohar III 103b–104a. The song of the day, sung by the Levi\'im in the Beis Hamikdash: Mishnah Tamid 7:4.')}`)}
+      ${src('Each weekday and its sefirah, from Chesed on the first day to Malchus on Shabbos: Arizal, Pri Etz Chaim, Sha\'ar HaMoadim 3. The song of the day, sung by the Levi\'im in the Beis Hamikdash: Mishnah Tamid 7:4. The "guest": the ushpizin are a Sukkos teaching (Zohar III 103b); pairing them with the weekdays is awaiting a rav\'s review, and the Zohar elsewhere pairs these figures with the days differently.')}`)}
 `;
 }
 
@@ -430,7 +435,7 @@ function monthPanel(x, lore, T, start, len) {
       <div class="facets"><div><span>Letter</span><b class="he" lang="he">${lore.letter}</b></div><div><span>Sense</span><b>${lore.sense}</b></div><div><span>Mazal</span><b>${lore.mazal}</b><small>${lore.mazalEn}</small></div></div>`)}
     ${card('The moon', `${kv(`Molad ${esc(cur.month)}`, `${moladText(cur)}<small>Jerusalem time · ${fmtD(x, cur.utc)}, ${fmtT(x, cur.utc)} your time</small>`)}
       ${kv(`Molad ${esc(nxt.month)}`, `${moladText(nxt)}<small>${fmtD(x, nxt.utc)}, ${fmtT(x, nxt.utc)} your time</small>`)}
-      ${kv('Kiddush Levanah', `${kls}<small>From 7 days after the molad (Chabad custom) to mid-month</small>`)}`)}
+      ${kv('Kiddush Levanah', `${kls}<small>From 7 days after the molad (Shulchan Aruch 426:4; the Rema allows from 3) until half a month after it (Rema 426:3; the Mechaber says 15 days). Ask your rav.</small>`)}`)}
     ${hols.length ? card('This month', hols.map((h) => kv(`${h.day} ${x.hd.month}`, esc(h.name.replace(/ · \d+\w+ light/, '')))).join('')) : ''}`;
 }
 
@@ -449,20 +454,20 @@ function yearPanel(x, Y) {
 
 function shemitahPanel(x, first, pos) {
   const name = { sheni: "Ma'aser sheni: eaten in Yerushalayim", ani: "Ma'aser ani: given to the poor", rest: 'Shemitah: the land rests, debts are released' };
-  return card('Seven years', Array.from({ length: 7 }, (_, i) => `<div class="wkrow${i === pos - 1 ? ' now' : ''}"><span class="swatch big"><i style="background:${MAASER_COLOR[MAASER(i + 1)]}"></i></span><span><b>${first + i}</b><small>${name[MAASER(i + 1)]}</small></span><span class="muted">Year ${i + 1}</span></div>`).join('') + '<p class="fine">Vayikra 25; Devarim 14. The colors on the ring show which tithe each year carries.</p>');
+  return card('Seven years', Array.from({ length: 7 }, (_, i) => `<div class="wkrow${i === pos - 1 ? ' now' : ''}"><span class="swatch big"><i style="background:${MAASER_COLOR[MAASER(i + 1)]}"></i></span><span><b>${first + i}</b><small>${name[MAASER(i + 1)]}</small></span><span class="muted">Year ${i + 1}</span></div>`).join('') + '<p class="fine">Shemitah: Vayikra 25; Devarim 15:1-2. The tithes of each year: Devarim 14:22-29; Rambam, Hilchos Ma\'aser Sheni 1:1. The colors on the ring show which tithe each year carries.</p>');
 }
 
 function worldPanel(x, c) {
-  return card('Six days of a thousand years', `<p class="lore-p">"The world exists for six thousand years: two thousand of tohu, two thousand of Torah, two thousand of the days of Moshiach" (Sanhedrin 97a). Each millennium is a day of the cosmic week, and the seventh is Shabbos.</p>
+  return card('Six days of a thousand years', `<p class="lore-p">"The world exists for six thousand years: two thousand of tohu, two thousand of Torah, two thousand of the days of Moshiach" (Sanhedrin 97a). Each millennium is like one of the six days of creation (Ramban, Bereishis 2:3), and the seventh is "a day that is entirely Shabbos" (Sanhedrin 97a; Rashi, Avodah Zarah 9a).</p>
     <div class="eras"><span style="--c:${ERA_COLOR[0]}">Tohu</span><span style="--c:${ERA_COLOR[2]}">Torah</span><span style="--c:${ERA_COLOR[4]}">Days of Moshiach</span><span style="--c:${ERA_COLOR[6]}">Shabbos</span></div>
-    <p class="lore-p">${x.hd.year} is in the ${ordinal(c.mil)} millennium, the world's ${c.dayName}. Year ${x.hd.year % 1000} of it is like the ${ordinal(c.hour)} hour of ${c.isDay ? 'that day' : 'that night'}${c.dayName === 'Friday' ? ': Erev Shabbos afternoon, time to prepare.' : '.'}</p>`, 'feature');
+    <p class="lore-p">${x.hd.year} is in the ${ordinal(c.mil)} millennium.</p>`, 'feature');
 }
 
 const DIR_LETTER = { east: ['ד', 'Dalet'], west: ['כ', 'Kaf'], north: ['פ', 'Pei'], south: ['ר', 'Reish'] };
 const DIR_HE = { north: 'צפון', south: 'דרום', east: 'מזרח', west: 'מערב' };
 // The angels around you, as said in the Shema at bedtime (from Bamidbar Rabbah 2:10).
 const ANGEL = { Ahead: ['Uriel', 'אוריאל'], Behind: ['Refael', 'רפאל'], Right: ['Michael', 'מיכאל'], Left: ['Gavriel', 'גבריאל'] };
-// Sefer Yetzirah 1:13: the six directions sealed with the three letters of the Name (Kaplan's text; editions differ).
+// Sefer Yetzirah 1:13: the six directions sealed with the three letters of the Name (the standard printed text; the Gra version differs).
 const SEALS = [['Above', 'יהו'], ['Below', 'יוה'], ['East · ahead', 'היו'], ['West · behind', 'הוי'], ['South · right', 'ויה'], ['North · left', 'והי']];
 function spacePanel(x, j, mi, hourTr, monthTr, around, rot) {
   const row = (lbl, side) => `<div class="kv"><span>${lbl}<small class="angel">${ANGEL[lbl][0]} <bdi class="he" lang="he">${ANGEL[lbl][1]}</bdi></small></span><b><span class="dirrow"><span class="he big-l" lang="he">${DIR_LETTER[side][0]}</span> ${side[0].toUpperCase() + side.slice(1)} · <bdi class="he" lang="he">${DIR_HE[side]}</bdi></span><small><bdi class="he" lang="he">${CAMPS[side].map((t) => TRIBES[t].he).join(' · ')}</bdi></small></b></div>`;
@@ -472,12 +477,12 @@ function spacePanel(x, j, mi, hourTr, monthTr, around, rot) {
       <div class="kv"><span>Above · below<small class="angel">The Shechinah above</small></span><b><span class="dirrow"><span class="he big-l" lang="he">ב</span> above · <span class="he big-l" lang="he">ג</span> below</span></b></div>
       <div class="space-btns"><button id="faceJ" class="btn" type="button">Face Yerushalayim</button><button id="northUp" class="btn ghost" type="button">North up</button>${phone ? '<button id="compassBtn" class="btn ghost" type="button">Connect to compass</button>' : ''}</div>
       <p class="fine">Drag the dial to turn it${phone ? ', or connect it to your phone\'s compass' : ''}. The top of the dial is the way you face.</p>
-      ${src('The letters of the six directions, and ת for the Holy Palace in the middle: Sefer Yetzirah 4:3 (editions differ in the order). The angels around you: "On my right Michael, on my left Gavriel, before me Uriel, behind me Refael, and above my head the Shechinah of G-d," from the Shema at bedtime, based on Bamidbar Rabbah 2:10. The camp: Bamidbar 2.')}`, 'feature')}
+      ${src('The letters of the six directions, and ת for the Holy Palace in the middle: Sefer Yetzirah 4:3 (4:4 in some editions), pairing the letters with the directions in the order the text lists them. The angels around you: "On my right Michael, on my left Gavriel, before me Uriel, behind me Refael, and above my head the Shechinah of G-d," from the Shema at bedtime. The four angels around the Throne: Bamidbar Rabbah 2:10. The camp: Bamidbar 2.')}`, 'feature')}
     ${card('The six directions, sealed', `<p class="lore-p">Sefer Yetzirah tells how the world's six directions were sealed, each with the three letters of the Name in a different order. Wherever you turn, the Name is there.</p>
       <div class="seals">${SEALS.map(([d, l]) => `<div><span>${d}</span><b class="he" lang="he">${l}</b></div>`).join('')}</div>
-      ${src('Sefer Yetzirah 1:13, as translated by Rabbi Aryeh Kaplan. Editions of Sefer Yetzirah differ in which order goes with which direction.')}`)}
+      ${src('Sefer Yetzirah 1:13, as in the standard printed text. Other versions, among them the Gra\'s, pair some of the orders with different directions.')}`)}
     ${card(`Where ${hourTr} camped`, campSvg(hourTr, rot) + `<p class="fine">This hour's tribe, in the camp around the Mishkan, turned with the dial to the way you face.</p>`, 'camp-card')}
-    ${card('The camp', `<p class="lore-p">The dial is the camp in the desert (Bamidbar 2): Yehudah, Yissachar and Zevulun to the east; Reuven, Shimon and Gad to the south; Ephraim, Menashe and Binyamin to the west; Dan, Asher and Naftali to the north. At the center, where the Mishkan stood and the Beis Hamikdash would stand, is the Holy Palace.</p>
+    ${card('The camp', `<p class="lore-p">The dial is the camp in the desert (Bamidbar 2): Yehudah, Yissachar and Zevulun to the east; Reuven, Shimon and Gad to the south; Ephraim, Menashe and Binyamin to the west; Dan, Asher and Naftali to the north. At the center stood the Mishkan, with the Levi'im camped around it (Bamidbar 2:17; 3).</p>
       <p class="lore-p">Lit: <b>${hourTr}</b>, this hour's tribe. Outlined: <b>${monthTr}</b>, this month's. The gold dot points to Yerushalayim, ${mi.toLocaleString()} miles to the ${compassWord(j.bearing)}.</p>`)}`;
 }
 

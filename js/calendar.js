@@ -172,13 +172,13 @@ export function omerSefirah(n) {
   return { tr: `${inner[0]} sheb'${outer[0]}`, he: `${inner[1]} שב${outer[1]}` };
 }
 
-// ---------- Planetary hours (Shabbos 156a: שצ״ם חנכ״ל) ----------
+// ---------- Planetary hours: their order שצ״ם חנכ״ל and each day's first hour, Rashi on Berachos 59b; traits, Shabbos 156a ----------
 export const PLANETS = [
   { tr: 'Shabtai', en: 'Saturn', he: 'שבתאי', trait: 'Plans may come to nothing.' },
   { tr: 'Tzedek', en: 'Jupiter', he: 'צדק', trait: 'A person of tzedakah.' },
-  { tr: "Ma'adim", en: 'Mars', he: 'מאדים', trait: 'One who sheds blood: a surgeon, a shochet, a mohel.' },
+  { tr: "Ma'adim", en: 'Mars', he: 'מאדים', trait: 'One who sheds blood: a bloodletter, a thief, a shochet or a mohel.' },
   { tr: 'Chamah', en: 'Sun', he: 'חמה', trait: 'Radiant and open; eats and drinks of his own.' },
-  { tr: 'Nogah', en: 'Venus', he: 'נוגה', trait: 'Wealthy, drawn to pleasure.' },
+  { tr: 'Nogah', en: 'Venus', he: 'נוגה', trait: 'Wealthy, and given to passion.' },
   { tr: 'Kochav', en: 'Mercury', he: 'כוכב', trait: 'Bright and wise, quick of mind.' },
   { tr: 'Levanah', en: 'Moon', he: 'לבנה', trait: 'Builds and tears down, waxes and wanes.' },
 ];

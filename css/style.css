@@ -787,3 +787,10 @@ body.journeying .clock { min-height: calc(100svh - 330px - env(safe-area-inset-b
 .center-t { text-align: center; }
 .donate { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
 .donate .btn { margin-top: 4px; }
+
+/* Awaiting a rav's review */
+.review { display: inline-grid; place-items: center; width: 15px; height: 15px; margin-left: 3px; border-radius: 50%; font-size: 10px; font-weight: 700; line-height: 1; vertical-align: 1px; color: var(--solid); background: color-mix(in srgb, var(--accent) 70%, transparent); }
+
+/* Sources readable in day and night; the review mark clearly a question mark */
+.src-body { color: var(--ink); opacity: .82; }
+.review { width: 17px; height: 17px; font-size: 11.5px; color: #fff; background: #b07a1c; }

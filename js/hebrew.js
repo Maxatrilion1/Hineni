@@ -51,8 +51,10 @@ export const WEEKDAYS = [
   { tr: 'Shabbos Kodesh', he: 'שבת קודש', en: 'Saturday' },
 ];
 
-// The twelve months and what Sefer Yetzirah and the Arizal pair with each.
-// Tribe order follows the encampment (Arizal); letters, senses and mazalos follow Sefer Yetzirah.
+// The twelve months and what is paired with each.
+// Letters, senses and mazalos: Sefer Yetzirah, Gra version 5:7-10 (other versions order the senses differently).
+// Tribes: the order of the camps' marching (Bamidbar 10:14-27), as the Gra (on Sefer Yetzirah 5:3) and the
+// Bnei Yissaschar bring in the name of the Arizal. The Gra also brings a different order from Chazal.
 const LORE = {
   Nissan: { tribe: 'Yehudah', mazal: 'Taleh', mazalEn: 'Lamb (Aries)', letter: 'ה', sense: 'Speech' },
   Iyar: { tribe: 'Yissachar', mazal: 'Shor', mazalEn: 'Ox (Taurus)', letter: 'ו', sense: 'Thought' },
@@ -60,19 +62,20 @@ const LORE = {
   Tammuz: { tribe: 'Reuven', mazal: 'Sartan', mazalEn: 'Crab (Cancer)', letter: 'ח', sense: 'Sight' },
   'Menachem Av': { tribe: 'Shimon', mazal: 'Aryeh', mazalEn: 'Lion (Leo)', letter: 'ט', sense: 'Hearing' },
   Elul: { tribe: 'Gad', mazal: 'Besulah', mazalEn: 'Maiden (Virgo)', letter: 'י', sense: 'Action' },
-  Tishrei: { tribe: 'Ephraim', mazal: 'Moznayim', mazalEn: 'Scales (Libra)', letter: 'ל', sense: 'Touch' },
+  Tishrei: { tribe: 'Ephraim', mazal: 'Moznayim', mazalEn: 'Scales (Libra)', letter: 'ל', sense: 'Union' },
   Cheshvan: { tribe: 'Menashe', mazal: 'Akrav', mazalEn: 'Scorpion (Scorpio)', letter: 'נ', sense: 'Smell' },
   Kislev: { tribe: 'Binyamin', mazal: 'Keshes', mazalEn: 'Bow (Sagittarius)', letter: 'ס', sense: 'Sleep' },
   Teves: { tribe: 'Dan', mazal: 'Gedi', mazalEn: 'Kid (Capricorn)', letter: 'ע', sense: 'Anger' },
-  Shevat: { tribe: 'Asher', mazal: 'Dli', mazalEn: 'Bucket (Aquarius)', letter: 'צ', sense: 'Taste' },
+  Shevat: { tribe: 'Asher', mazal: 'Dli', mazalEn: 'Bucket (Aquarius)', letter: 'צ', sense: 'Eating' },
   Adar: { tribe: 'Naftali', mazal: 'Dagim', mazalEn: 'Fish (Pisces)', letter: 'ק', sense: 'Laughter' },
 };
 LORE['Adar I'] = LORE['Adar II'] = LORE.Adar;
 
-// Stone on the Kohen Gadol's choshen for each tribe (Ephraim and Menashe share Yosef's).
+// Stone on the Kohen Gadol's choshen for each tribe, as Bamidbar Rabbah 2:7 pairs them (Ephraim and Menashe share Yosef's).
+// Rashi (Shemos 28:21) and Targum Yonasan order the stones by birth instead.
 const STONES = {
   Reuven: 'Odem', Shimon: 'Pitdah', Levi: 'Bareket', Yehudah: 'Nofech', Yissachar: 'Sapir',
-  Zevulun: 'Yahalom', Dan: 'Leshem', Naftali: 'Shevo', Gad: 'Achlamah', Asher: 'Tarshish',
+  Zevulun: 'Yahalom', Dan: 'Leshem', Naftali: 'Achlamah', Gad: 'Shevo', Asher: 'Tarshish',
   Ephraim: 'Shoham', Menashe: 'Shoham', Binyamin: 'Yashpeh',
 };
 
