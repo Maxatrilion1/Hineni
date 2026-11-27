@@ -27,10 +27,15 @@ export function skyAt(alt) {
   return { cols, light: alt > -3, topDark: lum(cols[0]) < 0.45 };
 }
 
+let lastSky = '';
 /** Paint the sky for this moment. */
 export function paintSky(now, loc) {
   const alt = sunAltitude(now, loc.lat, loc.lon);
   const s = skyAt(alt);
+  // Only when the colours really change: re-setting them restyles the whole page, and this runs every second.
+  const key = s.cols.map(rgb).join() + s.topDark;
+  if (key === lastSky) return alt;
+  lastSky = key;
   const root = document.documentElement.style;
   root.setProperty('--sky-top', rgb(s.cols[0]));
   root.setProperty('--sky-mid', rgb(s.cols[1]));
