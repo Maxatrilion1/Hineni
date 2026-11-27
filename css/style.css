@@ -785,8 +785,11 @@ body.journeying .clock { min-height: calc(100svh - 330px - env(safe-area-inset-b
 /* Settings: the journey first, support last */
 .journey-btn { margin: 4px 0 6px; }
 .center-t { text-align: center; }
-.donate { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
-.donate .btn { margin-top: 4px; }
+/* The credit, with Support Hineni beside it */
+.credit-box { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; justify-items: center; gap: 8px; }
+.credit-box .credit { margin: 0; font-size: 16px; color: var(--ink); }
+.donate-btn { padding: 10px 26px; }
+.version { opacity: .6; }
 
 /* Awaiting a rav's review */
 .review { display: inline-grid; place-items: center; width: 15px; height: 15px; margin-left: 3px; border-radius: 50%; font-size: 10px; font-weight: 700; line-height: 1; vertical-align: 1px; color: var(--solid); background: color-mix(in srgb, var(--accent) 70%, transparent); }

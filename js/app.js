@@ -914,4 +914,13 @@ setInterval(tick, 1000);
 document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && tick());
 locationOnLoad();
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+// Updates: when a new version is published, switch to it straight away (only for returning visitors, not on a first visit).
+const VERSION = 32;
+$('appVersion').textContent = VERSION;
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  const hadOne = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadOne && !reloaded) { reloaded = true; location.reload(); } });
+  navigator.serviceWorker.register('sw.js').then((r) => r.update()).catch(() => {});
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then((r) => r?.update()).catch(() => {}); });
+}
